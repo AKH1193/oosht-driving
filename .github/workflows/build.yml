@@ -22,11 +22,28 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Download Gradle 8.9 (with retries and mirrors)
+        run: |
+          for url in \
+            https://services.gradle.org/distributions/gradle-8.9-bin.zip \
+            https://github.com/gradle/gradle-distributions/releases/download/v8.9.0/gradle-8.9-bin.zip \
+            https://downloads.gradle.org/distributions/gradle-8.9-bin.zip; do
+            for attempt in 1 2 3; do
+              echo "Trying $url (attempt $attempt)"
+              if curl -fL --connect-timeout 30 --max-time 600 --retry 3 --retry-all-errors --retry-delay 10 -o gradle.zip "$url" && unzip -q gradle.zip -d "$HOME/gradle-dist"; then
+                echo "$HOME/gradle-dist/gradle-8.9/bin" >> "$GITHUB_PATH"
+                exit 0
+              fi
+              rm -f gradle.zip; sleep 15
+            done
+          done
+          echo "Could not download Gradle from any mirror"; exit 1
+
       - name: Build the APK
         run: |
-          chmod +x gradlew
+          gradle --version
           for attempt in 1 2 3; do
-            ./gradlew assembleRelease -PversionCode=${{ github.run_number }} --no-daemon --stacktrace && exit 0
+            gradle assembleRelease -PversionCode=${{ github.run_number }} --no-daemon --stacktrace && exit 0
             echo "Build attempt $attempt failed, retrying in 20 seconds"
             sleep 20
           done
