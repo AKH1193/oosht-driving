@@ -90,6 +90,10 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 
 #apsh{position:absolute;top:calc(58px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:7px 14px;display:flex;align-items:center;gap:12px;border-color:rgba(255,199,44,.6)}
 #apsh .tx{display:grid;gap:1px}
+#unload{position:absolute;top:34%;left:50%;transform:translateX(-50%);padding:12px 18px;display:grid;justify-items:center;gap:8px}
+#unload .h{font-weight:700;font-size:16px}#unload .s{color:var(--muted);font-size:13px}#ulBtn{min-width:160px;min-height:60px;font-size:22px}
+#ctList,#outChallan{max-height:30vh;overflow:auto}#footBar{flex-wrap:nowrap;gap:6px}#footBar .sbtn{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
+#rideBar .notice{display:inline-block}
 #apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 #apsh .n{font-family:var(--display);font-size:42px;line-height:1;color:var(--auto-yellow);min-width:1.2ch;text-align:center}
 #apsh .l{font-family:var(--display);font-size:15px;letter-spacing:.03em;white-space:nowrap}
@@ -209,7 +213,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       </div>
       <div class="cond"><label><span>Condition</span><span id="condTxt">100%</span></label><div class="bar"><i id="condbar"></i></div></div>
       <div class="cond"><label><span id="fuelLbl">Fuel</span><span id="fuelTxt">100%</span></label><div class="bar"><i id="fuelbar" style="background:#4FC3F7"></i></div></div>
-      <div class="wallet"><span>₹ <span id="wallet">0</span></span><span class="lic" id="licChip" hidden>LICENCE SUSPENDED</span></div>
+      <div class="wallet"><span>₹ <span id="wallet">0</span></span><span class="lic" id="licChip" hidden>LICENCE SEIZED</span><span class="lic" id="chChip" hidden style="background:#B26A00">0/5 challans</span></div>
     </div>
     <div id="wanted" class="panel" hidden>
       <div class="stars"><i></i><i></i><i></i></div>
@@ -240,6 +244,15 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
     <div id="toast"></div>
     <div class="bottom-c">
       <div class="notice panel hit" id="notice" hidden></div>
+      <div class="row hit" id="footBar" hidden>
+        <button class="sbtn" id="fbAuto">Auto</button><button class="sbtn" id="fbCab">Cab</button><button class="sbtn" id="fbLift">Lift</button><button class="sbtn" id="fbBeg">Ask ₹</button><button class="sbtn y" id="fbJob">Work</button>
+      </div>
+      <div class="row hit" id="rideBar" hidden><span class="notice panel" id="rideTxt"></span><button class="sbtn y" id="rbSkip">Get there now</button></div>
+    </div>
+    <div id="unload" class="panel hit" hidden>
+      <div class="h" id="ulTxt">Tap UNLOAD 30 times</div>
+      <button class="btn primary" id="ulBtn">UNLOAD</button>
+      <div class="s" id="ulTime">15 s</div>
     </div>
     <div class="ctl-left">
       <button class="pad hit" id="btnL" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15.5 4 6 12l9.5 8z"/></svg></button>
@@ -353,14 +366,33 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
     </div>
   </div>
 
-  <div class="screen scrim" id="licence" hidden>
-    <div class="card" style="width:min(520px,100%)">
-      <h2>Licence suspended</h2>
-      <p id="licText"></p>
+  <div class="screen scrim" id="court" hidden>
+    <div class="card" style="width:min(560px,100%)">
+      <h2>District Magistrate Court</h2>
+      <p id="ctText"></p>
+      <div class="challan" id="ctList"></div>
       <div class="row" style="justify-content:flex-start">
-        <button class="btn primary" id="licPay">Pay ₹2,000 fine</button>
-        <button class="btn" data-go="title">Back</button>
+        <button class="btn primary" id="ctPay">Pay fines</button>
+        <button class="btn" id="ctLeave">Leave</button>
       </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="rideScr" hidden>
+    <div class="card" style="width:min(520px,100%)">
+      <h2 id="rdTitle">Where to?</h2>
+      <p id="rdText"></p>
+      <div class="opts" id="rdOpts"></div>
+      <div class="row" style="justify-content:flex-start"><button class="btn" id="rdCancel">Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="jobScr" hidden>
+    <div class="card" style="width:min(560px,100%)">
+      <h2>Find work</h2>
+      <p>Odd jobs around you. Money goes straight to your wallet.</p>
+      <div class="opts" id="jbOpts"></div>
+      <div class="row" style="justify-content:flex-start"><button class="btn" id="jbClose">Not now</button></div>
     </div>
   </div>
 
@@ -409,7 +441,7 @@ function fmtINR(n){return Math.round(n).toLocaleString('en-IN');}
 
 const store={get(k,d){try{const v=localStorage.getItem('oosht.'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('oosht.'+k,JSON.stringify(v));}catch(e){}}};
 const settings=Object.assign({sound:true,haptics:'med',steer:'buttons',tod:'auto',gfx:'balanced',cam:'chase'},store.get('settings',{}));
-const profile=Object.assign({wallet:500,km:0,trips:0,vehicle:'auto',challans:0,suspendedUntil:0},store.get('profile',{}));
+const profile=Object.assign({wallet:500,km:0,trips:0,vehicle:'auto',challans:0,suspendedUntil:0,pending:[],seized:false},store.get('profile',{}));
 if(profile.wallet<0)profile.wallet=0;
 const saveSettings=()=>store.set('settings',settings);
 const saveProfile=()=>store.set('profile',profile);
@@ -1770,6 +1802,7 @@ function buildWorld(data){
   genHazards();
   buildGarages();
   buildFuels();
+  buildCourt();
 }
 function nodeArms(list){let a=0;for(const e of list){if(e.k>0)a++;if(e.k<e.w.pts.length/2-1)a++;}return a;}
 function nodeXY(list){const e=list[0];return [e.w.pts[2*e.k],e.w.pts[2*e.k+1]];}
@@ -2076,6 +2109,7 @@ function buildChunk(cx,cy){
   for(const t of trees)gAdd(W.tG,Math.floor(t.x/CELL),Math.floor(t.y/CELL),t);
   for(const g of W.garages)if(inC(g.sx,g.sy))shedAt(sol,g);
   for(const g of W.fuels||[])if(inC(g.sx,g.sy))stationAt(sol,dec,g);
+  if(W.court&&inC(W.court.sx,W.court.sy))courtAt(sol,W.court);
   return {cx,cy,v:W.version,cas:cas.mesh(),asp:asp.mesh(),mrk:mrk.mesh(),dec:dec.mesh(),sol:sol.mesh(),shp:shp.mesh(),glow:makeGlowMesh(glow),shad:makeGlowMesh(shad),heads};
 }
 function freeChunk(c){for(const k of['cas','asp','mrk','dec','sol','shp','glow','shad'])freeMesh(c[k]);}
@@ -2438,7 +2472,7 @@ function suddenCrash(){
 
 /* ---------- Hoysala police ---------- */
 const COP={level:0,list:[],trail:[],lastTr:null,off:[],caughtT:0,lostT:0,pedHit:false,cool:0};
-const FINES={signal:['Jumped a red signal',1000],rash:['Rash driving',1000],speed:['Overspeeding',1000],wrong:['Driving the wrong way',500],ped:['Hit a pedestrian',5000],crash:['Dangerous driving, collision',2000]};
+const FINES={signal:['Jumped a red signal',500],rash:['Rash driving',500],speed:['Overspeeding',400],wrong:['Driving the wrong way',300],ped:['Hit a pedestrian',2000],crash:['Dangerous driving, collision',800]};
 function offence(code,level){
   if(state!=='play')return;
   if(!COP.off.includes(code))COP.off.push(code);
@@ -2478,7 +2512,7 @@ function updateCops(dt){
   if(COP.caughtT>1.6){caught();return;}
   if(md>320)COP.lostT+=dt;else COP.lostT=0;
   if(COP.lostT>7&&!COP.pedHit){escaped();}
-  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;toast('You got away for now. Your licence is still suspended.','bad');COP.list=[];Snd.sirenOff();COP.level=0;$('#wanted').hidden=true;COP.off=[];COP.pedHit=false;}
+  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;goFoot('You lost the Hoysala, but your licence is seized. Park it and walk to the court.');}
 }
 function escaped(){COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;P.rash=0;Snd.sirenOff();$('#wanted').hidden=true;toast('You lost the Hoysala','good');}
 
@@ -2500,7 +2534,7 @@ function damage(n,silent){
   P.cond=Math.max(0,P.cond-n);P.lastBad=performance.now();if(trip)trip.clean=false;
   if(P.cond<=0&&!P.broke){P.broke=true;toast('Your vehicle broke down','bad');Snd.stopEngine();setTimeout(()=>{if(state==='play'&&P.cond<=0&&!P.dry)Snd.startEngine(Object.assign({},VEH[P.type].engine,{vol:.4}),P.type);},400);}
 }
-const licenceSuspended=()=>Date.now()<profile.suspendedUntil;
+const licenceSuspended=()=>!!profile.seized;
 const timeStr=ms=>new Date(ms).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
 
 /* ---------- hazards felt in the seat ---------- */
@@ -2542,8 +2576,8 @@ function hitPed(p){
   if(p.state==='static'&&p.kind==='lie'){p.kind='lie';}
   p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);if(p.kind==='lie'||p.kind==='sit'){p.v=0;}
   Snd.crash();Hap.bigCrash();CAM.shake=10;flash();
-  profile.suspendedUntil=Math.max(profile.suspendedUntil,Date.now()+10*60e3);saveProfile();
-  COP.pedHit=true;toast('You hit a pedestrian! Licence suspended','bad');
+  addChallan('ped');profile.seized=true;saveProfile();
+  COP.pedHit=true;toast('You hit a pedestrian! Licence seized','bad');
   offence('ped',3);
   trip=null;
 }
@@ -2654,20 +2688,17 @@ function rules(dt,nr,sp){
 function caught(){
   if(state!=='play')return;
   state='outcome';Snd.stopEngine();Snd.sirenOff();Snd.hornOff();releaseAll();apshReset();
-  const lines=COP.off.map(c=>FINES[c]).filter(Boolean);const total=lines.reduce((s,l)=>s+l[1],0);
-  const paid=Math.min(profile.wallet,total);profile.wallet-=paid;
+  const codes=COP.off.filter(c=>FINES[c]&&c!=='ped');for(const c of codes)addChallan(c);
   const box=$('#outChallan');box.innerHTML='';
-  for(const[l,f]of lines){const d=document.createElement('div');d.className='ln';d.innerHTML='<span></span><b></b>';d.querySelector('span').textContent=l;d.querySelector('b').textContent='₹'+fmtINR(f);box.appendChild(d);}
-  const t=document.createElement('div');t.className='ln tot';t.innerHTML='<span>Paid from wallet</span><b></b>';t.querySelector('b').textContent='₹'+fmtINR(paid)+(paid<total?' of ₹'+fmtINR(total):'');box.appendChild(t);
-  const ped=COP.pedHit;let end=false;
-  if(ped){end=true;profile.suspendedUntil=Math.max(profile.suspendedUntil,Date.now()+10*60e3);profile.challans=0;
-    $('#outTitle').textContent='Arrested by the Hoysala';$('#outText').textContent=`You hit a pedestrian. Your driving licence is suspended until ${timeStr(profile.suspendedUntil)}.`;}
-  else{profile.challans=(profile.challans||0)+1;
-    if(profile.challans>=3){end=true;profile.challans=0;profile.suspendedUntil=Date.now()+10*60e3;$('#outTitle').textContent='Licence suspended';$('#outText').textContent=`That is your third e-challan. Your licence is suspended until ${timeStr(profile.suspendedUntil)}.`;}
-    else{$('#outTitle').textContent='e-Challan issued';$('#outText').textContent=`The Hoysala caught you. Challan ${profile.challans} of 3: a third challan suspends your licence.`;}}
+  for(const c of profile.pending){const d=document.createElement('div');d.className='ln';d.innerHTML='<span></span><b></b>';d.querySelector('span').textContent=c.l;d.querySelector('b').textContent='₹'+fmtINR(c.f);box.appendChild(d);}
+  const t=document.createElement('div');t.className='ln tot';t.innerHTML='<span>Pending at the court</span><b></b>';t.querySelector('b').textContent='₹'+fmtINR(pendingTotal());box.appendChild(t);
+  const n=profile.pending.length;const end=profile.seized;
+  if(COP.pedHit){$('#outTitle').textContent='Arrested by the Hoysala';$('#outText').textContent='You hit a pedestrian. Your licence is seized. Until you pay every pending challan at the District Magistrate Court, you go on foot.';}
+  else if(end){$('#outTitle').textContent='Licence seized';$('#outText').textContent=`That makes ${n} unpaid challans. Your licence and vehicle stay with the police until you pay ₹${fmtINR(pendingTotal())} at the District Magistrate Court. Walk, ride or hitch there.`;}
+  else{$('#outTitle').textContent='e-Challan issued';$('#outText').textContent=`Challan ${n} of ${MAXCH}. Fines are paid only at the District Magistrate Court; at ${MAXCH} unpaid challans your licence is seized.`;}
   saveProfile();
   COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;COP.pedHit=false;P.rash=0;$('#wanted').hidden=true;
-  $('#outPrimary').textContent=end?'Back to menu':'Pay and drive on';$('#outPrimary').dataset.end=end?'1':'';
+  $('#outPrimary').textContent=end?'Continue on foot':'Drive on';$('#outPrimary').dataset.end=end?'1':'';
   show('outcome');
 }
 
@@ -2699,7 +2730,7 @@ function towToGarage(){
   agents=agents.filter(a=>Math.hypot(a.x-P.x,a.y-P.y)>25);flash();toast(`Towed to ${g.name} · ₹${fee}`,'');
   garageLock=g;openRepair(g);
 }
-function resumeDrive(){state='play';show('play');const V=VEH[P.type];if(!P.dry)Snd.startEngine(P.cond<=0?Object.assign({},V.engine,{vol:.4}):V.engine,P.type);}
+function resumeDrive(){state='play';show('play');if(FOOT.on){footHud(true);if(FOOT.ride){$('#footBar').hidden=true;$('#rideBar').hidden=false;$('#rbSkip').hidden=FOOT.ride.phase!=='ride';}return;}const V=VEH[P.type];if(!P.dry)Snd.startEngine(P.cond<=0?Object.assign({},V.engine,{vol:.4}):V.engine,P.type);}
 
 /* ---------- fuel ---------- */
 let fuelLock=null,fuelG=null;
@@ -2765,6 +2796,7 @@ function updateHud(){
   else if(P.rash>5){el.wanted.hidden=false;el.wanted.querySelectorAll('.stars i').forEach(s=>s.classList.remove('on'));el.wantedTxt.textContent='Drive carefully';}
   else el.wanted.hidden=true;
   el.rashbar.style.width=clamp(P.rash,0,100)+'%';
+  if(footHudTick(el))return;
   if(trip){const d=Math.hypot(trip.x-P.x,trip.y-P.y);el.trip.innerHTML='';const a=document.createElement('div');a.innerHTML='Drop at <b></b>';a.querySelector('b').textContent=trip.name;const b=document.createElement('div');b.textContent=`${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'} · fare ₹${trip.fare}`;el.trip.append(a,b);}
   else el.trip.textContent=licenceSuspended()?'No passengers: licence suspended':'Finding a passenger';
   /* breakdown, fuel and repair notices */
@@ -2796,13 +2828,14 @@ function renderMini(){
   for(const k of ORDER){m.strokeStyle=RANK[k]>=3?'#E7D9A6':k==='tertiary'?'#B8BCC2':'#7D848D';m.lineWidth=HW[k]*1.6;m.beginPath();for(const s of segs){if(s.w.cls!==k)continue;m.moveTo(s.ax,s.ay);m.lineTo(s.bx,s.by);}m.stroke();}
   for(const g of W.garages){if(Math.abs(g.x-P.x)>R||Math.abs(g.y-P.y)>R)continue;m.fillStyle='#53D68E';m.fillRect(g.x-9,g.y-9,18,18);}
   for(const g of W.fuels){if(Math.abs(g.x-P.x)>R||Math.abs(g.y-P.y)>R)continue;m.fillStyle='#4FC3F7';m.fillRect(g.x-10,g.y-10,20,20);}
+  footMini(m,R);
   if(trip){m.fillStyle='#FFC72C';m.beginPath();m.arc(trip.x,trip.y,12,0,TAU);m.fill();}
   const fl=(performance.now()/250|0)%2;for(const c of COP.list){m.fillStyle=fl?'#FF5A4E':'#2F6BFF';m.beginPath();m.arc(c.x,c.y,11,0,TAU);m.fill();}
   m.restore();
   const arrow=(tx,ty,col)=>{const ang=hAng(tx-P.x,ty-P.y)-P.h;const d=Math.hypot(tx-P.x,ty-P.y);if(d>R*.9){m.save();m.translate(S/2,S/2);m.rotate(ang);m.fillStyle=col;m.beginPath();m.moveTo(0,-S/2+6);m.lineTo(-11,-S/2+26);m.lineTo(11,-S/2+26);m.closePath();m.fill();m.restore();}};
-  if(trip)arrow(trip.x,trip.y,'#FFC72C');
-  if(P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)arrow(ng.g.x,ng.g.y,'#53D68E');}
-  if(P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)arrow(nf.g.x,nf.g.y,'#4FC3F7');}
+  if(trip)arrow(trip.x,trip.y,'#FFC72C');footArrows(arrow);
+  if(!FOOT.on&&P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)arrow(ng.g.x,ng.g.y,'#53D68E');}
+  if(!FOOT.on&&P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)arrow(nf.g.x,nf.g.y,'#4FC3F7');}
   m.fillStyle='#FFFFFF';m.beginPath();m.moveTo(S/2,S/2-11);m.lineTo(S/2-8,S/2+9);m.lineTo(S/2,S/2+4);m.lineTo(S/2+8,S/2+9);m.closePath();m.fill();
 }
 
@@ -2845,7 +2878,7 @@ function lightsFor(model,M,headOn,brake,night){
 }
 function renderScene(dt){
   resizeGL();
-  const V=VEH[P.type];const pm=playerModel(P.type);
+  let V=VEH[P.type],pm=playerModel(P.type);const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
   setupCamera(dt,P,V,pm);setFrameUniforms();
   const night=TOD.night;
   gl.viewport(0,0,glc.width,glc.height);
@@ -2865,7 +2898,7 @@ function renderScene(dt){
   for(const c of vis)drawGlowMesh(c.shad,1,.32*(1-night*.7));
   DS.reset();
   const sh=(x,y,h,l,w)=>DS.quad(x,.03,y,Math.sin(h),-Math.cos(h),l,w,ZERO3);
-  sh(P.x,P.y,P.h,P.len*.62,P.wid*.75);
+  if(fv&&fv.foot){sh(P.x,P.y,P.h,.35,.35);if(FOOT.ride)sh(FOOT.ride.x,FOOT.ride.y,FOOT.ride.h,FOOT.ride.t.len*.6,FOOT.ride.t.wid*.72);}else sh(P.x,P.y,P.h,(pm.len||P.len)*.62,(pm.wid||P.wid)*.75);
   for(const a of agents)sh(a.x,a.y,a.h,a.t.len*.6,a.t.wid*.72);
   for(const c of COP.list)sh(c.x,c.y,c.h,2.6,1.3);
   for(const p of peds){if(p.state==='down')continue;if(p.cart!=null)sh(p.cx,p.cy,p.h,1.1,.7);sh(p.x,p.y,p.h,p.kind==='lie'?1:.35*(p.sc||1),.35*(p.sc||1));}
@@ -2908,26 +2941,29 @@ function renderScene(dt){
     lightsFor(cm,TM,night>.25,false,night);}
   if(intruder){M4.model(TM,intruder.x,0,intruder.y,-intruder.h,0,0);drawLit(intruder.model.body,TM,{emiK:.5+night});if(intruder.model.glass)drawLit(intruder.model.glass,TM);if(intruder.model.rider)drawLit(intruder.model.rider,TM);lightsFor(intruder.model,TM,true,false,night);}
   /* player */
-  if(CAM.mode==='cockpit'){
+  if(fv)drawFootPlayer(fv,A,night);
+  else if(CAM.mode==='cockpit'){
     drawLit(pm.body,P.M,{emiK:.4+night*.6});drawLit(pm.cockpit,P.M,{emiK:.6+night*.8,noHL:true});
     if(pm.steer){const sp=pm.steerPos;M4.model(TM,sp[0],sp[1],sp[2],0,-.42,-P.steer*1.9);M4.mul(TM2,P.M,TM);drawLit(pm.steer,TM2,{noHL:true});}
   }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);}
-  if(CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
+  if(!fv&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
   /* light, glow and signboards */
   gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
   if(night>.05){for(const c of vis)drawGlowMesh(c.glow,0,night*.5);
     DGb.reset();const beam=(M,model)=>{for(const p of model.lights.head){const w=M4.xform(M,p[0],.05,p[2]);DGb.quad(w[0],.06,w[2],Math.sin(model._h),-Math.cos(model._h),16,4.5,[1,.88,.65],true);}};
-    pm._h=P.h;beam(P.M,pm);
+    if(!fv){pm._h=P.h;beam(P.M,pm);}
     for(const a of agents){if(Math.hypot(a.x-ex,a.y-ez)>140)continue;a.model._h=a.h;M4.model(TM,a.x,0,a.y,-a.h,0,0);beam(TM,a.model);}
     DGb.draw(2,night*.55);}
   DGr.draw(0,.75+night*.6);DGr.reset();
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
   if(trip){const d=Math.hypot(trip.x-ex,trip.y-ez);drawSprite(beamTex().tex,trip.x,0,trip.y,3.2+d*.01,45,[1,.8,.25]);}
-  if(P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)drawSprite(beamTex().tex,ng.g.x,0,ng.g.y,3+ng.d*.01,40,[.3,1,.45]);}
-  if(P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)drawSprite(beamTex().tex,nf.g.x,0,nf.g.y,3+nf.d*.01,40,[.3,.7,1]);}
+  drawFootBeams(ex,ez);
+  if(!FOOT.on&&P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)drawSprite(beamTex().tex,ng.g.x,0,ng.g.y,3+ng.d*.01,40,[.3,1,.45]);}
+  if(!FOOT.on&&P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)drawSprite(beamTex().tex,nf.g.x,0,nf.g.y,3+nf.d*.01,40,[.3,.7,1]);}
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   for(const q of nearPois){const t=boardTex(q);const w=Math.min(7,2.6+q.name.length*.17);drawSprite(t.tex,q.x,3.3,q.y,w,w/4,1-night*.25);}
   for(const g of W.garages){const d=Math.hypot(g.sx-ex,g.sy-ez);if(d>220)continue;drawSprite(garageTex(g).tex,g.sx,3.6,g.sy,6,1.5,1);}
+  drawCourtSign(ex,ez);
   for(const g of W.fuels){const d=Math.hypot(g.sx-ex,g.sy-ez);if(d>260)continue;const c=Math.cos(-g.h),s2=Math.sin(-g.h);drawSprite(fuelTex(g).tex,g.sx-6.6*c-3.6*s2,7.4,g.sy+6.6*s2-3.6*c,4.4,2.2,1);}
   gl.disable(gl.BLEND);gl.depthMask(true);
 }
@@ -2944,9 +2980,10 @@ function frame(t){
   requestAnimationFrame(frame);
 }
 function update(dt){
-  updatePlayer(dt);
+  if(FOOT.on){updateFoot(dt);updateAgents(dt);updatePeds(dt);updateAnimals(dt);}
+  else{updatePlayer(dt);
   updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);updateIntruder(dt);apshakunTick(dt);
-  checkTrip();
+  checkTrip();}
   updateChunks(P.x,P.y,settings.gfx==='fast'?5:8);
   if((todT-=dt)<=0){todT=30;computeTod();}
   if((hudT-=dt)<=0){hudT=.1;updateHud();}
@@ -2976,8 +3013,7 @@ async function streamMap(){
 }
 function resetActors(){agents=[];peds=[];animals=[];intruder=null;COP.list=[];COP.level=0;COP.off=[];COP.trail=[];COP.lastTr=null;COP.pedHit=false;COP.caughtT=COP.lostT=0;apshReset();sigInside=new Map();Snd.sirenOff();}
 async function startDrive(loc){
-  if(licenceSuspended()){showLicence();return;}
-  currentLoc=loc;state='loading';show('loading');
+  currentLoc=loc;if(FOOT.on)leaveFoot();state='loading';show('loading');
   $('#loadActions').hidden=true;$('#loadWheel').hidden=false;const lt=$('#loadText');
   resetActors();clearChunks();
   if(loc.demo){lt.textContent='Building the demo city';await sleep(60);
@@ -3029,11 +3065,12 @@ function startPlay(keepPos){
   Snd.init();Snd.resume();Snd.startEngine(V.engine,P.type);
   calibrateTilt();
   toast(`${W.label} · ${TOD.label}`,'gold');
-  if(licenceSuspended())toast('Driving with a suspended licence!','bad');
+  if(licenceSuspended())goFoot(`Licence seized. Pay ₹${fmtINR(pendingTotal())} at the District Magistrate Court. Walk, ride or hitch there.`);
+  else if(profile.pending.length)toast(`${profile.pending.length} unpaid challan${profile.pending.length>1?'s':''}: pay at the court (red beam)`,'');
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','licence','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
@@ -3056,11 +3093,9 @@ function renderTitle(){
   c.fillStyle='rgba(20,18,40,.85)';for(let x=0;x<w;){const bw=18+r()*46,bh=h*(.08+r()*.22);c.fillRect(x,base-bh,bw,bh);x+=bw+r()*6;}
   c.fillStyle='rgba(20,18,40,.95)';c.fillRect(w*.72,base-h*.42,10,h*.42);c.fillRect(w*.72-6,base-h*.30,22,h*.30);
   c.fillStyle='#14121F';c.fillRect(0,base,w,h-base);c.fillStyle='#F2C230';for(let x=0;x<w;x+=60)c.fillRect(x,base+(h-base)*.45,30,4);
-  $('#titleStats').textContent=`Wallet ₹${fmtINR(profile.wallet)} · ${profile.km.toFixed(1)} km driven · ${profile.trips} trips`+(licenceSuspended()?` · Licence suspended until ${timeStr(profile.suspendedUntil)}`:'');
+  $('#titleStats').textContent=`Wallet ₹${fmtINR(profile.wallet)} · ${profile.km.toFixed(1)} km driven · ${profile.trips} trips`+(licenceSuspended()?` · Licence seized: pay ₹${fmtINR(pendingTotal())} at the court`:profile.pending.length?` · ${profile.pending.length} unpaid challan${profile.pending.length>1?'s':''}`:'');
 }
-$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();if(licenceSuspended()){showLicence();return;}go('where');});
-function showLicence(){state='menu';$('#licText').textContent=`You can drive again at ${timeStr(profile.suspendedUntil)}, or pay a ₹2,000 fine to restore it now. Wallet: ₹${fmtINR(profile.wallet)}.`;$('#licPay').disabled=profile.wallet<2000;show('licence');}
-$('#licPay').addEventListener('click',()=>{if(profile.wallet<2000)return;profile.wallet-=2000;profile.suspendedUntil=0;saveProfile();toast('Licence restored','good');go('where');});
+$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();go('where');});
 
 const AREAS=[
   {label:'MG Road',sub:'Central',lat:12.9755,lon:77.6068},{label:'Koramangala',sub:'80 Feet Road',lat:12.9352,lon:77.6245},
@@ -3130,16 +3165,17 @@ $('#quitBtn').addEventListener('click',()=>{resetActors();go('title');});
 $('#changeBtn').addEventListener('click',()=>{changingVehicle=true;go('showroom');});
 $('#repFull').addEventListener('click',()=>doRepair(true));$('#repHalf').addEventListener('click',()=>doRepair(false));
 $('#repLeave').addEventListener('click',()=>resumeDrive());
-$('#outPrimary').addEventListener('click',()=>{if($('#outPrimary').dataset.end){resetActors();go('title');}else{resumeDrive();}});
+$('#outPrimary').addEventListener('click',()=>{if($('#outPrimary').dataset.end){goFoot();toast('Head to the court: follow the red beam','bad');}else{resumeDrive();}});
 $('#outMenu').addEventListener('click',()=>{resetActors();go('title');});
 $('#camBtn').addEventListener('click',()=>{const order=['chase','cockpit','far'];CAM.mode=order[(order.indexOf(CAM.mode)+1)%3];settings.cam=CAM.mode;saveSettings();toast({chase:'Chase view',cockpit:'Cockpit view',far:'Top view'}[CAM.mode],'','cam',300);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Snd.hornOff();if(Snd.ctx&&Snd.ctx.suspend)Snd.ctx.suspend();}else Snd.resume();});
 window.__onBack=()=>{
   if(!$('#settings').hidden){closeSettings();return true;}
   if(state==='play'){pause();return true;}if(state==='pause'){resume();return true;}
+  if(state==='court'){$('#ctLeave').click();return true;}if(state==='ride'){$('#rdCancel').click();return true;}if(state==='job'){$('#jbClose').click();return true;}
   if(state==='repair'||state==='fuel'){resumeDrive();return true;}if(state==='outcome'){$('#outPrimary').click();return true;}
   if(!$('#showroom').hidden){go(changingVehicle?'title':'where');changingVehicle=false;return true;}
-  if(!$('#where').hidden||!$('#loading').hidden||!$('#licence').hidden){go('title');return true;}
+  if(!$('#where').hidden||!$('#loading').hidden||false){go('title');return true;}
   return false;
 };
 
@@ -3179,14 +3215,15 @@ const scareAnimals=()=>{for(const a of animals){if(a.event||a.lie)continue;const
 hold($('#btnL'),()=>input.L=1,()=>input.L=0);hold($('#btnR'),()=>input.R=1,()=>input.R=0);
 hold($('#btnGas'),()=>{input.gas=1;P.rev=false;},()=>input.gas=0);hold($('#btnBrake'),brakeDown,()=>{input.brake=0;P.brakeUp=performance.now();});
 function brakeDown(){input.brake=1;if(Math.abs(P.s)<.5&&performance.now()-(P.brakeUp||0)<400){P.rev=true;toast('Reverse','', 'rev',800);}else if(P.s>.5)P.rev=false;}
-hold($('#btnHorn'),()=>{input.horn=1;Snd.hornOn(VEH[P.type].horn);scareAnimals();},()=>{input.horn=0;Snd.hornOff();});
+hold($('#btnHorn'),()=>{input.horn=1;if(FOOT.on)return;Snd.hornOn(VEH[P.type].horn);scareAnimals();},()=>{input.horn=0;Snd.hornOff();});
 function releaseAll(){input.L=input.R=input.gas=input.brake=input.horn=0;document.querySelectorAll('.on').forEach(e=>{if(e.closest('#hud'))e.classList.remove('on');});Snd.hornOff();}
 const KEYS={ArrowLeft:'L',a:'L',ArrowRight:'R',d:'R',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake',' ':'brake'};
 window.addEventListener('keydown',e=>{if(e.repeat)return;const k=KEYS[e.key]||KEYS[(e.key||'').toLowerCase()];if(k&&state==='play'){if(k==='brake')brakeDown();else{input[k]=1;if(k==='gas')P.rev=false;}e.preventDefault();}
-  if((e.key==='h'||e.key==='H')&&state==='play'){Snd.hornOn(VEH[P.type].horn);scareAnimals();}
+  if((e.key==='h'||e.key==='H')&&state==='play'&&FOOT.on){input.horn=1;}
+  else if((e.key==='h'||e.key==='H')&&state==='play'){Snd.hornOn(VEH[P.type].horn);scareAnimals();}
   if((e.key==='c'||e.key==='C')&&state==='play')$('#camBtn').click();
   if(e.key==='Escape'||e.key==='p'){if(state==='play')pause();else if(state==='pause')resume();}});
-window.addEventListener('keyup',e=>{const k=KEYS[e.key]||KEYS[(e.key||'').toLowerCase()];if(k){input[k]=0;if(k==='brake')P.brakeUp=performance.now();}if(e.key==='h'||e.key==='H')Snd.hornOff();});
+window.addEventListener('keyup',e=>{const k=KEYS[e.key]||KEYS[(e.key||'').toLowerCase()];if(k){input[k]=0;if(k==='brake')P.brakeUp=performance.now();}if(e.key==='h'||e.key==='H'){input.horn=0;Snd.hornOff();}});
 let tiltZero=0,tiltRaw=0;
 function orientAngle(){return (screen.orientation&&screen.orientation.angle)||window.orientation||0;}
 window.addEventListener('deviceorientation',e=>{const a=orientAngle();let v=Math.abs(a)===90?(a===90?e.beta:-e.beta):e.gamma;if(v==null)return;tiltRaw=v;input.tilt=clamp((v-tiltZero)/22,-1,1);});
@@ -3208,6 +3245,291 @@ if(bootOk){
   requestAnimationFrame(frame);
 }
 window.__oosht={P,W,input,CAM,sigState,get GT(){return GT;},get state(){return state;},startDrive,go,update,COP,APSH,agents:()=>agents,peds:()=>peds,animals:()=>animals,tod:()=>TOD,offence,openRepair,towToGarage,launchIntruder,TILES,decodeMVT,tilesToWorld,parseTile,setOrigin};
+
+/* ================= licence seizure, the court, life on foot ================= */
+const FOOT={on:false,walk:0,stam:100,ride:null,lift:null,job:null,unload:null,begCool:0,liftCool:0,look:11,pose:0,pt:0};
+const MAXCH=5;
+if(!Array.isArray(profile.pending))profile.pending=[];
+if(profile.seized==null)profile.seized=false;
+const pendingTotal=()=>profile.pending.reduce((s,c)=>s+c.f,0);
+function addChallan(code){const f=FINES[code];if(!f)return;profile.pending.push({c:code,l:f[0],f:f[1],t:Date.now()});if(profile.pending.length>=MAXCH)profile.seized=true;saveProfile();}
+
+/* ---------- the court: a real courthouse from the map, otherwise one on a main road ---------- */
+function buildCourt(){
+  W.court=null;
+  const lot=(s,t,name,real)=>{const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len,lx=dy,ly=-dx,mx=s.ax+dx*t,my=s.ay+dy*t;
+    const h=hAng(-lx,-ly),sx=mx+lx*(s.w.hw+13),sy=my+ly*(s.w.hw+13);clearLot(sx,sy,h,13,10,true);
+    W.court={x:mx+lx*(s.w.hw-1.4),y:my+ly*(s.w.hw-1.4),sx,sy,h,name,real};};
+  for(const q of W.pois){if(!/court/i.test(q.cls+' '+q.sub+' '+q.name))continue;const n=nearestSeg(q.x,q.y,60,s=>s.len>30&&!s.w.br);if(n.seg){lot(n.seg,n.seg.len*.5,'District Magistrate Court',true);return;}}
+  /* about 1.5 km from where you started, on the best main road there */
+  let best=null,bs=-1e9;
+  for(const s of W.segs){if(s.len<50||s.w.br||RANK[s.w.cls]<2)continue;const mx=(s.ax+s.bx)/2,my=(s.ay+s.by)/2,d=Math.hypot(mx,my);
+    const sc=-Math.abs(d-1500)+RANK[s.w.cls]*60-(nearSignal(mx,my,40)?500:0)-(W.fuels||[]).concat(W.garages).some(g=>Math.hypot(g.x-mx,g.y-my)<60)*800;if(sc>bs){bs=sc;best=s;}}
+  if(!best)best=W.segs.reduce((b,s)=>s.len>(b?b.len:0)?s:b,null);
+  if(best)lot(best,best.len*.5,'District Magistrate Court',false);
+}
+function courtAt(mb,c){
+  mb.save();mb.tr(c.sx,0,c.sy);mb.rotY(-c.h);
+  const wall=[.72,.32,.24],trim=[.95,.93,.88],roof=[.45,.45,.47];
+  mb.box(0,.3,-1,26,.6,4,[.82,.8,.76]);for(let i=0;i<3;i++)mb.box(0,.12+i*.2,-3.4+i*.5,20,.2,1,[.85,.83,.79]);
+  mb.box(0,5,4,24,10,14,wall);mb.box(0,10.3,4,24.6,.6,14.6,trim);mb.box(0,11.4,4,10,1.6,8,wall);mb.box(0,12.4,4,10.6,.4,8.6,trim);
+  for(let i=-4;i<=4;i++)mb.cyl(i*2.3,4.8,-3,.4,8.4,'y',10,trim);
+  mb.box(0,9.4,-3,22,1.2,1.6,trim);mb.tbox(0,10,-3,22,1.6,.4,1.2,2.6,trim);
+  for(const x of[-9,-5.5,5.5,9])for(const y of[2.6,6.6])mb.box(x,y,-3.05,1.6,2.4,.1,[.2,.24,.3]);
+  mb.box(0,2.2,-3.05,3,4,.1,[.28,.18,.1]);
+  mb.box(-11,7,-6,.15,14,.15,[.8,.8,.8]);mb.box(-10.2,13,-6,1.5,.9,.05,[1,.55,.15]);mb.box(-10.2,12.1,-6,1.5,.9,.05,[.95,.95,.95]);mb.box(-10.2,11.2,-6,1.5,.9,.05,[.1,.5,.2]);
+  mb.restore();
+}
+function courtTex(){return textTex('court',(c,w,h)=>{c.fillStyle='#F4F1E8';c.fillRect(0,0,w,h);c.strokeStyle='#5A1F14';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);c.fillStyle='#5A1F14';c.textAlign='center';c.textBaseline='middle';c.font='700 42px Arial, sans-serif';c.fillText('DISTRICT MAGISTRATE COURT',w/2,h*.38);c.font='600 26px Arial, sans-serif';c.fillStyle='#333';c.fillText('Traffic challans are paid here',w/2,h*.74);},640,128);}
+
+/* ---------- road graph and shortest routes for rides ---------- */
+let GR=null,GRV=-1;
+function graph(){
+  if(GRV===W.version&&GR)return GR;const adj=new Map(),pos=new Map();
+  const add=(a,b,L,w)=>{let l=adj.get(a);if(!l){l=[];adj.set(a,l);}l.push([b,L,w]);};
+  for(const w of W.ways){const n=w.pts.length/2;for(let k=0;k<n;k++)pos.set(w.nodes[k],[w.pts[2*k],w.pts[2*k+1]]);
+    for(let k=0;k<n-1;k++){const a=w.nodes[k],b=w.nodes[k+1];const L=Math.hypot(w.pts[2*k+2]-w.pts[2*k],w.pts[2*k+3]-w.pts[2*k+1]);if(!w.oneway||!w.rev)add(a,b,L,w);if(!w.oneway||w.rev)add(b,a,L,w);}}
+  GR={adj,pos};GRV=W.version;return GR;
+}
+function nodeNear(x,y){const n=nearestSeg(x,y,120,s=>!s.w.br);if(!n.seg)return null;const s=n.seg;const da=Math.hypot(s.ax-x,s.ay-y),db=Math.hypot(s.bx-x,s.by-y);return s.w.nodes[da<db?s.i:s.i+1];}
+function findPath(a,b){
+  const G=graph();if(a==null||b==null)return null;const goal=G.pos.get(b);if(!goal)return null;
+  const g=new Map([[a,0]]),from=new Map(),heap=[[0,a]],done=new Set();
+  const push=it=>{heap.push(it);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}};
+  const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return top;};
+  let guard=0;
+  while(heap.length&&guard++<200000){const[,u]=pop();if(u===b)break;if(done.has(u))continue;done.add(u);
+    for(const[v,L]of G.adj.get(u)||[]){const ng=g.get(u)+L;if(ng<(g.has(v)?g.get(v):1e18)){g.set(v,ng);from.set(v,u);const p=G.pos.get(v);push([ng+Math.hypot(p[0]-goal[0],p[1]-goal[1]),v]);}}}
+  if(!g.has(b))return null;
+  const keys=[b];let k=b;while(k!==a){k=from.get(k);if(k==null)return null;keys.push(k);}keys.reverse();
+  return keys.map(k=>G.pos.get(k));
+}
+function laneShift(pts,off){const out=[];for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;out.push([pts[i][0]+dy/l*off,pts[i][1]-dx/l*off]);}return out;}
+const pathLen=pts=>{let L=0;for(let i=1;i<pts.length;i++)L+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);return L;};
+
+/* ---------- switching between driving and walking ---------- */
+function goFoot(why){
+  FOOT.on=true;FOOT.tip=9;FOOT.ride=null;FOOT.lift=null;FOOT.stam=100;FOOT.walk=0;
+  Snd.stopEngine();Snd.sirenOff();resetChase();apshReset();intruder=null;trip=null;
+  const n=nearestSeg(P.x,P.y,30);if(n.seg){const s=n.seg;const t=clamp(((P.x-s.ax)*(s.bx-s.ax)+(P.y-s.ay)*(s.by-s.ay))/(s.len*s.len),0,1);const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;P.x=s.ax+dx*t*s.len+dy*(s.w.hw+1.1);P.y=s.ay+dy*t*s.len-dx*(s.w.hw+1.1);P.h=s.h;}
+  P.s=P.vx=P.vy=0;P.len=.6;P.wid=.5;P.cond=100;
+  state='play';show('play');footHud(true);
+  if(why)toast(why,'bad');
+}
+function resetChase(){COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;COP.pedHit=false;P.rash=0;$('#wanted').hidden=true;Snd.sirenOff();}
+function footHud(on){
+  $('#footBar').hidden=!on;$('#rideBar').hidden=true;$('#btnHorn').textContent=on?'RUN':'HORN';
+  $('#limit').hidden=on;$('#fuelbar').parentElement.parentElement.hidden=on;
+  noticeKey='~';
+}
+function leaveFoot(){FOOT.on=false;FOOT.ride=null;footHud(false);const pm=playerModel(P.type);P.len=pm.len;P.wid=pm.wid;}
+
+/* ---------- walking and running ---------- */
+function updateFoot(dt){
+  if(FOOT.ride){updateRide(dt);return;}
+  let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
+  P.h+=steerIn*2.4*dt;
+  const run=input.horn&&FOOT.stam>2;const top=run?6.2:2.3;
+  if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);
+  if(input.brake)P.s=Math.max(0,P.s-14*dt);
+  if(run&&P.s>2.6)FOOT.stam=Math.max(0,FOOT.stam-10*dt);else FOOT.stam=Math.min(100,FOOT.stam+(P.s<.3?12:6)*dt);
+  const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
+  const ox=P.x,oy=P.y;P.x+=P.vx*dt;P.y+=P.vy*dt;
+  if(inBuilding(P.x+fx*.3,P.y+fy*.3)){P.x=ox;P.y=oy;P.s=0;}
+  for(const a of agents){const d=Math.hypot(a.x-P.x,a.y-P.y);const r=a.t.wid*.55+.35;if(d<r){P.x=a.x+(P.x-a.x)/(d||1)*r;P.y=a.y+(P.y-a.y)/(d||1)*r;}}
+  for(const c of animals){const d=Math.hypot(c.x-P.x,c.y-P.y);const r=(c.kind==='cow'?1:.35)+.3;if(d<r){P.x=c.x+(P.x-c.x)/(d||1)*r;P.y=c.y+(P.y-c.y)/(d||1)*r;}}
+  const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;P.offroad=!nr.seg||nr.edge>1.4;
+  /* sweat coins: every 10 seconds on the move earns 5 */
+  if(P.s>.9){FOOT.walk+=dt;if(FOOT.walk>=10){FOOT.walk-=10;profile.wallet+=5;session.fare+=5;saveProfile();toast('+5 sweat coins (₹5)','good','sweat',500);Snd.coin();}}
+  FOOT.pt+=dt*(P.s>.3?P.s/1.2:0);if(FOOT.pt>.33){FOOT.pt=0;FOOT.pose^=1;}
+  M4.model(P.M,P.x,0,P.y,-P.h,0,0);
+  session.m+=P.s*dt;
+  if(FOOT.lift){FOOT.lift.t-=dt;if(FOOT.lift.t<=0){const ok=Math.random()<.4;FOOT.lift=null;if(ok)sendRide('lift');else{toast('Nobody stopped. Try again in a bit.','');FOOT.liftCool=6;}}}
+  FOOT.liftCool-=dt;FOOT.begCool-=dt;FOOT.tip-=dt;
+  if(FOOT.job&&FOOT.job.kind==='deliver'){const j=FOOT.job;j.left-=dt;if(Math.hypot(j.x-P.x,j.y-P.y)<14){profile.wallet+=j.pay;session.fare+=j.pay;saveProfile();toast(`Parcel delivered · ₹${j.pay}`,'gold');Snd.chime();Hap.success();FOOT.job=null;}
+    else if(j.left<=0){toast('Too late. The delivery was cancelled.','bad');FOOT.job=null;}}
+  if(FOOT.unload){const u=FOOT.unload;u.left-=dt;$('#ulTime').textContent=Math.ceil(Math.max(0,u.left))+' s';if(u.left<=0){$('#unload').hidden=true;FOOT.unload=null;toast('Not fast enough. No pay this time.','bad');}}
+  if(W.court&&Math.hypot(W.court.x-P.x,W.court.y-P.y)<14&&P.s<.5&&!FOOT.courtLock){FOOT.courtLock=true;openCourt();}
+  if(W.court&&FOOT.courtLock&&Math.hypot(W.court.x-P.x,W.court.y-P.y)>25)FOOT.courtLock=false;
+}
+
+/* ---------- autos, cabs and lifts ---------- */
+function sendRide(kind){
+  const tk=kind==='auto'?'auto':kind==='cab'?'taxi':['sakhi','pratham','hatch','suv','maharaja'][Math.floor(Math.random()*5)];
+  const t=TT.find(q=>q.k===tk);const col=t.cols?t.cols[Math.floor(Math.random()*t.cols.length)]:null;
+  const me=nodeNear(P.x,P.y);if(me==null){toast('Walk to a road first','bad');return;}
+  const G=graph();let start=null;
+  for(let tries=0;tries<40&&!start;tries++){const s=W.segs[Math.floor(Math.random()*W.segs.length)];const d=Math.hypot(s.ax-P.x,s.ay-P.y);if(d>60&&d<180)start=s.w.nodes[s.i];}
+  let path=start!=null?findPath(start,me):null;if(!path||path.length<2){const p=G.pos.get(me);path=[[p[0]+40,p[1]],p];}
+  const pick=nearestSeg(P.x,P.y,20);let px=P.x,py=P.y;if(pick.seg){const s=pick.seg;const tt=clamp(((P.x-s.ax)*(s.bx-s.ax)+(P.y-s.ay)*(s.by-s.ay))/(s.len*s.len),0,1);px=s.ax+(s.bx-s.ax)*tt;py=s.ay+(s.by-s.ay)*tt;}
+  path.push([px,py]);
+  const rate=kind==='cab'?{base:60,km:22,name:'cab'}:kind==='auto'?{base:36,km:18,name:'auto'}:{base:0,km:0,name:'lift'};
+  FOOT.ride={kind,t,model:trafficModel(t,col),pts:laneShift(path,1.6),i:0,x:path[0][0],y:path[0][1],h:0,v:0,phase:'pickup',rate,meter:0,dist:0};
+  toast(kind==='lift'?'Someone is stopping for you':`Your ${rate.name} is on the way`,'good');
+  $('#footBar').hidden=true;$('#rideBar').hidden=false;$('#rbSkip').hidden=true;
+}
+function rideDest(){
+  const opts=[];
+  if(W.court)opts.push({name:'District Magistrate Court',x:W.court.x,y:W.court.y});
+  if(FOOT.job&&FOOT.job.kind==='deliver')opts.push({name:'Delivery: '+FOOT.job.name,x:FOOT.job.x,y:FOOT.job.y});
+  const nf=nearestFuel(P.x,P.y);if(nf)opts.push({name:nf.g.name+' fuel station',x:nf.g.x,y:nf.g.y});
+  const far=W.places.filter(p=>Math.hypot(p.x-P.x,p.y-P.y)>250).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));for(const pl of far.slice(0,2))opts.push({name:pl.name,x:pl.x,y:pl.y});
+  return opts;
+}
+function openRideMenu(){
+  const R=FOOT.ride;state='ride';releaseAll();
+  $('#rdTitle').textContent=R.kind==='lift'?'Where are you headed?':'Where to?';
+  $('#rdText').textContent=R.kind==='lift'?'The rider offers a free lift.':`${R.kind==='auto'?'Auto meter':'Cab fare'}: ₹${R.rate.base} plus ₹${R.rate.km} per km. Wallet ₹${fmtINR(profile.wallet)}.`;
+  const box=$('#rdOpts');box.innerHTML='';
+  const me=nodeNear(P.x,P.y);
+  for(const o of rideDest()){const path=findPath(me,nodeNear(o.x,o.y));const L=path?pathLen(path):Math.hypot(o.x-P.x,o.y-P.y)*1.3;const fare=Math.round(R.rate.base+L/1000*R.rate.km);
+    const b=document.createElement('button');b.className='btn';b.textContent=`${o.name} · ${(L/1000).toFixed(1)} km${R.kind==='lift'?'':' · about ₹'+fare}`;
+    b.disabled=R.kind!=='lift'&&profile.wallet<fare;
+    b.addEventListener('click',()=>startRide(o,path));box.appendChild(b);}
+  show('rideScr');
+}
+function startRide(o,path){
+  const R=FOOT.ride;if(!path||path.length<2)path=[[P.x,P.y],[o.x,o.y]];
+  path=path.slice();const ns=nearestSeg(o.x,o.y,60,q=>!q.w.br);if(ns.seg){const q=ns.seg;const t=clamp(((o.x-q.ax)*(q.bx-q.ax)+(o.y-q.ay)*(q.by-q.ay))/(q.len*q.len),0,1);path.push([q.ax+(q.bx-q.ax)*t,q.ay+(q.by-q.ay)*t]);}
+  R.pts=laneShift(path,1.6);R.i=0;R.phase='ride';R.dest=o;R.meter=R.rate.base;R.dist=0;
+  state='play';show('play');footHud(true);$('#footBar').hidden=true;$('#rideBar').hidden=false;$('#rbSkip').hidden=false;
+  const pm=R.model;Snd.startEngine(VEH[R.t.k==='taxi'?'sedan':R.t.k]?VEH[R.t.k==='taxi'?'sedan':R.t.k].engine:VEH.hatch.engine,R.t.k==='taxi'?'sedan':R.t.k);
+}
+function updateRide(dt){
+  const R=FOOT.ride;const pts=R.pts;
+  if(R.i>=pts.length-1){
+    if(R.phase==='pickup'){R.v=0;openRideMenu();return;}
+    endRide();return;}
+  const tx=pts[R.i+1][0],ty=pts[R.i+1][1],dx=tx-R.x,dy=ty-R.y,d=Math.hypot(dx,dy);
+  let vt=R.t.k==='auto'?9:12;const nx=pts[Math.min(pts.length-1,R.i+2)];const turn=Math.abs(angDiff(hAng(dx,dy),hAng(nx[0]-tx,nx[1]-ty)));if(d<14&&turn>.5)vt=5;
+  const sa=signalAhead(R.x,R.y,R.h,40);if(sa&&sa.d>sa.S.R-.5){const st=sigState(sa.S,sigArmFor(sa.S,R.x,R.y).ph,GT);if(st[0]==='R'){vt=Math.min(vt,Math.sqrt(Math.max(0,2*3*(sa.d-sa.S.R-2))));}}
+  R.v+=clamp(vt-R.v,-7*dt,3*dt);
+  const step=Math.min(d,R.v*dt);if(d>.01){R.x+=dx/d*step;R.y+=dy/d*step;R.h+=angDiff(R.h,hAng(dx,dy))*Math.min(1,dt*5);}
+  if(d<.6)R.i++;
+  if(R.phase==='ride'){R.dist+=step;R.meter=R.rate.base+R.dist/1000*R.rate.km;P.x=R.x;P.y=R.y;P.h=R.h;P.s=R.v;P.vx=Math.sin(R.h)*R.v;P.vy=-Math.cos(R.h)*R.v;M4.model(P.M,R.x,0,R.y,-R.h,0,0);Snd.engine(R.v/14,R.v<vt?1:0);
+    const left=pathLen(pts.slice(R.i+1))+Math.hypot(pts[Math.min(R.i+1,pts.length-1)][0]-R.x,pts[Math.min(R.i+1,pts.length-1)][1]-R.y);
+    $('#rideTxt').textContent=R.kind==='lift'?`Riding along · ${Math.round(left)} m to go`:`${R.kind==='auto'?'Auto meter':'Cab fare'} ₹${Math.round(R.meter)} · ${Math.round(left)} m to go`;}
+  else $('#rideTxt').textContent=`Your ${R.rate.name} is ${Math.round(Math.hypot(R.x-P.x,R.y-P.y))} m away`;
+}
+function endRide(skip){
+  const R=FOOT.ride;if(!R)return;
+  if(skip){const L=pathLen(R.pts.slice(R.i));R.dist+=L;R.meter=R.rate.base+R.dist/1000*R.rate.km;const end=R.pts[R.pts.length-1];R.x=end[0];R.y=end[1];}
+  const fare=R.kind==='lift'?0:Math.round(R.meter);const paid=Math.min(fare,profile.wallet);profile.wallet-=paid;saveProfile();
+  Snd.stopEngine();
+  const n=nearestSeg(R.x,R.y,20);P.x=R.x;P.y=R.y;if(n.seg){const s=n.seg;const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;P.x+=dy*(s.w.hw*.55+1.4);P.y-=dx*(s.w.hw*.55+1.4);}
+  P.s=P.vx=P.vy=0;M4.model(P.M,P.x,0,P.y,-P.h,0,0);
+  toast(R.kind==='lift'?`Dropped at ${R.dest.name}. Say thanks!`:`Arrived · paid ₹${paid}${paid<fare?' (all you had)':''}`,'good');
+  FOOT.ride=null;FOOT.courtLock=false;$('#rideBar').hidden=true;$('#footBar').hidden=false;
+}
+$('#rbSkip').addEventListener('click',()=>endRide(true));
+$('#rdCancel').addEventListener('click',()=>{FOOT.ride=null;state='play';show('play');footHud(true);toast('Ride cancelled','');});
+$('#fbAuto').addEventListener('click',()=>{if(profile.wallet<40){toast('You need at least ₹40 for an auto','bad');return;}sendRide('auto');});
+$('#fbCab').addEventListener('click',()=>{if(profile.wallet<70){toast('You need at least ₹70 for a cab','bad');return;}sendRide('cab');});
+$('#fbLift').addEventListener('click',()=>{if(FOOT.lift||FOOT.liftCool>0){toast('Keep waving…','','lw',1500);return;}FOOT.lift={t:3+Math.random()*3};toast('Waving for a lift…','');});
+
+/* ---------- asking for money ---------- */
+$('#fbBeg').addEventListener('click',()=>{
+  if(FOOT.begCool>0)return;FOOT.begCool=3;
+  const busy=nearSignal(P.x,P.y,45)||W.pois.some(q=>q.sub==='place_of_worship'&&Math.hypot(q.x-P.x,q.y-P.y)<70)||peds.filter(p=>Math.hypot(p.x-P.x,p.y-P.y)<20).length>3;
+  if(Math.random()<(busy?.45:.18)){const amt=[1,2,5,5,10,10,10,20,20,50][Math.floor(Math.random()*10)];profile.wallet+=amt;session.fare+=amt;saveProfile();toast(`Someone gave you ₹${amt}`,'good');Snd.coin();}
+  else toast(busy?'People walked past':'Hardly anyone here. Try near a signal or temple.','');
+});
+
+/* ---------- odd jobs ---------- */
+$('#fbJob').addEventListener('click',()=>{
+  state='job';releaseAll();const box=$('#jbOpts');box.innerHTML='';
+  let target=null;for(let tries=0;tries<120&&!target;tries++){const s=W.segs[Math.floor(Math.random()*W.segs.length)];if(!s.w.name)continue;const mx=(s.ax+s.bx)/2,my=(s.ay+s.by)/2,d=Math.hypot(mx-P.x,my-P.y);if(d>300&&d<900)target={x:mx,y:my,name:s.w.name,d};}
+  if(target){const pay=Math.round(30+target.d/1000*90),time=Math.round(target.d/2.6+40);const b=document.createElement('button');b.className='btn';
+    b.textContent=`Deliver a parcel to ${target.name} · ${Math.round(target.d)} m · ₹${pay} if you reach in ${Math.floor(time/60)} min ${time%60} s`;
+    b.addEventListener('click',()=>{FOOT.job={kind:'deliver',x:target.x,y:target.y,name:target.name,pay,left:time};state='play';show('play');footHud(true);toast('Parcel picked up. Follow the yellow beam.','gold');});box.appendChild(b);}
+  const shop=W.pois.filter(q=>Math.hypot(q.x-P.x,q.y-P.y)<400)[0];
+  const b2=document.createElement('button');b2.className='btn';b2.textContent=`Help unload a lorry${shop?' at '+shop.name:''} · tap 30 times in 15 s · ₹45`;
+  b2.addEventListener('click',()=>{FOOT.unload={n:0,left:15};$('#ulTxt').textContent='Tap UNLOAD 30 times';$('#unload').hidden=false;state='play';show('play');footHud(true);});box.appendChild(b2);
+  const b3=document.createElement('button');b3.className='btn';b3.textContent='Wash a parked car · tap 20 times in 12 s · ₹30';
+  b3.addEventListener('click',()=>{FOOT.unload={n:0,left:12,need:20,pay:30,word:'SCRUB'};$('#ulTxt').textContent='Tap SCRUB 20 times';$('#ulBtn').textContent='SCRUB';$('#unload').hidden=false;state='play';show('play');footHud(true);});box.appendChild(b3);
+  show('jobScr');
+});
+$('#jbClose').addEventListener('click',()=>{state='play';show('play');footHud(true);});
+$('#ulBtn').addEventListener('pointerdown',e=>{e.preventDefault();const u=FOOT.unload;if(!u)return;u.n++;Hap.tick();const need=u.need||30;$('#ulTxt').textContent=`${u.n} / ${need}`;
+  if(u.n>=need){const pay=u.pay||45;profile.wallet+=pay;session.fare+=pay;saveProfile();FOOT.unload=null;$('#unload').hidden=true;$('#ulBtn').textContent='UNLOAD';toast(`Job done · ₹${pay}`,'gold');Snd.chime();}});
+
+/* ---------- paying at the court ---------- */
+function openCourt(){
+  state='court';releaseAll();Snd.stopEngine();
+  const list=$('#ctList');list.innerHTML='';const tot=pendingTotal();
+  for(const c of profile.pending){const d=document.createElement('div');d.className='ln';d.innerHTML='<span></span><b></b>';d.querySelector('span').textContent=c.l;d.querySelector('b').textContent='₹'+fmtINR(c.f);list.appendChild(d);}
+  const t=document.createElement('div');t.className='ln tot';t.innerHTML='<span>Total due</span><b></b>';t.querySelector('b').textContent='₹'+fmtINR(tot);list.appendChild(t);
+  list.hidden=!profile.pending.length;
+  if(!profile.pending.length)$('#ctText').textContent='You have no pending challans. The clerk waves you on.';
+  else if(profile.wallet>=tot)$('#ctText').textContent=`${profile.pending.length} pending challan${profile.pending.length>1?'s':''}. Pay the full amount to ${profile.seized?'get your licence and vehicle back':'clear your record'}. Wallet ₹${fmtINR(profile.wallet)}.`;
+  else $('#ctText').textContent=`You need ₹${fmtINR(tot-profile.wallet)} more (wallet ₹${fmtINR(profile.wallet)}). Walk, work or ask around to earn it, then come back.`;
+  $('#ctPay').hidden=!profile.pending.length;$('#ctPay').disabled=profile.wallet<tot;$('#ctPay').textContent=`Pay ₹${fmtINR(tot)}`;
+  show('court');
+}
+$('#ctPay').addEventListener('click',()=>{
+  const tot=pendingTotal();if(profile.wallet<tot)return;profile.wallet-=tot;const was=profile.seized;profile.pending=[];profile.seized=false;saveProfile();
+  if(was&&FOOT.on){leaveFoot();const c=W.court;P.x=c.x;P.y=c.y;const n=nearestSeg(c.x,c.y,15);if(n.seg)P.h=n.seg.h;P.cond=100;P.fuel=Math.max(P.fuel||0,40);P.dry=false;P.broke=false;
+    M4.model(P.M,P.x,0,P.y,-P.h,0,0);toast('Licence returned. Your vehicle is waiting outside.','gold');}
+  else toast('Challans paid','good');
+  Snd.chime();resumeAfterCourt();
+});
+$('#ctLeave').addEventListener('click',resumeAfterCourt);
+function resumeAfterCourt(){if(FOOT.on){state='play';show('play');footHud(true);}else resumeDrive();}
+
+/* ---------- what the camera and renderer use while on foot ---------- */
+const FOOTV={top:22,cat:'foot'},FOOTPM={len:.7,wid:.5,eye:[0,1.62,-.14],foot:true};
+function footView(){
+  const R=FOOT.ride;
+  if(R&&R.phase==='ride'){
+    if(!R.pm){const m=R.model;const two=!!m.two;const e=m.eye;R.pm=Object.assign({},m,{ride:true,eye:two||R.t.k==='auto'?e.slice():[-e[0],e[1],e[2]]});}
+    return {V:{top:50,cat:R.pm.two?'two':'car'},pm:R.pm,ride:true};}
+  return {V:FOOTV,pm:FOOTPM,foot:true};
+}
+function drawFootPlayer(fv,A,night){
+  const R=FOOT.ride;
+  const car=(M,m,inside)=>{drawLit(m.body,M,{emiK:.5+night});if(m.glass&&!inside)drawLit(m.glass,M);if(m.rider&&!inside)drawLit(m.rider,M);lightsFor(m,M,night>.25,false,night);};
+  if(fv.ride){car(P.M,R.model,CAM.mode==='cockpit');return;}
+  if(R){M4.model(TM,R.x,0,R.y,-R.h,0,0);car(TM,R.model,false);}
+  if(CAM.mode!=='cockpit')drawLit(A.ped[FOOT.look][P.s>.3?FOOT.pose:0],P.M);
+}
+function drawFootBeams(ex,ez){
+  if(W.court&&(FOOT.on||profile.pending.length)){const d=Math.hypot(W.court.x-ex,W.court.y-ez);drawSprite(beamTex().tex,W.court.x,0,W.court.y,3.4+d*.012,55,[1,.25,.2]);}
+  if(FOOT.job&&FOOT.job.kind==='deliver'){const j=FOOT.job,d=Math.hypot(j.x-ex,j.y-ez);drawSprite(beamTex().tex,j.x,0,j.y,3.2+d*.01,45,[1,.85,.2]);}
+}
+function drawCourtSign(ex,ez){
+  const c=W.court;if(!c||Math.hypot(c.sx-ex,c.sy-ez)>320)return;
+  drawSprite(courtTex().tex,c.sx+Math.sin(c.h)*4.2,9.4,c.sy-Math.cos(c.h)*4.2,10,2,1);
+}
+function footMini(m,R,arrow){
+  if(W.court&&Math.abs(W.court.x-P.x)<R&&Math.abs(W.court.y-P.y)<R){m.fillStyle='#E53935';m.fillRect(W.court.x-12,W.court.y-12,24,24);m.fillStyle='#FFF';m.fillRect(W.court.x-6,W.court.y-2,12,4);}
+  if(FOOT.job&&FOOT.job.kind==='deliver'){m.fillStyle='#FFC72C';m.beginPath();m.arc(FOOT.job.x,FOOT.job.y,12,0,TAU);m.fill();}
+}
+function footArrows(arrow){
+  if(W.court&&(FOOT.on||profile.seized))arrow(W.court.x,W.court.y,'#E53935');
+  if(FOOT.job&&FOOT.job.kind==='deliver')arrow(FOOT.job.x,FOOT.job.y,'#FFC72C');
+}
+let condLbl=null;
+function footHudTick(el){
+  if(!condLbl)condLbl=el.condTxt.previousElementSibling;
+  const fm=d=>d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km';
+  const ch=$('#chChip');ch.hidden=!profile.pending.length||profile.seized;ch.textContent=`${profile.pending.length}/${MAXCH} challans`;
+  if(!FOOT.on){condLbl.textContent='Condition';return false;}
+  el.sig.hidden=true;
+  condLbl.textContent='Stamina';el.condbar.style.width=FOOT.stam+'%';el.condbar.style.background=FOOT.stam>40?'#80DEEA':FOOT.stam>15?'var(--auto-yellow)':'var(--danger)';el.condTxt.textContent=Math.round(FOOT.stam)+'%';
+  el.trip.innerHTML='';
+  const a=document.createElement('div'),b=document.createElement('div');
+  if(FOOT.job&&FOOT.job.kind==='deliver'){const j=FOOT.job;a.innerHTML='Deliver to <b></b>';a.querySelector('b').textContent=j.name;b.textContent=`${fm(Math.hypot(j.x-P.x,j.y-P.y))} · ${Math.ceil(j.left)} s left · ₹${j.pay}`;}
+  else if(W.court){a.innerHTML='<b>District Magistrate Court</b>';const due=pendingTotal();b.textContent=`${fm(Math.hypot(W.court.x-P.x,W.court.y-P.y))} · due ₹${fmtINR(due)}${profile.wallet<due?' · short ₹'+fmtINR(due-profile.wallet):''}`;}
+  el.trip.append(a,b);
+  let key='foot',html='';
+  if(FOOT.ride)key='';
+  else if(FOOT.stam<8){key='tired';html='<b>Out of breath.</b> Walk for a bit to get your stamina back.';}
+  else if(FOOT.tip>0){key='tip';html=`On foot · <b>+₹5</b> for every 10 s you keep moving · hold <b>RUN</b> to run`;}
+  else key='';
+  if(key!==noticeKey){noticeKey=key;el.notice.hidden=!key;el.notice.innerHTML=html;}
+  return true;
+}
+Object.assign(window.__oosht||{},{FOOT,profile,goFoot,findPath,nodeNear,openCourt,caught:()=>caught(),hitPed,pendingTotal,addChallan,sendRide,endRide});
 
 })();
 </script>

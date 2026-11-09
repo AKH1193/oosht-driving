@@ -65,6 +65,7 @@ function buildWorld(data){
   genHazards();
   buildGarages();
   buildFuels();
+  buildCourt();
 }
 function nodeArms(list){let a=0;for(const e of list){if(e.k>0)a++;if(e.k<e.w.pts.length/2-1)a++;}return a;}
 function nodeXY(list){const e=list[0];return [e.w.pts[2*e.k],e.w.pts[2*e.k+1]];}

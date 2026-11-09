@@ -269,7 +269,7 @@ function suddenCrash(){
 
 /* ---------- Hoysala police ---------- */
 const COP={level:0,list:[],trail:[],lastTr:null,off:[],caughtT:0,lostT:0,pedHit:false,cool:0};
-const FINES={signal:['Jumped a red signal',1000],rash:['Rash driving',1000],speed:['Overspeeding',1000],wrong:['Driving the wrong way',500],ped:['Hit a pedestrian',5000],crash:['Dangerous driving, collision',2000]};
+const FINES={signal:['Jumped a red signal',500],rash:['Rash driving',500],speed:['Overspeeding',400],wrong:['Driving the wrong way',300],ped:['Hit a pedestrian',2000],crash:['Dangerous driving, collision',800]};
 function offence(code,level){
   if(state!=='play')return;
   if(!COP.off.includes(code))COP.off.push(code);
@@ -309,6 +309,6 @@ function updateCops(dt){
   if(COP.caughtT>1.6){caught();return;}
   if(md>320)COP.lostT+=dt;else COP.lostT=0;
   if(COP.lostT>7&&!COP.pedHit){escaped();}
-  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;toast('You got away for now. Your licence is still suspended.','bad');COP.list=[];Snd.sirenOff();COP.level=0;$('#wanted').hidden=true;COP.off=[];COP.pedHit=false;}
+  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;goFoot('You lost the Hoysala, but your licence is seized. Park it and walk to the court.');}
 }
 function escaped(){COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;P.rash=0;Snd.sirenOff();$('#wanted').hidden=true;toast('You lost the Hoysala','good');}

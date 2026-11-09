@@ -15,7 +15,7 @@ function fmtINR(n){return Math.round(n).toLocaleString('en-IN');}
 
 const store={get(k,d){try{const v=localStorage.getItem('oosht.'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('oosht.'+k,JSON.stringify(v));}catch(e){}}};
 const settings=Object.assign({sound:true,haptics:'med',steer:'buttons',tod:'auto',gfx:'balanced',cam:'chase'},store.get('settings',{}));
-const profile=Object.assign({wallet:500,km:0,trips:0,vehicle:'auto',challans:0,suspendedUntil:0},store.get('profile',{}));
+const profile=Object.assign({wallet:500,km:0,trips:0,vehicle:'auto',challans:0,suspendedUntil:0,pending:[],seized:false},store.get('profile',{}));
 if(profile.wallet<0)profile.wallet=0;
 const saveSettings=()=>store.set('settings',settings);
 const saveProfile=()=>store.set('profile',profile);

@@ -16,7 +16,7 @@ function damage(n,silent){
   P.cond=Math.max(0,P.cond-n);P.lastBad=performance.now();if(trip)trip.clean=false;
   if(P.cond<=0&&!P.broke){P.broke=true;toast('Your vehicle broke down','bad');Snd.stopEngine();setTimeout(()=>{if(state==='play'&&P.cond<=0&&!P.dry)Snd.startEngine(Object.assign({},VEH[P.type].engine,{vol:.4}),P.type);},400);}
 }
-const licenceSuspended=()=>Date.now()<profile.suspendedUntil;
+const licenceSuspended=()=>!!profile.seized;
 const timeStr=ms=>new Date(ms).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
 
 /* ---------- hazards felt in the seat ---------- */
@@ -58,8 +58,8 @@ function hitPed(p){
   if(p.state==='static'&&p.kind==='lie'){p.kind='lie';}
   p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);if(p.kind==='lie'||p.kind==='sit'){p.v=0;}
   Snd.crash();Hap.bigCrash();CAM.shake=10;flash();
-  profile.suspendedUntil=Math.max(profile.suspendedUntil,Date.now()+10*60e3);saveProfile();
-  COP.pedHit=true;toast('You hit a pedestrian! Licence suspended','bad');
+  addChallan('ped');profile.seized=true;saveProfile();
+  COP.pedHit=true;toast('You hit a pedestrian! Licence seized','bad');
   offence('ped',3);
   trip=null;
 }
@@ -170,20 +170,17 @@ function rules(dt,nr,sp){
 function caught(){
   if(state!=='play')return;
   state='outcome';Snd.stopEngine();Snd.sirenOff();Snd.hornOff();releaseAll();apshReset();
-  const lines=COP.off.map(c=>FINES[c]).filter(Boolean);const total=lines.reduce((s,l)=>s+l[1],0);
-  const paid=Math.min(profile.wallet,total);profile.wallet-=paid;
+  const codes=COP.off.filter(c=>FINES[c]&&c!=='ped');for(const c of codes)addChallan(c);
   const box=$('#outChallan');box.innerHTML='';
-  for(const[l,f]of lines){const d=document.createElement('div');d.className='ln';d.innerHTML='<span></span><b></b>';d.querySelector('span').textContent=l;d.querySelector('b').textContent='₹'+fmtINR(f);box.appendChild(d);}
-  const t=document.createElement('div');t.className='ln tot';t.innerHTML='<span>Paid from wallet</span><b></b>';t.querySelector('b').textContent='₹'+fmtINR(paid)+(paid<total?' of ₹'+fmtINR(total):'');box.appendChild(t);
-  const ped=COP.pedHit;let end=false;
-  if(ped){end=true;profile.suspendedUntil=Math.max(profile.suspendedUntil,Date.now()+10*60e3);profile.challans=0;
-    $('#outTitle').textContent='Arrested by the Hoysala';$('#outText').textContent=`You hit a pedestrian. Your driving licence is suspended until ${timeStr(profile.suspendedUntil)}.`;}
-  else{profile.challans=(profile.challans||0)+1;
-    if(profile.challans>=3){end=true;profile.challans=0;profile.suspendedUntil=Date.now()+10*60e3;$('#outTitle').textContent='Licence suspended';$('#outText').textContent=`That is your third e-challan. Your licence is suspended until ${timeStr(profile.suspendedUntil)}.`;}
-    else{$('#outTitle').textContent='e-Challan issued';$('#outText').textContent=`The Hoysala caught you. Challan ${profile.challans} of 3: a third challan suspends your licence.`;}}
+  for(const c of profile.pending){const d=document.createElement('div');d.className='ln';d.innerHTML='<span></span><b></b>';d.querySelector('span').textContent=c.l;d.querySelector('b').textContent='₹'+fmtINR(c.f);box.appendChild(d);}
+  const t=document.createElement('div');t.className='ln tot';t.innerHTML='<span>Pending at the court</span><b></b>';t.querySelector('b').textContent='₹'+fmtINR(pendingTotal());box.appendChild(t);
+  const n=profile.pending.length;const end=profile.seized;
+  if(COP.pedHit){$('#outTitle').textContent='Arrested by the Hoysala';$('#outText').textContent='You hit a pedestrian. Your licence is seized. Until you pay every pending challan at the District Magistrate Court, you go on foot.';}
+  else if(end){$('#outTitle').textContent='Licence seized';$('#outText').textContent=`That makes ${n} unpaid challans. Your licence and vehicle stay with the police until you pay ₹${fmtINR(pendingTotal())} at the District Magistrate Court. Walk, ride or hitch there.`;}
+  else{$('#outTitle').textContent='e-Challan issued';$('#outText').textContent=`Challan ${n} of ${MAXCH}. Fines are paid only at the District Magistrate Court; at ${MAXCH} unpaid challans your licence is seized.`;}
   saveProfile();
   COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;COP.pedHit=false;P.rash=0;$('#wanted').hidden=true;
-  $('#outPrimary').textContent=end?'Back to menu':'Pay and drive on';$('#outPrimary').dataset.end=end?'1':'';
+  $('#outPrimary').textContent=end?'Continue on foot':'Drive on';$('#outPrimary').dataset.end=end?'1':'';
   show('outcome');
 }
 
@@ -215,7 +212,7 @@ function towToGarage(){
   agents=agents.filter(a=>Math.hypot(a.x-P.x,a.y-P.y)>25);flash();toast(`Towed to ${g.name} · ₹${fee}`,'');
   garageLock=g;openRepair(g);
 }
-function resumeDrive(){state='play';show('play');const V=VEH[P.type];if(!P.dry)Snd.startEngine(P.cond<=0?Object.assign({},V.engine,{vol:.4}):V.engine,P.type);}
+function resumeDrive(){state='play';show('play');if(FOOT.on){footHud(true);if(FOOT.ride){$('#footBar').hidden=true;$('#rideBar').hidden=false;$('#rbSkip').hidden=FOOT.ride.phase!=='ride';}return;}const V=VEH[P.type];if(!P.dry)Snd.startEngine(P.cond<=0?Object.assign({},V.engine,{vol:.4}):V.engine,P.type);}
 
 /* ---------- fuel ---------- */
 let fuelLock=null,fuelG=null;
@@ -281,6 +278,7 @@ function updateHud(){
   else if(P.rash>5){el.wanted.hidden=false;el.wanted.querySelectorAll('.stars i').forEach(s=>s.classList.remove('on'));el.wantedTxt.textContent='Drive carefully';}
   else el.wanted.hidden=true;
   el.rashbar.style.width=clamp(P.rash,0,100)+'%';
+  if(footHudTick(el))return;
   if(trip){const d=Math.hypot(trip.x-P.x,trip.y-P.y);el.trip.innerHTML='';const a=document.createElement('div');a.innerHTML='Drop at <b></b>';a.querySelector('b').textContent=trip.name;const b=document.createElement('div');b.textContent=`${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'} · fare ₹${trip.fare}`;el.trip.append(a,b);}
   else el.trip.textContent=licenceSuspended()?'No passengers: licence suspended':'Finding a passenger';
   /* breakdown, fuel and repair notices */
@@ -312,13 +310,14 @@ function renderMini(){
   for(const k of ORDER){m.strokeStyle=RANK[k]>=3?'#E7D9A6':k==='tertiary'?'#B8BCC2':'#7D848D';m.lineWidth=HW[k]*1.6;m.beginPath();for(const s of segs){if(s.w.cls!==k)continue;m.moveTo(s.ax,s.ay);m.lineTo(s.bx,s.by);}m.stroke();}
   for(const g of W.garages){if(Math.abs(g.x-P.x)>R||Math.abs(g.y-P.y)>R)continue;m.fillStyle='#53D68E';m.fillRect(g.x-9,g.y-9,18,18);}
   for(const g of W.fuels){if(Math.abs(g.x-P.x)>R||Math.abs(g.y-P.y)>R)continue;m.fillStyle='#4FC3F7';m.fillRect(g.x-10,g.y-10,20,20);}
+  footMini(m,R);
   if(trip){m.fillStyle='#FFC72C';m.beginPath();m.arc(trip.x,trip.y,12,0,TAU);m.fill();}
   const fl=(performance.now()/250|0)%2;for(const c of COP.list){m.fillStyle=fl?'#FF5A4E':'#2F6BFF';m.beginPath();m.arc(c.x,c.y,11,0,TAU);m.fill();}
   m.restore();
   const arrow=(tx,ty,col)=>{const ang=hAng(tx-P.x,ty-P.y)-P.h;const d=Math.hypot(tx-P.x,ty-P.y);if(d>R*.9){m.save();m.translate(S/2,S/2);m.rotate(ang);m.fillStyle=col;m.beginPath();m.moveTo(0,-S/2+6);m.lineTo(-11,-S/2+26);m.lineTo(11,-S/2+26);m.closePath();m.fill();m.restore();}};
-  if(trip)arrow(trip.x,trip.y,'#FFC72C');
-  if(P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)arrow(ng.g.x,ng.g.y,'#53D68E');}
-  if(P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)arrow(nf.g.x,nf.g.y,'#4FC3F7');}
+  if(trip)arrow(trip.x,trip.y,'#FFC72C');footArrows(arrow);
+  if(!FOOT.on&&P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)arrow(ng.g.x,ng.g.y,'#53D68E');}
+  if(!FOOT.on&&P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)arrow(nf.g.x,nf.g.y,'#4FC3F7');}
   m.fillStyle='#FFFFFF';m.beginPath();m.moveTo(S/2,S/2-11);m.lineTo(S/2-8,S/2+9);m.lineTo(S/2,S/2+4);m.lineTo(S/2+8,S/2+9);m.closePath();m.fill();
 }
 
@@ -361,7 +360,7 @@ function lightsFor(model,M,headOn,brake,night){
 }
 function renderScene(dt){
   resizeGL();
-  const V=VEH[P.type];const pm=playerModel(P.type);
+  let V=VEH[P.type],pm=playerModel(P.type);const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
   setupCamera(dt,P,V,pm);setFrameUniforms();
   const night=TOD.night;
   gl.viewport(0,0,glc.width,glc.height);
@@ -381,7 +380,7 @@ function renderScene(dt){
   for(const c of vis)drawGlowMesh(c.shad,1,.32*(1-night*.7));
   DS.reset();
   const sh=(x,y,h,l,w)=>DS.quad(x,.03,y,Math.sin(h),-Math.cos(h),l,w,ZERO3);
-  sh(P.x,P.y,P.h,P.len*.62,P.wid*.75);
+  if(fv&&fv.foot){sh(P.x,P.y,P.h,.35,.35);if(FOOT.ride)sh(FOOT.ride.x,FOOT.ride.y,FOOT.ride.h,FOOT.ride.t.len*.6,FOOT.ride.t.wid*.72);}else sh(P.x,P.y,P.h,(pm.len||P.len)*.62,(pm.wid||P.wid)*.75);
   for(const a of agents)sh(a.x,a.y,a.h,a.t.len*.6,a.t.wid*.72);
   for(const c of COP.list)sh(c.x,c.y,c.h,2.6,1.3);
   for(const p of peds){if(p.state==='down')continue;if(p.cart!=null)sh(p.cx,p.cy,p.h,1.1,.7);sh(p.x,p.y,p.h,p.kind==='lie'?1:.35*(p.sc||1),.35*(p.sc||1));}
@@ -424,26 +423,29 @@ function renderScene(dt){
     lightsFor(cm,TM,night>.25,false,night);}
   if(intruder){M4.model(TM,intruder.x,0,intruder.y,-intruder.h,0,0);drawLit(intruder.model.body,TM,{emiK:.5+night});if(intruder.model.glass)drawLit(intruder.model.glass,TM);if(intruder.model.rider)drawLit(intruder.model.rider,TM);lightsFor(intruder.model,TM,true,false,night);}
   /* player */
-  if(CAM.mode==='cockpit'){
+  if(fv)drawFootPlayer(fv,A,night);
+  else if(CAM.mode==='cockpit'){
     drawLit(pm.body,P.M,{emiK:.4+night*.6});drawLit(pm.cockpit,P.M,{emiK:.6+night*.8,noHL:true});
     if(pm.steer){const sp=pm.steerPos;M4.model(TM,sp[0],sp[1],sp[2],0,-.42,-P.steer*1.9);M4.mul(TM2,P.M,TM);drawLit(pm.steer,TM2,{noHL:true});}
   }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);}
-  if(CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
+  if(!fv&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
   /* light, glow and signboards */
   gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
   if(night>.05){for(const c of vis)drawGlowMesh(c.glow,0,night*.5);
     DGb.reset();const beam=(M,model)=>{for(const p of model.lights.head){const w=M4.xform(M,p[0],.05,p[2]);DGb.quad(w[0],.06,w[2],Math.sin(model._h),-Math.cos(model._h),16,4.5,[1,.88,.65],true);}};
-    pm._h=P.h;beam(P.M,pm);
+    if(!fv){pm._h=P.h;beam(P.M,pm);}
     for(const a of agents){if(Math.hypot(a.x-ex,a.y-ez)>140)continue;a.model._h=a.h;M4.model(TM,a.x,0,a.y,-a.h,0,0);beam(TM,a.model);}
     DGb.draw(2,night*.55);}
   DGr.draw(0,.75+night*.6);DGr.reset();
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
   if(trip){const d=Math.hypot(trip.x-ex,trip.y-ez);drawSprite(beamTex().tex,trip.x,0,trip.y,3.2+d*.01,45,[1,.8,.25]);}
-  if(P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)drawSprite(beamTex().tex,ng.g.x,0,ng.g.y,3+ng.d*.01,40,[.3,1,.45]);}
-  if(P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)drawSprite(beamTex().tex,nf.g.x,0,nf.g.y,3+nf.d*.01,40,[.3,.7,1]);}
+  drawFootBeams(ex,ez);
+  if(!FOOT.on&&P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)drawSprite(beamTex().tex,ng.g.x,0,ng.g.y,3+ng.d*.01,40,[.3,1,.45]);}
+  if(!FOOT.on&&P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)drawSprite(beamTex().tex,nf.g.x,0,nf.g.y,3+nf.d*.01,40,[.3,.7,1]);}
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   for(const q of nearPois){const t=boardTex(q);const w=Math.min(7,2.6+q.name.length*.17);drawSprite(t.tex,q.x,3.3,q.y,w,w/4,1-night*.25);}
   for(const g of W.garages){const d=Math.hypot(g.sx-ex,g.sy-ez);if(d>220)continue;drawSprite(garageTex(g).tex,g.sx,3.6,g.sy,6,1.5,1);}
+  drawCourtSign(ex,ez);
   for(const g of W.fuels){const d=Math.hypot(g.sx-ex,g.sy-ez);if(d>260)continue;const c=Math.cos(-g.h),s2=Math.sin(-g.h);drawSprite(fuelTex(g).tex,g.sx-6.6*c-3.6*s2,7.4,g.sy+6.6*s2-3.6*c,4.4,2.2,1);}
   gl.disable(gl.BLEND);gl.depthMask(true);
 }
@@ -460,9 +462,10 @@ function frame(t){
   requestAnimationFrame(frame);
 }
 function update(dt){
-  updatePlayer(dt);
+  if(FOOT.on){updateFoot(dt);updateAgents(dt);updatePeds(dt);updateAnimals(dt);}
+  else{updatePlayer(dt);
   updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);updateIntruder(dt);apshakunTick(dt);
-  checkTrip();
+  checkTrip();}
   updateChunks(P.x,P.y,settings.gfx==='fast'?5:8);
   if((todT-=dt)<=0){todT=30;computeTod();}
   if((hudT-=dt)<=0){hudT=.1;updateHud();}
@@ -492,8 +495,7 @@ async function streamMap(){
 }
 function resetActors(){agents=[];peds=[];animals=[];intruder=null;COP.list=[];COP.level=0;COP.off=[];COP.trail=[];COP.lastTr=null;COP.pedHit=false;COP.caughtT=COP.lostT=0;apshReset();sigInside=new Map();Snd.sirenOff();}
 async function startDrive(loc){
-  if(licenceSuspended()){showLicence();return;}
-  currentLoc=loc;state='loading';show('loading');
+  currentLoc=loc;if(FOOT.on)leaveFoot();state='loading';show('loading');
   $('#loadActions').hidden=true;$('#loadWheel').hidden=false;const lt=$('#loadText');
   resetActors();clearChunks();
   if(loc.demo){lt.textContent='Building the demo city';await sleep(60);
@@ -545,11 +547,12 @@ function startPlay(keepPos){
   Snd.init();Snd.resume();Snd.startEngine(V.engine,P.type);
   calibrateTilt();
   toast(`${W.label} · ${TOD.label}`,'gold');
-  if(licenceSuspended())toast('Driving with a suspended licence!','bad');
+  if(licenceSuspended())goFoot(`Licence seized. Pay ₹${fmtINR(pendingTotal())} at the District Magistrate Court. Walk, ride or hitch there.`);
+  else if(profile.pending.length)toast(`${profile.pending.length} unpaid challan${profile.pending.length>1?'s':''}: pay at the court (red beam)`,'');
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','licence','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
@@ -572,11 +575,9 @@ function renderTitle(){
   c.fillStyle='rgba(20,18,40,.85)';for(let x=0;x<w;){const bw=18+r()*46,bh=h*(.08+r()*.22);c.fillRect(x,base-bh,bw,bh);x+=bw+r()*6;}
   c.fillStyle='rgba(20,18,40,.95)';c.fillRect(w*.72,base-h*.42,10,h*.42);c.fillRect(w*.72-6,base-h*.30,22,h*.30);
   c.fillStyle='#14121F';c.fillRect(0,base,w,h-base);c.fillStyle='#F2C230';for(let x=0;x<w;x+=60)c.fillRect(x,base+(h-base)*.45,30,4);
-  $('#titleStats').textContent=`Wallet ₹${fmtINR(profile.wallet)} · ${profile.km.toFixed(1)} km driven · ${profile.trips} trips`+(licenceSuspended()?` · Licence suspended until ${timeStr(profile.suspendedUntil)}`:'');
+  $('#titleStats').textContent=`Wallet ₹${fmtINR(profile.wallet)} · ${profile.km.toFixed(1)} km driven · ${profile.trips} trips`+(licenceSuspended()?` · Licence seized: pay ₹${fmtINR(pendingTotal())} at the court`:profile.pending.length?` · ${profile.pending.length} unpaid challan${profile.pending.length>1?'s':''}`:'');
 }
-$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();if(licenceSuspended()){showLicence();return;}go('where');});
-function showLicence(){state='menu';$('#licText').textContent=`You can drive again at ${timeStr(profile.suspendedUntil)}, or pay a ₹2,000 fine to restore it now. Wallet: ₹${fmtINR(profile.wallet)}.`;$('#licPay').disabled=profile.wallet<2000;show('licence');}
-$('#licPay').addEventListener('click',()=>{if(profile.wallet<2000)return;profile.wallet-=2000;profile.suspendedUntil=0;saveProfile();toast('Licence restored','good');go('where');});
+$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();go('where');});
 
 const AREAS=[
   {label:'MG Road',sub:'Central',lat:12.9755,lon:77.6068},{label:'Koramangala',sub:'80 Feet Road',lat:12.9352,lon:77.6245},
@@ -646,16 +647,17 @@ $('#quitBtn').addEventListener('click',()=>{resetActors();go('title');});
 $('#changeBtn').addEventListener('click',()=>{changingVehicle=true;go('showroom');});
 $('#repFull').addEventListener('click',()=>doRepair(true));$('#repHalf').addEventListener('click',()=>doRepair(false));
 $('#repLeave').addEventListener('click',()=>resumeDrive());
-$('#outPrimary').addEventListener('click',()=>{if($('#outPrimary').dataset.end){resetActors();go('title');}else{resumeDrive();}});
+$('#outPrimary').addEventListener('click',()=>{if($('#outPrimary').dataset.end){goFoot();toast('Head to the court: follow the red beam','bad');}else{resumeDrive();}});
 $('#outMenu').addEventListener('click',()=>{resetActors();go('title');});
 $('#camBtn').addEventListener('click',()=>{const order=['chase','cockpit','far'];CAM.mode=order[(order.indexOf(CAM.mode)+1)%3];settings.cam=CAM.mode;saveSettings();toast({chase:'Chase view',cockpit:'Cockpit view',far:'Top view'}[CAM.mode],'','cam',300);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Snd.hornOff();if(Snd.ctx&&Snd.ctx.suspend)Snd.ctx.suspend();}else Snd.resume();});
 window.__onBack=()=>{
   if(!$('#settings').hidden){closeSettings();return true;}
   if(state==='play'){pause();return true;}if(state==='pause'){resume();return true;}
+  if(state==='court'){$('#ctLeave').click();return true;}if(state==='ride'){$('#rdCancel').click();return true;}if(state==='job'){$('#jbClose').click();return true;}
   if(state==='repair'||state==='fuel'){resumeDrive();return true;}if(state==='outcome'){$('#outPrimary').click();return true;}
   if(!$('#showroom').hidden){go(changingVehicle?'title':'where');changingVehicle=false;return true;}
-  if(!$('#where').hidden||!$('#loading').hidden||!$('#licence').hidden){go('title');return true;}
+  if(!$('#where').hidden||!$('#loading').hidden||false){go('title');return true;}
   return false;
 };
 
@@ -695,14 +697,15 @@ const scareAnimals=()=>{for(const a of animals){if(a.event||a.lie)continue;const
 hold($('#btnL'),()=>input.L=1,()=>input.L=0);hold($('#btnR'),()=>input.R=1,()=>input.R=0);
 hold($('#btnGas'),()=>{input.gas=1;P.rev=false;},()=>input.gas=0);hold($('#btnBrake'),brakeDown,()=>{input.brake=0;P.brakeUp=performance.now();});
 function brakeDown(){input.brake=1;if(Math.abs(P.s)<.5&&performance.now()-(P.brakeUp||0)<400){P.rev=true;toast('Reverse','', 'rev',800);}else if(P.s>.5)P.rev=false;}
-hold($('#btnHorn'),()=>{input.horn=1;Snd.hornOn(VEH[P.type].horn);scareAnimals();},()=>{input.horn=0;Snd.hornOff();});
+hold($('#btnHorn'),()=>{input.horn=1;if(FOOT.on)return;Snd.hornOn(VEH[P.type].horn);scareAnimals();},()=>{input.horn=0;Snd.hornOff();});
 function releaseAll(){input.L=input.R=input.gas=input.brake=input.horn=0;document.querySelectorAll('.on').forEach(e=>{if(e.closest('#hud'))e.classList.remove('on');});Snd.hornOff();}
 const KEYS={ArrowLeft:'L',a:'L',ArrowRight:'R',d:'R',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake',' ':'brake'};
 window.addEventListener('keydown',e=>{if(e.repeat)return;const k=KEYS[e.key]||KEYS[(e.key||'').toLowerCase()];if(k&&state==='play'){if(k==='brake')brakeDown();else{input[k]=1;if(k==='gas')P.rev=false;}e.preventDefault();}
-  if((e.key==='h'||e.key==='H')&&state==='play'){Snd.hornOn(VEH[P.type].horn);scareAnimals();}
+  if((e.key==='h'||e.key==='H')&&state==='play'&&FOOT.on){input.horn=1;}
+  else if((e.key==='h'||e.key==='H')&&state==='play'){Snd.hornOn(VEH[P.type].horn);scareAnimals();}
   if((e.key==='c'||e.key==='C')&&state==='play')$('#camBtn').click();
   if(e.key==='Escape'||e.key==='p'){if(state==='play')pause();else if(state==='pause')resume();}});
-window.addEventListener('keyup',e=>{const k=KEYS[e.key]||KEYS[(e.key||'').toLowerCase()];if(k){input[k]=0;if(k==='brake')P.brakeUp=performance.now();}if(e.key==='h'||e.key==='H')Snd.hornOff();});
+window.addEventListener('keyup',e=>{const k=KEYS[e.key]||KEYS[(e.key||'').toLowerCase()];if(k){input[k]=0;if(k==='brake')P.brakeUp=performance.now();}if(e.key==='h'||e.key==='H'){input.horn=0;Snd.hornOff();}});
 let tiltZero=0,tiltRaw=0;
 function orientAngle(){return (screen.orientation&&screen.orientation.angle)||window.orientation||0;}
 window.addEventListener('deviceorientation',e=>{const a=orientAngle();let v=Math.abs(a)===90?(a===90?e.beta:-e.beta):e.gamma;if(v==null)return;tiltRaw=v;input.tilt=clamp((v-tiltZero)/22,-1,1);});

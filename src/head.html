@@ -84,6 +84,10 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 
 #apsh{position:absolute;top:calc(58px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:7px 14px;display:flex;align-items:center;gap:12px;border-color:rgba(255,199,44,.6)}
 #apsh .tx{display:grid;gap:1px}
+#unload{position:absolute;top:34%;left:50%;transform:translateX(-50%);padding:12px 18px;display:grid;justify-items:center;gap:8px}
+#unload .h{font-weight:700;font-size:16px}#unload .s{color:var(--muted);font-size:13px}#ulBtn{min-width:160px;min-height:60px;font-size:22px}
+#ctList,#outChallan{max-height:30vh;overflow:auto}#footBar{flex-wrap:nowrap;gap:6px}#footBar .sbtn{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
+#rideBar .notice{display:inline-block}
 #apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 #apsh .n{font-family:var(--display);font-size:42px;line-height:1;color:var(--auto-yellow);min-width:1.2ch;text-align:center}
 #apsh .l{font-family:var(--display);font-size:15px;letter-spacing:.03em;white-space:nowrap}
@@ -203,7 +207,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       </div>
       <div class="cond"><label><span>Condition</span><span id="condTxt">100%</span></label><div class="bar"><i id="condbar"></i></div></div>
       <div class="cond"><label><span id="fuelLbl">Fuel</span><span id="fuelTxt">100%</span></label><div class="bar"><i id="fuelbar" style="background:#4FC3F7"></i></div></div>
-      <div class="wallet"><span>₹ <span id="wallet">0</span></span><span class="lic" id="licChip" hidden>LICENCE SUSPENDED</span></div>
+      <div class="wallet"><span>₹ <span id="wallet">0</span></span><span class="lic" id="licChip" hidden>LICENCE SEIZED</span><span class="lic" id="chChip" hidden style="background:#B26A00">0/5 challans</span></div>
     </div>
     <div id="wanted" class="panel" hidden>
       <div class="stars"><i></i><i></i><i></i></div>
@@ -234,6 +238,15 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
     <div id="toast"></div>
     <div class="bottom-c">
       <div class="notice panel hit" id="notice" hidden></div>
+      <div class="row hit" id="footBar" hidden>
+        <button class="sbtn" id="fbAuto">Auto</button><button class="sbtn" id="fbCab">Cab</button><button class="sbtn" id="fbLift">Lift</button><button class="sbtn" id="fbBeg">Ask ₹</button><button class="sbtn y" id="fbJob">Work</button>
+      </div>
+      <div class="row hit" id="rideBar" hidden><span class="notice panel" id="rideTxt"></span><button class="sbtn y" id="rbSkip">Get there now</button></div>
+    </div>
+    <div id="unload" class="panel hit" hidden>
+      <div class="h" id="ulTxt">Tap UNLOAD 30 times</div>
+      <button class="btn primary" id="ulBtn">UNLOAD</button>
+      <div class="s" id="ulTime">15 s</div>
     </div>
     <div class="ctl-left">
       <button class="pad hit" id="btnL" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15.5 4 6 12l9.5 8z"/></svg></button>
@@ -347,14 +360,33 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
     </div>
   </div>
 
-  <div class="screen scrim" id="licence" hidden>
-    <div class="card" style="width:min(520px,100%)">
-      <h2>Licence suspended</h2>
-      <p id="licText"></p>
+  <div class="screen scrim" id="court" hidden>
+    <div class="card" style="width:min(560px,100%)">
+      <h2>District Magistrate Court</h2>
+      <p id="ctText"></p>
+      <div class="challan" id="ctList"></div>
       <div class="row" style="justify-content:flex-start">
-        <button class="btn primary" id="licPay">Pay ₹2,000 fine</button>
-        <button class="btn" data-go="title">Back</button>
+        <button class="btn primary" id="ctPay">Pay fines</button>
+        <button class="btn" id="ctLeave">Leave</button>
       </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="rideScr" hidden>
+    <div class="card" style="width:min(520px,100%)">
+      <h2 id="rdTitle">Where to?</h2>
+      <p id="rdText"></p>
+      <div class="opts" id="rdOpts"></div>
+      <div class="row" style="justify-content:flex-start"><button class="btn" id="rdCancel">Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="jobScr" hidden>
+    <div class="card" style="width:min(560px,100%)">
+      <h2>Find work</h2>
+      <p>Odd jobs around you. Money goes straight to your wallet.</p>
+      <div class="opts" id="jbOpts"></div>
+      <div class="row" style="justify-content:flex-start"><button class="btn" id="jbClose">Not now</button></div>
     </div>
   </div>
 
