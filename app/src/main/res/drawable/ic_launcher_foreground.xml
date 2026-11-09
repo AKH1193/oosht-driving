@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto-rickshaw seen from above, driving up a dashed road -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#3A414B" android:pathData="M40,20h28v68h-28z" />
+    <path android:fillColor="#FFC72C" android:pathData="M53,22h2v8h-2zM53,78h2v8h-2z" />
+    <path android:fillColor="#1E8A4C" android:pathData="M47,32h14q9,6 9,15v29q0,4 -4,4h-24q-4,0 -4,-4v-29q0,-9 9,-15z" />
+    <path android:fillColor="#A9D2EA" android:pathData="M46,40h16l4,6h-24z" />
+    <path android:fillColor="#FFC72C" android:pathData="M40,47h28v28q0,4 -4,4h-20q-4,0 -4,-4z" />
+    <path android:fillColor="#E0A912" android:pathData="M41,55h26v1.6h-26zM41,63h26v1.6h-26zM41,71h26v1.6h-26z" />
+    <path android:fillColor="#FFF4C2" android:pathData="M52,32.5h4v2h-4z" />
+</vector>
