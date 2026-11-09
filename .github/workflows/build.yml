@@ -22,21 +22,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle
-        id: gradle1
-        continue-on-error: true
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-
-      - name: Set up Gradle (retry if the download timed out)
-        if: steps.gradle1.outcome == 'failure'
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-
       - name: Build the APK
-        run: gradle assembleRelease -PversionCode=${{ github.run_number }} --no-daemon --stacktrace
+        run: |
+          chmod +x gradlew
+          for attempt in 1 2 3; do
+            ./gradlew assembleRelease -PversionCode=${{ github.run_number }} --no-daemon --stacktrace && exit 0
+            echo "Build attempt $attempt failed, retrying in 20 seconds"
+            sleep 20
+          done
+          exit 1
 
       - name: Name the APK
         run: cp app/build/outputs/apk/release/app-release.apk oosht-driving.apk
