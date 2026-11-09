@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Bundle the game page into the app
-        run: python3 tools/build_page.py web/game.html app/src/main/assets/www/index.html
+      - name: Assemble the game from src/
+        run: python3 tools/build.py
 
       - uses: actions/setup-java@v5
         with:

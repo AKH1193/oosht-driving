@@ -1,0 +1,385 @@
+<title>Oosht Driving</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: full-bleed landscape 3D stage; instruments float at the corners; menus are signboard panels */
+:root{
+  --ink:#0D1116;
+  --panel:rgba(12,16,22,.78);
+  --panel-solid:#141A22;
+  --line:rgba(255,255,255,.14);
+  --text:#F4F1E8;
+  --muted:#9FA8B2;
+  --auto-yellow:#FFC72C;
+  --auto-green:#1E8A4C;
+  --auto-green-deep:#12603A;
+  --danger:#FF5A4E;
+  --ok:#53D68E;
+  --cop-blue:#2F6BFF;
+  --display:'Bungee','Impact','Arial Black',system-ui,sans-serif;
+  --ui:'Barlow Semi Condensed','Roboto Condensed','Arial Narrow',system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;background:var(--ink);color:var(--text)}
+body{overflow:hidden;font-family:var(--ui);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none;overscroll-behavior:none}
+button{font-family:var(--ui);color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
+#app{position:fixed;inset:0;overflow:hidden;background:var(--ink)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .5s}
+#vign{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(ellipse at center,transparent 45%,rgba(200,20,20,.55) 100%)}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;pointer-events:none;font-variant-numeric:tabular-nums}
+#hud .hit{pointer-events:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.hud-tl{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));padding:8px 12px 10px;display:grid;gap:6px;min-width:158px}
+.spdrow{display:flex;align-items:center;gap:10px}
+.spd{display:flex;align-items:baseline;gap:5px}
+.spd b{font-family:var(--display);font-size:34px;line-height:1;font-weight:400}
+.spd span{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.limit{width:34px;height:34px;border-radius:50%;background:#fff;border:4px solid #D7261E;color:#111;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.limit.over{animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{background:#FFD0CC}}
+.cond{display:grid;gap:3px}
+.cond label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--ok);border-radius:3px;transition:width .25s,background .25s}
+.wallet{font-size:15px;font-weight:600;color:var(--auto-yellow);display:flex;justify-content:space-between;gap:8px}
+.lic{font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:5px;background:var(--danger);color:#fff}
+.hud-tc{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;max-width:40vw}
+.chip{padding:4px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.chip.dim{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.03em}
+.sig{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.sig .lamps{display:flex;flex-direction:column;gap:3px;padding:4px;background:#111;border-radius:6px}
+.sig .lamps i{width:12px;height:12px;border-radius:50%;background:#333}
+.sig .lamps i.r.on{background:#FF3B30;box-shadow:0 0 8px #FF3B30}
+.sig .lamps i.a.on{background:#FFB020;box-shadow:0 0 8px #FFB020}
+.sig .lamps i.g.on{background:#2EE07A;box-shadow:0 0 8px #2EE07A}
+.sig b{font-family:var(--display);font-weight:400;font-size:22px;min-width:2ch;text-align:center}
+.sig span{font-size:12px;color:var(--muted);line-height:1.2}
+.hud-tr{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));display:grid;grid-template-columns:auto auto;gap:8px;align-items:start;justify-items:end}
+.btncol{display:grid;gap:8px}
+#mini{width:108px;height:108px;border-radius:50%;border:2px solid var(--line);background:rgba(12,16,22,.7)}
+.trip{grid-column:1 / -1;max-width:230px;padding:6px 10px;font-size:13px;line-height:1.3;text-align:right}
+.trip b{color:var(--auto-yellow);font-weight:600}
+.iconbtn{width:42px;height:42px;border-radius:12px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center}
+.iconbtn svg{width:20px;height:20px;fill:var(--text)}
+#wanted{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));padding:7px 11px;display:grid;gap:4px;min-width:158px}
+#wanted .stars{display:flex;gap:5px}
+#wanted .stars i{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,.12)}
+#wanted .stars i.on{animation:cop .5s steps(2) infinite}
+@keyframes cop{0%{background:var(--danger)}50%{background:var(--cop-blue)}}
+#wanted .t{font-size:13px;font-weight:600}
+#wanted .rash{display:grid;gap:2px}
+#wanted .rash label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#toast{position:absolute;top:30%;left:50%;transform:translateX(-50%);display:grid;gap:6px;justify-items:center}
+.toast{padding:7px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:16px;font-weight:600;white-space:nowrap;animation:toast 2.2s ease forwards}
+.toast.bad{border-color:rgba(255,90,78,.6);color:#FFD2CE}
+.toast.good{border-color:rgba(83,214,142,.6);color:#D2F7E2}
+.toast.gold{border-color:rgba(255,199,44,.7);color:var(--auto-yellow)}
+@keyframes toast{0%{opacity:0;transform:translateY(8px)}10%{opacity:1;transform:none}82%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+
+#apsh{position:absolute;top:calc(58px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:7px 14px;display:flex;align-items:center;gap:12px;border-color:rgba(255,199,44,.6)}
+#apsh .tx{display:grid;gap:1px}
+#apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#apsh .n{font-family:var(--display);font-size:42px;line-height:1;color:var(--auto-yellow);min-width:1.2ch;text-align:center}
+#apsh .l{font-family:var(--display);font-size:15px;letter-spacing:.03em;white-space:nowrap}
+#apsh .s{font-size:12px;color:#FFE9C7}
+#apsh svg{width:40px;height:28px;flex:none}
+
+.bottom-c{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:6px;max-width:44vw}
+.notice{padding:8px 14px;font-size:14px;text-align:center;line-height:1.35}
+.notice b{color:var(--auto-yellow)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.sbtn{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel-solid);font-size:15px;font-weight:700}
+.sbtn.y{background:var(--auto-yellow);color:#1A1405;border-color:#E2AE14}
+
+.ctl-left{position:absolute;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:12px}
+.ctl-right{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:10px;align-items:end}
+.pad{width:80px;height:80px;border-radius:20px;background:rgba(12,16,22,.5);border:2px solid rgba(255,255,255,.22);display:grid;place-items:center;touch-action:none}
+.pad svg{width:34px;height:34px;fill:var(--text)}
+.pad.on,.horn.on{background:rgba(255,199,44,.28);border-color:var(--auto-yellow)}
+.pedal{border-radius:16px;background:rgba(12,16,22,.5);border:2px solid rgba(255,255,255,.22);font-size:13px;font-weight:700;letter-spacing:.12em;touch-action:none;display:grid;place-items:end center;padding-bottom:10px;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.07) 0 6px,transparent 6px 12px)}
+.pedal.brake{width:86px;height:74px;grid-column:1;grid-row:2}
+.pedal.gas{width:76px;height:128px;grid-column:2;grid-row:1 / span 2}
+.pedal.gas.on{background-color:rgba(83,214,142,.3);border-color:var(--ok)}
+.pedal.brake.on{background-color:rgba(255,90,78,.3);border-color:var(--danger)}
+.horn{grid-column:1;grid-row:1;width:58px;height:58px;justify-self:center;border-radius:50%;background:rgba(12,16,22,.5);border:2px solid rgba(255,255,255,.22);font-size:11px;font-weight:700;letter-spacing:.1em;touch-action:none}
+.attrib{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(2px + env(safe-area-inset-bottom,0px));font-size:10px;color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap}
+
+/* ---------- Screens ---------- */
+.screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-block:calc(12px + env(safe-area-inset-top,0px)) calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.scrim{background:radial-gradient(ellipse at center,rgba(13,17,22,.6),rgba(13,17,22,.93))}
+
+#splash{background:#000;flex-direction:column;gap:14px;z-index:50;cursor:pointer}
+#splash .l1{font-family:var(--ui);font-weight:600;font-size:clamp(18px,3.6vw,30px);letter-spacing:.42em;color:#EDEBE4;opacity:0;animation:spl1 3.6s ease forwards;text-align:center;padding-left:.42em}
+#splash .l2{font-family:var(--display);font-size:clamp(14px,2.6vw,22px);letter-spacing:.18em;color:var(--auto-yellow);opacity:0;animation:spl2 3.6s ease forwards;text-align:center}
+#splash .rule{width:0;height:2px;background:var(--auto-green);animation:rule 3.6s ease forwards}
+@keyframes spl1{0%{opacity:0;letter-spacing:.7em}22%{opacity:1;letter-spacing:.42em}85%{opacity:1}100%{opacity:0}}
+@keyframes spl2{0%,30%{opacity:0;transform:translateY(6px)}48%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}
+@keyframes rule{0%,18%{width:0}45%{width:min(46vw,380px)}85%{opacity:1}100%{opacity:0;width:min(46vw,380px)}}
+@media (prefers-reduced-motion:reduce){#splash .l1,#splash .l2,#splash .rule{animation-duration:.01s;opacity:1;width:min(46vw,380px)}}
+
+#title{flex-direction:column;gap:16px;background:linear-gradient(180deg,#1B1B3A 0%,#5A2D4F 46%,#E8875A 78%,#F6C48B 100%)}
+#titlebg{position:absolute;inset:0;width:100%;height:100%}
+#title > :not(canvas){position:relative}
+.logo{position:relative;text-align:center;line-height:.9}
+.logo .o1{font-family:var(--display);font-size:clamp(54px,11vw,104px);color:var(--auto-yellow);text-shadow:0 5px 0 var(--auto-green-deep),0 10px 24px rgba(0,0,0,.45);letter-spacing:.02em}
+.logo .o2{font-family:var(--display);font-size:clamp(20px,3.6vw,34px);color:var(--text);letter-spacing:.5em;padding-left:.5em;margin-top:10px}
+.tag{position:relative;font-size:clamp(14px,2vw,18px);color:#FFE9C7;letter-spacing:.04em;text-align:center}
+.btn{min-height:48px;padding:0 22px;border-radius:12px;border:2px solid var(--line);background:var(--panel-solid);font-size:17px;font-weight:700;letter-spacing:.04em}
+.btn.primary{background:var(--auto-yellow);color:#1A1405;border-color:#E2AE14;box-shadow:0 4px 0 #9C7A0E}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 #9C7A0E}
+.btn:disabled{opacity:.45;cursor:default}
+.stats{position:relative;font-size:14px;color:#FFE9C7;opacity:.9;text-align:center}
+
+.card{position:relative;width:min(780px,100%);max-height:100%;overflow:auto;background:var(--panel-solid);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:grid;gap:12px}
+.card h2{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.03em;color:var(--auto-yellow);text-wrap:balance}
+.card p{color:var(--muted);font-size:15px;line-height:1.45;max-width:62ch}
+.card .head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.back{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:transparent;font-size:15px;font-weight:600}
+.areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.area{min-height:52px;border-radius:12px;border:1px solid var(--line);background:#1B232D;text-align:left;padding:8px 12px;display:grid;gap:2px}
+.area b{font-size:16px}
+.area small{font-size:12px;color:var(--muted)}
+.gps{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.note{font-size:14px;color:var(--muted);min-height:1.2em}
+.note.err{color:#FFB3AC}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#1B232D;font-size:14px;font-weight:600}
+.tabs button.on{background:var(--auto-yellow);color:#1A1405;border-color:var(--auto-yellow)}
+.showroom{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.veh{border-radius:14px;border:2px solid var(--line);background:#1B232D;padding:6px 6px 10px;display:grid;gap:4px;justify-items:center;text-align:center}
+.veh.sel{border-color:var(--auto-yellow);background:#262A1E}
+.veh img,.veh .ph{width:100%;aspect-ratio:3/2;max-width:100%;border-radius:10px;background:#11161D;object-fit:cover}
+.veh b{font-size:15px}
+.veh small{font-size:12px;color:var(--muted)}
+.meters{width:100%;display:grid;gap:3px;padding:0 4px}
+.meter{display:grid;grid-template-columns:62px 1fr;align-items:center;gap:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.meter i{height:4px;border-radius:2px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}
+.meter i::after{content:"";position:absolute;inset:0;width:var(--v);background:var(--auto-yellow);border-radius:2px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;bottom:-16px;background:var(--panel-solid);padding-block:10px;margin-bottom:-6px;border-top:1px solid var(--line)}
+
+#loading{flex-direction:column;gap:16px;background:rgba(13,17,22,.94);z-index:5}
+.wheel{width:56px;height:56px;border-radius:50%;border:6px solid #333A44;border-top-color:var(--auto-yellow);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadText{font-size:17px;text-align:center;max-width:56ch;line-height:1.4}
+
+.opts{display:grid;gap:12px}
+.opt{display:grid;grid-template-columns:120px 1fr;align-items:center;gap:12px}
+.opt > span{font-size:15px;font-weight:600}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{min-height:38px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:#1B232D;font-size:14px;font-weight:600}
+.seg button.on{background:var(--auto-yellow);color:#1A1405;border-color:var(--auto-yellow)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.summary div{background:#1B232D;border-radius:12px;padding:10px;display:grid;gap:2px;min-width:0}
+.summary small{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.summary b{font-family:var(--display);font-weight:400;font-size:20px}
+.challan{border:2px dashed rgba(255,255,255,.25);border-radius:12px;padding:10px 12px;display:grid;gap:6px;font-size:14px}
+.challan .ln{display:flex;justify-content:space-between;gap:12px}
+.challan .tot{font-weight:700;color:var(--auto-yellow);border-top:1px solid var(--line);padding-top:6px}
+
+#rotate{display:none;z-index:60;background:#0D1116;flex-direction:column;gap:16px;text-align:center}
+#rotate svg{width:72px;height:72px;fill:none;stroke:var(--auto-yellow);stroke-width:2.5;animation:rot 2.2s ease-in-out infinite}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait){#rotate:not(.dismissed){display:flex}}
+#glerr{z-index:70;background:#0D1116;flex-direction:column;gap:12px;text-align:center}
+</style>
+
+<div id="app">
+  <canvas id="gl"></canvas>
+  <div id="vign"></div>
+  <div id="flash"></div>
+
+  <div id="hud" hidden>
+    <div class="hud-tl panel">
+      <div class="spdrow">
+        <div class="spd"><b id="spd">0</b><span>km/h</span></div>
+        <div class="limit" id="limit" title="Speed limit">40</div>
+      </div>
+      <div class="cond"><label><span>Condition</span><span id="condTxt">100%</span></label><div class="bar"><i id="condbar"></i></div></div>
+      <div class="cond"><label><span id="fuelLbl">Fuel</span><span id="fuelTxt">100%</span></label><div class="bar"><i id="fuelbar" style="background:#4FC3F7"></i></div></div>
+      <div class="wallet"><span>₹ <span id="wallet">0</span></span><span class="lic" id="licChip" hidden>LICENCE SUSPENDED</span></div>
+    </div>
+    <div id="wanted" class="panel" hidden>
+      <div class="stars"><i></i><i></i><i></i></div>
+      <div class="t" id="wantedTxt">Hoysala on your tail</div>
+      <div class="rash"><label>Rash driving</label><div class="bar"><i id="rashbar" style="width:0;background:var(--danger)"></i></div></div>
+    </div>
+    <div class="hud-tc">
+      <div class="chip" id="road">Finding road</div>
+      <div class="chip dim" id="clock">Day</div>
+      <div class="sig" id="sig" hidden>
+        <div class="lamps"><i class="r"></i><i class="a"></i><i class="g"></i></div>
+        <b id="sigN">0</b><span id="sigT">Signal ahead</span>
+      </div>
+    </div>
+    <div class="hud-tr">
+      <div class="btncol">
+        <button class="iconbtn hit" id="pauseBtn" aria-label="Pause"><svg viewBox="0 0 20 20"><rect x="4" y="3" width="4" height="14" rx="1"/><rect x="12" y="3" width="4" height="14" rx="1"/></svg></button>
+        <button class="iconbtn hit" id="camBtn" aria-label="Change camera view"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zm8 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/></svg></button>
+      </div>
+      <canvas id="mini" width="216" height="216"></canvas>
+      <div class="trip panel" id="trip">Finding a passenger</div>
+    </div>
+    <div id="apsh" class="panel" hidden>
+      <svg viewBox="0 0 44 30" aria-hidden="true"><path fill="#F4F1E8" d="M6 26c0-6 4-11 10-12l2-6 3 5h4l3-5 2 6c3 1 5 3 6 6l5-6c1-1 3 0 2 2l-6 9c-1 1-2 2-4 2H8c-1 0-2-1-2-1z"/><circle cx="21" cy="17" r="1.3" fill="#FFC72C"/><circle cx="27" cy="17" r="1.3" fill="#FFC72C"/></svg>
+      <div class="tx"><div class="h" id="apshH">A black cat crossed your path</div><div class="l">STOP FOR APSHAKUN BONUS</div><div class="s" id="apshS">Stop before the cat's path</div></div>
+      <div class="n" id="apshN">5</div>
+    </div>
+    <div id="toast"></div>
+    <div class="bottom-c">
+      <div class="notice panel hit" id="notice" hidden></div>
+    </div>
+    <div class="ctl-left">
+      <button class="pad hit" id="btnL" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15.5 4 6 12l9.5 8z"/></svg></button>
+      <button class="pad hit" id="btnR" aria-label="Steer right"><svg viewBox="0 0 24 24"><path d="M8.5 4 18 12l-9.5 8z"/></svg></button>
+    </div>
+    <div class="ctl-right">
+      <button class="horn hit" id="btnHorn">HORN</button>
+      <button class="pedal brake hit" id="btnBrake">BRAKE</button>
+      <button class="pedal gas hit" id="btnGas">GO</button>
+    </div>
+    <div class="attrib" id="attrib">© OpenStreetMap contributors</div>
+  </div>
+
+  <div class="screen" id="title" hidden>
+    <canvas id="titlebg"></canvas>
+    <div class="logo"><div class="o1">OOSHT</div><div class="o2">DRIVING</div></div>
+    <div class="tag">Your real streets. Real potholes. Real Hoysala.</div>
+    <div class="row">
+      <button class="btn primary" id="playBtn">Start driving</button>
+      <button class="btn" id="setBtn1">Settings</button>
+    </div>
+    <div class="stats" id="titleStats"></div>
+  </div>
+
+  <div class="screen scrim" id="where" hidden>
+    <div class="card">
+      <div class="head"><h2>Where do you want to drive?</h2><button class="back" data-go="title">Back</button></div>
+      <div class="gps">
+        <button class="btn primary" id="gpsBtn">Use my GPS location</button>
+        <div class="note" id="gpsNote">The streets, buildings and shops around you load from OpenStreetMap.</div>
+      </div>
+      <p>Or pick a Bengaluru area:</p>
+      <div class="areas" id="areas"></div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="showroom" hidden>
+    <div class="card">
+      <div class="head"><h2>Pick your ride</h2><button class="back" data-go="where">Back</button></div>
+      <div class="tabs" id="vtabs"></div>
+      <div class="showroom" id="vlist"></div>
+      <div class="foot"><div class="note" id="vehNote"></div><button class="btn primary" id="driveBtn">Drive</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="loading" hidden>
+    <div class="wheel" id="loadWheel"></div>
+    <div id="loadText">Loading streets</div>
+    <div class="row" id="loadActions" hidden>
+      <button class="btn primary" id="retryBtn">Try again</button>
+      <button class="btn" id="demoBtn">Drive the demo city</button>
+      <button class="btn" data-go="where">Pick another area</button>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="pause" hidden>
+    <div class="card" style="width:min(460px,100%)">
+      <h2>Paused</h2>
+      <div class="opts">
+        <button class="btn primary" id="resumeBtn">Resume</button>
+        <button class="btn" id="setBtn2">Settings</button>
+        <button class="btn" id="changeBtn">Change vehicle</button>
+        <button class="btn" id="quitBtn">Quit to menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="repair" hidden>
+    <div class="card" style="width:min(520px,100%)">
+      <h2 id="repTitle">Mechanic shop</h2>
+      <p id="repText"></p>
+      <div class="summary">
+        <div><small>Condition</small><b id="repCond">0%</b></div>
+        <div><small>Full repair</small><b id="repCost">₹0</b></div>
+        <div><small>Wallet</small><b id="repWallet">₹0</b></div>
+      </div>
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn primary" id="repFull">Full repair</button>
+        <button class="btn" id="repHalf">Patch it up</button>
+        <button class="btn" id="repLeave">Drive on</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="fuelScr" hidden>
+    <div class="card" style="width:min(540px,100%)">
+      <h2 id="fuTitle">Petrol bunk</h2>
+      <p id="fuText"></p>
+      <div class="summary">
+        <div><small id="fuLvlL">Tank</small><b id="fuLvl">0%</b></div>
+        <div><small id="fuPriceL">Price</small><b id="fuPrice">₹0</b></div>
+        <div><small>Wallet</small><b id="fuWallet">₹0</b></div>
+      </div>
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn primary" id="fuFull">Fill tank</button>
+        <button class="btn" id="fuSome">₹200 worth</button>
+        <button class="btn" id="fuLeave">Drive on</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="outcome" hidden>
+    <div class="card" style="width:min(540px,100%)">
+      <h2 id="outTitle">e-Challan</h2>
+      <p id="outText"></p>
+      <div class="challan" id="outChallan"></div>
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn primary" id="outPrimary">Pay and drive on</button>
+        <button class="btn" id="outMenu">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="licence" hidden>
+    <div class="card" style="width:min(520px,100%)">
+      <h2>Licence suspended</h2>
+      <p id="licText"></p>
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn primary" id="licPay">Pay ₹2,000 fine</button>
+        <button class="btn" data-go="title">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen scrim" id="settings" hidden>
+    <div class="card" style="width:min(640px,100%)">
+      <div class="head"><h2>Settings</h2><button class="back" id="setClose">Done</button></div>
+      <div class="opts" id="setOpts"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="glerr" hidden>
+    <div style="font-family:var(--display);font-size:22px;color:var(--auto-yellow)">3D graphics are not available</div>
+    <p style="color:var(--muted);max-width:46ch">This phone's browser did not allow WebGL. Update Android System WebView from the Play Store, then open Oosht Driving again.</p>
+  </div>
+
+  <div class="screen" id="rotate">
+    <svg viewBox="0 0 48 48"><rect x="14" y="4" width="20" height="40" rx="4"/><circle cx="24" cy="38" r="1.5"/></svg>
+    <div style="font-family:var(--display);font-size:22px;color:var(--auto-yellow)">Turn your phone sideways</div>
+    <p style="color:var(--muted);max-width:40ch">Oosht Driving plays in landscape, with steering on the left and pedals on the right.</p>
+    <button class="btn" id="portraitBtn">Continue anyway</button>
+  </div>
+
+  <div class="screen" id="splash">
+    <div class="l1">AN ANIRUDH PRODUCTION</div>
+    <div class="rule"></div>
+    <div class="l2">(ARK CREATIONS)</div>
+  </div>
+</div>
