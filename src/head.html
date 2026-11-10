@@ -1,4 +1,4 @@
-<title>Oosht Driving</title>
+<title>Wise City</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,7 +67,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 .trip b{color:var(--auto-yellow);font-weight:600}
 .iconbtn{width:42px;height:42px;border-radius:12px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center}
 .iconbtn svg{width:20px;height:20px;fill:var(--text)}
-#wanted{position:absolute;top:calc(118px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));padding:7px 11px;display:grid;gap:4px;min-width:158px}
+#wanted{position:absolute;top:calc(160px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));padding:7px 11px;display:grid;gap:4px;min-width:158px}
 #wanted .stars{display:flex;gap:5px}
 #wanted .stars i{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,.12)}
 #wanted .stars i.on{animation:cop .5s steps(2) infinite}
@@ -86,6 +86,19 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #apsh .tx{display:grid;gap:1px}
 #unload{position:absolute;top:34%;left:50%;transform:translateX(-50%);padding:12px 18px;display:grid;justify-items:center;gap:8px}
 #unload .h{font-weight:700;font-size:16px}#unload .s{color:var(--muted);font-size:13px}#ulBtn{min-width:160px;min-height:60px;font-size:22px}
+
+.ctl-act{position:absolute;right:calc(198px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:10px}
+.abtn{width:62px;height:62px;border-radius:50%;background:rgba(12,16,22,.55);border:2px solid rgba(255,255,255,.25);font-size:12px;font-weight:800;letter-spacing:.08em;touch-action:none}
+.abtn.atk{width:74px;height:74px;background:rgba(160,20,20,.55);border-color:#FF6E6E}
+.abtn.on{background:rgba(255,199,44,.3);border-color:var(--auto-yellow)}
+.usebtn{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(158px + env(safe-area-inset-bottom,0px));min-height:44px;padding:0 18px;border-radius:22px;background:var(--auto-yellow);color:#1A1405;font-size:15px;font-weight:800;border:0;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wchip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.12);color:var(--text);border:1px solid rgba(255,255,255,.2)}
+.hpbars .bar{position:relative}.hpbars #arbar{position:absolute;left:0;bottom:0;height:3px;background:#64B5F6}
+#hitfx{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(200,0,0,.65) 100%);transition:opacity .1s}
+.vitems{display:grid;gap:8px;max-height:52vh;overflow:auto}
+.vitem{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:2px 12px;text-align:left;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text)}
+.vitem .n{font-weight:700;font-size:15px}.vitem .e{grid-row:2;font-size:12px;color:var(--muted)}.vitem b{grid-row:1 / span 2;grid-column:2;align-self:center;color:var(--auto-yellow);font-size:15px}
+.vitem:disabled{opacity:.45}
 #ctList,#outChallan{max-height:30vh;overflow:auto}#footBar{flex-wrap:nowrap;gap:6px}#footBar .sbtn{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
 #rideBar .notice{display:inline-block}
 #apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -200,6 +213,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
   <div id="flash"></div>
 
   <div id="hud" hidden>
+    <div id="hitfx"></div>
     <div class="hud-tl panel">
       <div class="spdrow">
         <div class="spd"><b id="spd">0</b><span>km/h</span></div>
@@ -207,10 +221,11 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       </div>
       <div class="cond"><label><span>Condition</span><span id="condTxt">100%</span></label><div class="bar"><i id="condbar"></i></div></div>
       <div class="cond"><label><span id="fuelLbl">Fuel</span><span id="fuelTxt">100%</span></label><div class="bar"><i id="fuelbar" style="background:#4FC3F7"></i></div></div>
-      <div class="wallet"><span>₹ <span id="wallet">0</span></span><span class="lic" id="licChip" hidden>LICENCE SEIZED</span><span class="lic" id="chChip" hidden style="background:#B26A00">0/5 challans</span></div>
+      <div class="cond hpbars"><label><span>Health</span><span id="hpTxt">100</span></label><div class="bar"><i id="hpbar" style="background:#E53935"></i><i id="arbar" style="width:0"></i></div></div>
+      <div class="wallet"><span>₹ <span id="wallet">0</span></span><button class="wchip hit" id="wpnChip" hidden>Fists</button><span class="lic" id="drunkChip" hidden style="background:#6A1B9A">TIPSY</span><span class="lic" id="licChip" hidden>LICENCE SEIZED</span><span class="lic" id="chChip" hidden style="background:#B26A00">0/5 challans</span></div>
     </div>
     <div id="wanted" class="panel" hidden>
-      <div class="stars"><i></i><i></i><i></i></div>
+      <div class="stars"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="t" id="wantedTxt">Hoysala on your tail</div>
       <div class="rash"><label>Rash driving</label><div class="bar"><i id="rashbar" style="width:0;background:var(--danger)"></i></div></div>
     </div>
@@ -252,6 +267,12 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <button class="pad hit" id="btnL" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15.5 4 6 12l9.5 8z"/></svg></button>
       <button class="pad hit" id="btnR" aria-label="Steer right"><svg viewBox="0 0 24 24"><path d="M8.5 4 18 12l-9.5 8z"/></svg></button>
     </div>
+    <div class="ctl-act">
+      <button class="abtn hit" id="btnJump" hidden>JUMP</button>
+      <button class="abtn atk hit" id="btnAtk" hidden>HIT</button>
+      <button class="abtn hit" id="btnExit">EXIT</button>
+    </div>
+    <button class="usebtn hit" id="btnUse" hidden>Get in</button>
     <div class="ctl-right">
       <button class="horn hit" id="btnHorn">HORN</button>
       <button class="pedal brake hit" id="btnBrake">BRAKE</button>
@@ -262,7 +283,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 
   <div class="screen" id="title" hidden>
     <canvas id="titlebg"></canvas>
-    <div class="logo"><div class="o1">OOSHT</div><div class="o2">DRIVING</div></div>
+    <div class="logo"><div class="o1">WISE</div><div class="o2">CITY</div></div>
     <div class="tag">Your real streets. Real potholes. Real Hoysala.</div>
     <div class="row">
       <button class="btn primary" id="playBtn">Start driving</button>
@@ -360,6 +381,20 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
     </div>
   </div>
 
+  <div class="screen scrim" id="venueScr" hidden>
+    <div class="card" style="width:min(560px,100%)">
+      <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><h2 id="vnTitle" style="margin:0">Venue</h2><button class="btn" id="vnClose">Leave</button></div>
+      <p id="vnSub" style="margin:0"></p>
+      <div class="vitems" id="vnItems"></div>
+    </div>
+  </div>
+  <div class="screen scrim" id="hospScr" hidden>
+    <div class="card" style="width:min(520px,100%)">
+      <h2 id="hsTitle">Hospitalised</h2>
+      <p id="hsText"></p>
+      <div class="row" style="justify-content:flex-start"><button class="btn primary" id="hsBtn">Get up</button></div>
+    </div>
+  </div>
   <div class="screen scrim" id="court" hidden>
     <div class="card" style="width:min(560px,100%)">
       <h2>District Magistrate Court</h2>
@@ -399,13 +434,13 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 
   <div class="screen" id="glerr" hidden>
     <div style="font-family:var(--display);font-size:22px;color:var(--auto-yellow)">3D graphics are not available</div>
-    <p style="color:var(--muted);max-width:46ch">This phone's browser did not allow WebGL. Update Android System WebView from the Play Store, then open Oosht Driving again.</p>
+    <p style="color:var(--muted);max-width:46ch">This phone's browser did not allow WebGL. Update Android System WebView from the Play Store, then open Wise City again.</p>
   </div>
 
   <div class="screen" id="rotate">
     <svg viewBox="0 0 48 48"><rect x="14" y="4" width="20" height="40" rx="4"/><circle cx="24" cy="38" r="1.5"/></svg>
     <div style="font-family:var(--display);font-size:22px;color:var(--auto-yellow)">Turn your phone sideways</div>
-    <p style="color:var(--muted);max-width:40ch">Oosht Driving plays in landscape, with steering on the left and pedals on the right.</p>
+    <p style="color:var(--muted);max-width:40ch">Wise City plays in landscape, with steering on the left and pedals on the right.</p>
     <button class="btn" id="portraitBtn">Continue anyway</button>
   </div>
 

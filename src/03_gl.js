@@ -273,7 +273,7 @@ const textCache=new Map();
 function textTex(key,draw,wpx,hpx){
   let t=textCache.get(key);if(t){t.used=frameId;return t;}
   const cv=document.createElement('canvas');cv.width=wpx;cv.height=hpx;const c=cv.getContext('2d');draw(c,wpx,hpx);
-  t={tex:texFromCanvas(cv,false),w:wpx,h:hpx,used:frameId};textCache.set(key,t);
+  t={tex:texFromCanvas(cv,false),w:wpx,h:hpx,used:frameId,keep:/^(hoysala|ads|court|beam)$/.test(key)};textCache.set(key,t);
   if(textCache.size>90){let oldK=null,oldU=1e18;for(const[k2,v]of textCache){if(v.used<oldU&&!v.keep){oldU=v.used;oldK=k2;}}if(oldK){gl.deleteTexture(textCache.get(oldK).tex);textCache.delete(oldK);}}
   return t;
 }

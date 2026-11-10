@@ -172,6 +172,10 @@ const CARDIM={
   hatch:{L:3.85,W:1.7,H:1.5,R:.3,belt:.86,cf:-.6,cb:1.55,rf:-.05,rb:1.42,dx:.37},
   sedan:{L:4.4,W:1.73,H:1.47,R:.31,belt:.86,cf:-.7,cb:.95,rf:-.15,rb:.6,dx:.38,trunk:true},
   suv:{L:4.55,W:1.86,H:1.82,R:.37,belt:1.06,cf:-.85,cb:2.05,rf:-.45,rb:2.08,dx:.42,rails:true,spare:true},
+  veloce:{L:4.55,W:1.98,H:1.14,R:.34,belt:.72,cf:-.5,cb:.9,rf:-.1,rb:.6,dx:.4,wing:true,low:true},
+  zephyr:{L:4.7,W:1.92,H:1.3,R:.35,belt:.8,cf:-.3,cb:1.25,rf:.12,rb:1.0,dx:.4,trunk:true,low:true},
+  regent:{L:5.35,W:1.96,H:1.56,R:.38,belt:.96,cf:-.55,cb:1.5,rf:-.08,rb:1.15,dx:.42,trunk:true,chrome:true},
+  monarch:{L:5.0,W:2.0,H:1.88,R:.41,belt:1.12,cf:-.95,cb:2.25,rf:-.55,rb:2.3,dx:.44,rails:true,chrome:true},
 };
 function buildCar(type,colHex,o){
   o=o||{};const d=CARDIM[type==='police'?'suv':type];
@@ -200,6 +204,12 @@ function buildCar(type,colHex,o){
   for(const sx of[-1,1])for(const sz of[-1,1]){const ax=sz*(L/2-.72);wheel(mb,sx*(W/2-.08),R,ax,R,.2);mb.box(sx*(W/2-.02),R+.1,ax,.06,.2,R*2+.1,C.black);}
   if(d.rails)for(const s of[-1,1])mb.box(s*(W/2-.22),H+.02,rz,.04,.05,rl*.85,C.black);
   if(d.spare&&!o.police)mb.cyl(0,.95,L/2+.12,.34,.22,'z',14,C.black,C.black);
+  const chrome=[.86,.87,.9];
+  if(d.chrome){mb.box(0,.66,-L/2-.004,W*.34,.36,.03,chrome,.15);for(let i=0;i<6;i++)mb.box(-W*.15+i*W*.06,.66,-L/2-.02,.012,.32,.01,[.3,.3,.32]);
+    for(const s of[-1,1])mb.box(s*(W/2+.004),b-.03,0,.012,.035,L*.78,chrome,.1);mb.box(0,b+.02,-L/2+.6,.04,.12,.04,chrome,.2);}
+  if(d.wing){for(const s of[-1,1]){mb.box(s*.6,b+.16,L/2-.28,.05,.26,.1,dk);mb.box(s*(W/2+.004),.52,.55,.012,.26,.8,C.black);}
+    mb.box(0,b+.3,L/2-.28,W*.86,.035,.34,dk);mb.box(0,.3,L/2,W*.6,.1,.04,C.black);for(const s of[-1,1])mb.cyl(s*.22,.36,L/2+.03,.05,.06,'z',10,[.5,.5,.52]);}
+  if(d.low){mb.box(0,.22,-L/2+.05,W*.9,.06,.12,C.black);}
   let lightbar=null,decal=null;
   if(o.police){
     for(const s of[-1,1])mb.box(s*(W/2+.003),.47,0,.01,.14,L-.6,[.12,.28,.78]);
@@ -388,6 +398,12 @@ const VEH={
   garuda:{name:'Garuda 155R',sub:'Faired sports',cat:'two',top:142,accel:5.4,brake:10,handling:1.25,susp:1.2,cost:5,engine:{base:80,range:220,wave:'sawtooth',putt:0,gears:6},horn:'sport'},
   agni:{name:'Agni 1000RR',sub:'Superbike',cat:'two',top:250,accel:9.5,brake:12,handling:1.15,susp:1.1,cost:12,engine:{base:70,range:300,wave:'sawtooth',putt:0,gears:6,vol:1.1},horn:'sport'},
   auto:{name:'Namma Auto',sub:'Auto-rickshaw',cat:'three',top:78,accel:2.9,brake:7,handling:1.05,susp:1.15,cost:3,engine:{base:34,range:60,wave:'square',putt:17,gears:4},horn:'pom'},
+  veloce:{name:'Veloce V12',sub:'Supercar',cat:'posh',top:330,accel:10.5,brake:14,handling:1.08,susp:.45,cost:25,engine:{base:60,range:260,wave:'sawtooth',putt:0,gears:7,vol:1.1},horn:'sport',col:'#F2B705'},
+  zephyr:{name:'Zephyr GT',sub:'Grand tourer',cat:'posh',top:300,accel:8.6,brake:13,handling:1.02,susp:.55,cost:20,engine:{base:50,range:220,wave:'sawtooth',putt:0,gears:7},horn:'sport',col:'#B3121F'},
+  regent:{name:'Regent Imperial',sub:'Luxury saloon',cat:'posh',top:250,accel:6.8,brake:12,handling:.92,susp:.5,cost:22,engine:{base:38,range:120,wave:'sawtooth',putt:0,gears:8,vol:.7},horn:'suv',col:'#15171C'},
+  monarch:{name:'Monarch LX',sub:'Luxury SUV',cat:'posh',top:240,accel:6.4,brake:11.5,handling:.88,susp:.45,cost:22,engine:{base:40,range:110,wave:'sawtooth',putt:0,gears:8},horn:'suv',col:'#E8E8E4'},
+  bus:{name:'City Bus',sub:'City bus',cat:'heavy',top:90,accel:1.7,brake:6,handling:.62,susp:.5,cost:30,engine:{base:30,range:60,wave:'sawtooth',putt:6,gears:5},horn:'suv',col:'red'},
+  truck:{name:'Lorry',sub:'Goods carrier',cat:'heavy',top:95,accel:1.9,brake:6,handling:.64,susp:.6,cost:28,engine:{base:28,range:60,wave:'sawtooth',putt:8,gears:5},horn:'suv',col:'#E07A1F'},
   hatch:{name:'Hatchback',sub:'City car',cat:'car',top:158,accel:4.2,brake:10,handling:.98,susp:.85,cost:7,engine:{base:50,range:120,wave:'sawtooth',putt:0,gears:5},horn:'car',col:'#C9CED6'},
   sedan:{name:'Sedan',sub:'Highway cruiser',cat:'car',top:178,accel:4.6,brake:10.5,handling:.94,susp:.75,cost:8,engine:{base:45,range:115,wave:'sawtooth',putt:0,gears:6},horn:'car',col:'#7A1F2B'},
   suv:{name:'SUV',sub:'Ghat road king',cat:'car',top:172,accel:4.4,brake:10,handling:.86,susp:.55,cost:9,engine:{base:40,range:95,wave:'sawtooth',putt:0,gears:6},horn:'suv',col:'#22344C'},
@@ -395,19 +411,21 @@ const VEH={
 /* engine character: cylinders, idle and redline rpm */
 const ENG={saathi:{cyl:1,idle:1500,max:6500,gears:2},sakhi:{cyl:1,idle:1600,max:7500,gears:1},bijli:{ev:true},pratham:{cyl:1,idle:1300,max:8000,gears:4},
   rocket:{cyl:1,idle:1400,max:9500,gears:5},maharaja:{cyl:1,idle:1000,max:5500,gears:5,thump:true,p:.6},nandi:{cyl:1,idle:1300,max:8500,gears:6},
-  kesari:{cyl:1,idle:1500,max:10500,gears:6},garuda:{cyl:1,idle:1600,max:11000,gears:6},agni:{cyl:4,idle:1300,max:14000,gears:6,p:.85},
+  kesari:{cyl:1,idle:1500,max:10500,gears:6},garuda:{cyl:1,idle:1600,max:11000,gears:6},agni:{cyl:4,idle:1300,max:14000,gears:6,p:.85},veloce:{cyl:12,idle:950,max:8800,gears:7,p:.9},zephyr:{cyl:8,idle:850,max:7500,gears:7},regent:{cyl:12,idle:600,max:6000,gears:8,p:.95},monarch:{cyl:8,idle:650,max:6000,gears:8},bus:{cyl:6,idle:600,max:2600,gears:5,diesel:true},truck:{cyl:6,idle:600,max:2800,gears:5,diesel:true},
   auto:{cyl:1,idle:1150,max:5200,gears:4,rattle:true,p:.65},hatch:{cyl:3,idle:800,max:6500,gears:5},sedan:{cyl:4,idle:750,max:6500,gears:6,p:.85},suv:{cyl:4,idle:750,max:4500,gears:6,diesel:true}};
 /* fuel: game range on a full tank (km), tank size, fuel type */
 const FUEL={saathi:[9,4,'petrol'],sakhi:[10,5.3,'petrol'],bijli:[8,3,'ev'],pratham:[12,9.8,'petrol'],rocket:[9,15,'petrol'],maharaja:[10,13,'petrol'],nandi:[12,17,'petrol'],
-  kesari:[9,15,'petrol'],garuda:[9,11,'petrol'],agni:[6,17,'petrol'],auto:[10,12,'lpg'],hatch:[12,37,'petrol'],sedan:[13,40,'petrol'],suv:[10,57,'diesel']};
+  kesari:[9,15,'petrol'],garuda:[9,11,'petrol'],agni:[6,17,'petrol'],veloce:[6,85,'petrol'],zephyr:[7,75,'petrol'],regent:[7,90,'petrol'],monarch:[7,90,'petrol'],bus:[8,180,'diesel'],truck:[8,220,'diesel'],auto:[10,12,'lpg'],hatch:[12,37,'petrol'],sedan:[13,40,'petrol'],suv:[10,57,'diesel']};
 const FUELPRICE={petrol:[102.9,'Petrol','L'],diesel:[88.99,'Diesel','L'],lpg:[62,'Auto LPG','L'],ev:[15,'EV charging','kWh']};
 const VKEYS=Object.keys(VEH);
-const VCATS=[['two','Two-wheelers'],['three','Auto'],['car','Cars']];
+const VCATS=[['two','Two-wheelers'],['three','Auto'],['car','Cars'],['posh','Luxury & sports'],['heavy','Bus & lorry']];
 const MODELS=new Map();
 function playerModel(k){
   const key='p:'+k;let m=MODELS.get(key);if(m)return m;
   if(TWO_SPECS[k])m=buildTwo(TWO_SPECS[k]);
   else if(k==='auto')m=buildAuto();
+  else if(k==='bus'){m=buildBus(VEH.bus.col);m.eye=[.75,2.2,-m.len/2+.85];}
+  else if(k==='truck'){m=buildTruck(VEH.truck.col,false);m.eye=[.7,2.25,-m.len/2+.9];}
   else m=buildCar(k,VEH[k].col);
   MODELS.set(key,m);return m;
 }
@@ -421,6 +439,10 @@ const TT=[
   {k:'sakhi',w:.1,len:1.7,wid:.72,two:true,cruise:1.05},
   {k:'pratham',w:.08,len:1.9,wid:.78,two:true,cruise:1.1},
   {k:'maharaja',w:.03,len:2.1,wid:.82,two:true,cruise:1.05},
+  {k:'veloce',w:.008,len:4.55,wid:1.98,cruise:1.25,cols:['#F2B705','#B3121F','#1B1B1F','#E8E8E4','#2D6CDF','#3BAA4A']},
+  {k:'zephyr',w:.01,len:4.7,wid:1.92,cruise:1.2,cols:['#B3121F','#1B1B1F','#C9CED6','#0F3D7A']},
+  {k:'regent',w:.012,len:5.35,wid:1.96,cruise:1.1,cols:['#15171C','#C9CED6','#F2F2F0','#3B0D18']},
+  {k:'monarch',w:.016,len:5.0,wid:2.0,cruise:1.1,cols:['#E8E8E4','#15171C','#4A4F55','#1E3A2B']},
   {k:'bus',w:.06,len:11,wid:2.5,cruise:.85},
   {k:'truck',w:.04,len:7.2,wid:2.35,cruise:.8},
   {k:'tanker',w:.03,len:7.4,wid:2.35,cruise:.8},
@@ -429,7 +451,7 @@ function trafficModel(t,col){
   const key='t:'+t.k+':'+(col||'');let m=MODELS.get(key);if(m)return m;
   if(t.k==='auto')m=buildAuto();
   else if(t.k==='taxi')m=buildCar('sedan','#F2F2F0',{taxi:true});
-  else if(t.k==='hatch'||t.k==='sedan'||t.k==='suv')m=buildCar(t.k,col);
+  else if(CARDIM[t.k])m=buildCar(t.k,col);
   else if(t.k==='bus')m=buildBus(col);
   else if(t.k==='truck')m=buildTruck(col,false);
   else if(t.k==='tanker')m=buildTruck('#E8E8E2',true);

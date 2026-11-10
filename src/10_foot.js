@@ -60,11 +60,12 @@ function laneShift(pts,off){const out=[];for(let i=0;i<pts.length;i++){const a=p
 const pathLen=pts=>{let L=0;for(let i=1;i<pts.length;i++)L+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);return L;};
 
 /* ---------- switching between driving and walking ---------- */
-function goFoot(why){
-  FOOT.on=true;FOOT.tip=9;FOOT.ride=null;FOOT.lift=null;FOOT.stam=100;FOOT.walk=0;
-  Snd.stopEngine();Snd.sirenOff();resetChase();apshReset();intruder=null;trip=null;
-  const n=nearestSeg(P.x,P.y,30);if(n.seg){const s=n.seg;const t=clamp(((P.x-s.ax)*(s.bx-s.ax)+(P.y-s.ay)*(s.by-s.ay))/(s.len*s.len),0,1);const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;P.x=s.ax+dx*t*s.len+dy*(s.w.hw+1.1);P.y=s.ay+dy*t*s.len-dx*(s.w.hw+1.1);P.h=s.h;}
-  P.s=P.vx=P.vy=0;P.len=.6;P.wid=.5;P.cond=100;
+function goFoot(why,keep){
+  FOOT.on=true;FOOT.tip=9;FOOT.ride=null;FOOT.lift=null;FOOT.stam=keep?Math.min(FOOT.stam||maxStam(),maxStam()):maxStam();FOOT.walk=0;
+  Snd.stopEngine();Snd.hornOff();apshReset();intruder=null;trip=null;
+  if(!keep){Snd.sirenOff();resetChase();FOOT.parked=null;
+    const n=nearestSeg(P.x,P.y,30);if(n.seg){const s=n.seg;const t=clamp(((P.x-s.ax)*(s.bx-s.ax)+(P.y-s.ay)*(s.by-s.ay))/(s.len*s.len),0,1);const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;P.x=s.ax+dx*t*s.len+dy*(s.w.hw+1.1);P.y=s.ay+dy*t*s.len-dx*(s.w.hw+1.1);P.h=s.h;}}
+  P.s=P.vx=P.vy=0;P.len=.6;P.wid=.5;P.cond=100;P.skin=keep?P.skin:null;
   state='play';show('play');footHud(true);
   if(why)toast(why,'bad');
 }
@@ -74,51 +75,68 @@ function footHud(on){
   $('#limit').hidden=on;$('#fuelbar').parentElement.parentElement.hidden=on;
   noticeKey='~';
 }
-function leaveFoot(){FOOT.on=false;FOOT.ride=null;footHud(false);const pm=playerModel(P.type);P.len=pm.len;P.wid=pm.wid;}
+function leaveFoot(){FOOT.on=false;FOOT.ride=null;footHud(false);const pm=curModel();P.len=pm.len;P.wid=pm.wid;}
 
 /* ---------- walking and running ---------- */
 function updateFoot(dt){
-  if(FOOT.ride){updateRide(dt);return;}
+  if(FOOT.ride){updateRide(dt);if(FOOT.ride&&FOOT.ride.phase!=='pickup')return;}
+  if(LIFE.dead)return;
   let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
   P.h+=steerIn*2.4*dt;
   const run=input.horn&&FOOT.stam>2;const top=run?6.2:2.3;
   if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);
   if(input.brake)P.s=Math.max(0,P.s-14*dt);
-  if(run&&P.s>2.6)FOOT.stam=Math.max(0,FOOT.stam-10*dt);else FOOT.stam=Math.min(100,FOOT.stam+(P.s<.3?12:6)*dt);
+  if(run&&P.s>2.6)FOOT.stam=Math.max(0,FOOT.stam-10*dt*(100/maxStam()));else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
-  const ox=P.x,oy=P.y;P.x+=P.vx*dt;P.y+=P.vy*dt;
-  if(inBuilding(P.x+fx*.3,P.y+fy*.3)){P.x=ox;P.y=oy;P.s=0;}
+  const ox=P.x,oy=P.y,sx=P.vx*dt,sy=P.vy*dt;
+  const blocked=(x,y)=>inBuilding(x,y)||inBuilding(x+fx*.32,y+fy*.32)||inBuilding(x-fy*.24+fx*.1,y+fx*.24+fy*.1)||inBuilding(x+fy*.24+fx*.1,y-fx*.24+fy*.1);
+  if(inBuilding(ox,oy)){P.x+=sx;P.y+=sy;}
+  else if(!blocked(ox+sx,oy+sy)){P.x=ox+sx;P.y=oy+sy;}
+  else if(Math.abs(sx)>1e-4&&!blocked(ox+sx,oy)){P.x=ox+sx;P.s*=.97;}
+  else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}
+  else{P.s*=.4;}
   for(const a of agents){const d=Math.hypot(a.x-P.x,a.y-P.y);const r=a.t.wid*.55+.35;if(d<r){P.x=a.x+(P.x-a.x)/(d||1)*r;P.y=a.y+(P.y-a.y)/(d||1)*r;}}
   for(const c of animals){const d=Math.hypot(c.x-P.x,c.y-P.y);const r=(c.kind==='cow'?1:.35)+.3;if(d<r){P.x=c.x+(P.x-c.x)/(d||1)*r;P.y=c.y+(P.y-c.y)/(d||1)*r;}}
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;P.offroad=!nr.seg||nr.edge>1.4;
   /* sweat coins: every 10 seconds on the move earns 5 */
   if(P.s>.9){FOOT.walk+=dt;if(FOOT.walk>=10){FOOT.walk-=10;profile.wallet+=5;session.fare+=5;saveProfile();toast('+5 sweat coins (₹5)','good','sweat',500);Snd.coin();}}
-  FOOT.pt+=dt*(P.s>.3?P.s/1.2:0);if(FOOT.pt>.33){FOOT.pt=0;FOOT.pose^=1;}
-  M4.model(P.M,P.x,0,P.y,-P.h,0,0);
+  FOOT.pt+=dt*(P.s>.3?Math.min(P.s,4.5)/1.2:0);if(FOOT.pt>.33){FOOT.pt=0;FOOT.pose^=1;}
+  M4.model(P.M,P.x,LIFE.z,P.y,-P.h,0,0);
   session.m+=P.s*dt;
   if(FOOT.lift){FOOT.lift.t-=dt;if(FOOT.lift.t<=0){const ok=Math.random()<.4;FOOT.lift=null;if(ok)sendRide('lift');else{toast('Nobody stopped. Try again in a bit.','');FOOT.liftCool=6;}}}
   FOOT.liftCool-=dt;FOOT.begCool-=dt;FOOT.tip-=dt;
   if(FOOT.job&&FOOT.job.kind==='deliver'){const j=FOOT.job;j.left-=dt;if(Math.hypot(j.x-P.x,j.y-P.y)<14){profile.wallet+=j.pay;session.fare+=j.pay;saveProfile();toast(`Parcel delivered · ₹${j.pay}`,'gold');Snd.chime();Hap.success();FOOT.job=null;}
     else if(j.left<=0){toast('Too late. The delivery was cancelled.','bad');FOOT.job=null;}}
-  if(FOOT.unload){const u=FOOT.unload;u.left-=dt;$('#ulTime').textContent=Math.ceil(Math.max(0,u.left))+' s';if(u.left<=0){$('#unload').hidden=true;FOOT.unload=null;toast('Not fast enough. No pay this time.','bad');}}
-  if(W.court&&Math.hypot(W.court.x-P.x,W.court.y-P.y)<14&&P.s<.5&&!FOOT.courtLock){FOOT.courtLock=true;openCourt();}
+  if(FOOT.unload){const u=FOOT.unload;u.left-=dt;$('#ulTime').textContent=Math.ceil(Math.max(0,u.left))+' s';if(u.left<=0){$('#unload').hidden=true;FOOT.unload=null;$('#ulBtn').textContent='UNLOAD';toast(u.gym?'Too slow. Rest and try again.':'Not fast enough. No pay this time.','bad');}}
+  if(W.court&&profile.pending.length&&Math.hypot(W.court.x-P.x,W.court.y-P.y)<14&&P.s<.5&&!FOOT.courtLock){FOOT.courtLock=true;openCourt();}
   if(W.court&&FOOT.courtLock&&Math.hypot(W.court.x-P.x,W.court.y-P.y)>25)FOOT.courtLock=false;
 }
 
 /* ---------- autos, cabs and lifts ---------- */
 function sendRide(kind){
-  const tk=kind==='auto'?'auto':kind==='cab'?'taxi':['sakhi','pratham','hatch','suv','maharaja'][Math.floor(Math.random()*5)];
+  const tk=kind==='auto'?'auto':kind==='cab'?'taxi':['sakhi','pratham','hatch','suv','maharaja','regent'][Math.floor(Math.random()*6)];
   const t=TT.find(q=>q.k===tk);const col=t.cols?t.cols[Math.floor(Math.random()*t.cols.length)]:null;
   const me=nodeNear(P.x,P.y);if(me==null){toast('Walk to a road first','bad');return;}
   const G=graph();let start=null;
-  for(let tries=0;tries<40&&!start;tries++){const s=W.segs[Math.floor(Math.random()*W.segs.length)];const d=Math.hypot(s.ax-P.x,s.ay-P.y);if(d>60&&d<180)start=s.w.nodes[s.i];}
+  for(let tries=0;tries<40&&!start;tries++){const s=W.segs[Math.floor(Math.random()*W.segs.length)];const d=Math.hypot(s.ax-P.x,s.ay-P.y);if(d>60&&d<180&&!s.w.br)start=s.w.nodes[s.i];}
   let path=start!=null?findPath(start,me):null;if(!path||path.length<2){const p=G.pos.get(me);path=[[p[0]+40,p[1]],p];}
   const pick=nearestSeg(P.x,P.y,20);let px=P.x,py=P.y;if(pick.seg){const s=pick.seg;const tt=clamp(((P.x-s.ax)*(s.bx-s.ax)+(P.y-s.ay)*(s.by-s.ay))/(s.len*s.len),0,1);px=s.ax+(s.bx-s.ax)*tt;py=s.ay+(s.by-s.ay)*tt;}
   path.push([px,py]);
   const rate=kind==='cab'?{base:60,km:22,name:'cab'}:kind==='auto'?{base:36,km:18,name:'auto'}:{base:0,km:0,name:'lift'};
-  FOOT.ride={kind,t,model:trafficModel(t,col),pts:laneShift(path,1.6),i:0,x:path[0][0],y:path[0][1],h:0,v:0,phase:'pickup',rate,meter:0,dist:0};
+  const pts=laneRoad(path,!!t.two);
+  FOOT.ride={kind,t,col,model:trafficModel(t,col),pts,i:0,x:pts[0][0],y:pts[0][1],h:hAng(pts[1][0]-pts[0][0],pts[1][1]-pts[0][1]),v:0,phase:'pickup',rate,meter:0,dist:0,tt:0,segT:0,lim:8};
   toast(kind==='lift'?'Someone is stopping for you':`Your ${rate.name} is on the way`,'good');
   $('#footBar').hidden=true;$('#rideBar').hidden=false;$('#rbSkip').hidden=true;
+}
+/* keep to the left lane of each road along the route */
+function laneRoad(path,two){
+  const out=[];const n=path.length;
+  for(let i=0;i<n;i++){const a=path[Math.max(0,i-1)],b=path[Math.min(n-1,i+1)];const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;
+    const e0=path[Math.min(i,n-2)],e1=path[Math.min(i+1,n-1)];const ns=nearestSeg((e0[0]+e1[0])/2,(e0[1]+e1[1])/2,12);
+    let off=1.6;if(ns.seg){const w=ns.seg.w;off=w.oneway?(two?w.hw*.45:0):w.hw*(two?.62:.42);}
+    if(i===n-1)off=ns.seg?ns.seg.w.hw*.7:2.2;
+    out.push([path[i][0]+dy/l*off,path[i][1]-dx/l*off]);}
+  return out;
 }
 function rideDest(){
   const opts=[];
@@ -129,11 +147,11 @@ function rideDest(){
   return opts;
 }
 function openRideMenu(){
-  const R=FOOT.ride;state='ride';releaseAll();
+  const R=FOOT.ride;state='ride';R.phase='wait';releaseAll();
   $('#rdTitle').textContent=R.kind==='lift'?'Where are you headed?':'Where to?';
   $('#rdText').textContent=R.kind==='lift'?'The rider offers a free lift.':`${R.kind==='auto'?'Auto meter':'Cab fare'}: ₹${R.rate.base} plus ₹${R.rate.km} per km. Wallet ₹${fmtINR(profile.wallet)}.`;
   const box=$('#rdOpts');box.innerHTML='';
-  const me=nodeNear(P.x,P.y);
+  const me=nodeNear(R.x,R.y);
   for(const o of rideDest()){const path=findPath(me,nodeNear(o.x,o.y));const L=path?pathLen(path):Math.hypot(o.x-P.x,o.y-P.y)*1.3;const fare=Math.round(R.rate.base+L/1000*R.rate.km);
     const b=document.createElement('button');b.className='btn';b.textContent=`${o.name} · ${(L/1000).toFixed(1)} km${R.kind==='lift'?'':' · about ₹'+fare}`;
     b.disabled=R.kind!=='lift'&&profile.wallet<fare;
@@ -141,40 +159,78 @@ function openRideMenu(){
   show('rideScr');
 }
 function startRide(o,path){
-  const R=FOOT.ride;if(!path||path.length<2)path=[[P.x,P.y],[o.x,o.y]];
-  path=path.slice();const ns=nearestSeg(o.x,o.y,60,q=>!q.w.br);if(ns.seg){const q=ns.seg;const t=clamp(((o.x-q.ax)*(q.bx-q.ax)+(o.y-q.ay)*(q.by-q.ay))/(q.len*q.len),0,1);path.push([q.ax+(q.bx-q.ax)*t,q.ay+(q.by-q.ay)*t]);}
-  R.pts=laneShift(path,1.6);R.i=0;R.phase='ride';R.dest=o;R.meter=R.rate.base;R.dist=0;
+  const R=FOOT.ride;if(!path||path.length<2)path=[[R.x,R.y],[o.x,o.y]];
+  path=[[R.x,R.y]].concat(path.slice());const ns=nearestSeg(o.x,o.y,60,q=>!q.w.br);if(ns.seg){const q=ns.seg;const t=clamp(((o.x-q.ax)*(q.bx-q.ax)+(o.y-q.ay)*(q.by-q.ay))/(q.len*q.len),0,1);path.push([q.ax+(q.bx-q.ax)*t,q.ay+(q.by-q.ay)*t]);}
+  const lp=laneRoad(path,!!R.t.two);lp[0]=[R.x,R.y];R.pts=lp;R.i=0;R.phase='ride';R.dest=o;R.meter=R.rate.base;R.dist=0;R.tt=0;
+  P.len=R.t.len;P.wid=R.t.wid;
   state='play';show('play');footHud(true);$('#footBar').hidden=true;$('#rideBar').hidden=false;$('#rbSkip').hidden=false;
-  const pm=R.model;Snd.startEngine(VEH[R.t.k==='taxi'?'sedan':R.t.k]?VEH[R.t.k==='taxi'?'sedan':R.t.k].engine:VEH.hatch.engine,R.t.k==='taxi'?'sedan':R.t.k);
+  const vk=vehKeyFor(R.t.k);Snd.startEngine(VEH[vk].engine,vk);Hap.tick();
+}
+const boardPoint=R=>{const lx=-Math.cos(R.h),ly=-Math.sin(R.h),fx=Math.sin(R.h),fy=-Math.cos(R.h);const off=R.t.wid/2+.45,back=R.t.two?.45:R.t.k==='auto'?.5:0;return [R.x+lx*off-fx*back,R.y+ly*off-fy*back];};
+function seatAnchor(R){const e=R.model.eye;if(R.t.two)return [0,e[1]-1.55,e[2]+.52];if(R.t.k==='auto')return [0,-.1,.55];return [-e[0],e[1]-1.6,e[2]];}
+/* the driver follows the same rules as everyone else: red lights, queues, people crossing */
+function rideRules(R,vt){
+  const gap=R.t.len/2+3;
+  for(const b of agents)if(inFront(R.x,R.y,R.h,b.x,b.y,gap+b.t.len/2+1.5,(R.t.wid+b.t.wid)/2+.2))vt=Math.min(vt,Math.max(0,b.v-1));
+  for(const c of COP.list)if(inFront(R.x,R.y,R.h,c.x,c.y,gap+4,2.2))vt=0;
+  for(const w of LIFE.wrecks)if(inFront(R.x,R.y,R.h,w.x,w.y,gap+4,(R.t.wid+1.8)/2))vt=0;
+  for(const p of peds)if((p.state==='cross'||p.state==='play'||p.state==='flee')&&inFront(R.x,R.y,R.h,p.x,p.y,gap+7,R.t.wid/2+1.2))vt=0;
+  for(const n of animals)if(n.onRoad&&inFront(R.x,R.y,R.h,n.x,n.y,gap+6,R.t.wid/2+1.2))vt=0;
+  const sa=signalAhead(R.x,R.y,R.h,55);
+  if(sa&&sa.d>sa.S.R-.5){const arm=sigArmFor(sa.S,R.x,R.y);const st=sigState(sa.S,arm.ph,GT);
+    if(st[0]==='R'||(st[0]==='A'&&sa.d-sa.S.R>9)){const stop=sa.d-sa.S.R-R.t.len/2-.6;vt=Math.min(vt,Math.sqrt(Math.max(0,2*3.2*stop)));R.redWait=true;}else R.redWait=false;}
+  else R.redWait=false;
+  return vt;
+}
+function rideToTraffic(R){
+  const n=nearestSeg(R.x,R.y,15,s=>!s.w.br);if(!n.seg)return;const s=n.seg;
+  const fwd=Math.abs(angDiff(R.h,s.h))<Math.PI/2;const dir=fwd?1:-1;if(s.w.oneway&&((s.w.rev?-1:1)!==dir))return;
+  const t=clamp(((R.x-s.ax)*(s.bx-s.ax)+(R.y-s.ay)*(s.by-s.ay))/(s.len*s.len),0,1);
+  const a={w:s.w,i:dir===1?s.i:s.i+1,dir,d:(dir===1?t:1-t)*s.len,v:Math.max(R.v,2),t:R.t,col:R.col,model:R.model,x:R.x,y:R.y,h:R.h,th:R.h,stop:1.2,brake:false,laneJ:1,turnSlow:0,k:1,horn:0,lean:0};
+  placeAgent(a);a.h=R.h;agents.push(a);
 }
 function updateRide(dt){
-  const R=FOOT.ride;const pts=R.pts;
-  if(R.i>=pts.length-1){
-    if(R.phase==='pickup'){R.v=0;openRideMenu();return;}
-    endRide();return;}
+  const R=FOOT.ride;R.tt+=dt;
+  const walkAnim=()=>{FOOT.pt+=dt*1.6;if(FOOT.pt>.33){FOOT.pt=0;FOOT.pose^=1;}};
+  if(R.phase==='board'){const bp=boardPoint(R);const dx=bp[0]-P.x,dy=bp[1]-P.y,d=Math.hypot(dx,dy);
+    if(d>.25&&R.tt<3.5){const sp=Math.min(d/dt,1.9);P.x+=dx/d*sp*dt;P.y+=dy/d*sp*dt;P.h=hAng(dx,dy);P.s=1.9;walkAnim();$('#rideTxt').textContent='Getting on…';}
+    else{P.s=0;P.h=R.h;M4.model(P.M,P.x,0,P.y,-P.h,0,0);openRideMenu();return;}
+    M4.model(P.M,P.x,0,P.y,-P.h,0,0);return;}
+  if(R.phase==='wait')return;
+  if(R.phase==='alight'){if(R.tt<1){const lx=-Math.cos(R.h),ly=-Math.sin(R.h);if(!inBuilding(P.x+lx*.5,P.y+ly*.5)){P.x+=lx*1.4*dt;P.y+=ly*1.4*dt;}P.h=hAng(lx,ly);P.s=1.4;walkAnim();M4.model(P.M,P.x,0,P.y,-P.h,0,0);}
+    else{P.s=0;rideToTraffic(R);finishRide();}return;}
+  const pts=R.pts;
+  if(R.i>=pts.length-1){if(R.phase==='pickup'){R.v=0;R.phase='board';R.tt=0;$('#rideTxt').textContent='Getting on…';return;}arrive();return;}
+  if((R.segT-=dt)<=0){R.segT=.5;const n=nearestSeg(R.x,R.y,20);R.lim=n.seg?(CRUISE[n.seg.w.cls]||8):8;}
   const tx=pts[R.i+1][0],ty=pts[R.i+1][1],dx=tx-R.x,dy=ty-R.y,d=Math.hypot(dx,dy);
-  let vt=R.t.k==='auto'?9:12;const nx=pts[Math.min(pts.length-1,R.i+2)];const turn=Math.abs(angDiff(hAng(dx,dy),hAng(nx[0]-tx,nx[1]-ty)));if(d<14&&turn>.5)vt=5;
-  const sa=signalAhead(R.x,R.y,R.h,40);if(sa&&sa.d>sa.S.R-.5){const st=sigState(sa.S,sigArmFor(sa.S,R.x,R.y).ph,GT);if(st[0]==='R'){vt=Math.min(vt,Math.sqrt(Math.max(0,2*3*(sa.d-sa.S.R-2))));}}
-  R.v+=clamp(vt-R.v,-7*dt,3*dt);
-  const step=Math.min(d,R.v*dt);if(d>.01){R.x+=dx/d*step;R.y+=dy/d*step;R.h+=angDiff(R.h,hAng(dx,dy))*Math.min(1,dt*5);}
+  let vt=Math.min(R.lim*(R.t.cruise||1)*1.05,R.t.k==='auto'?11:16);
+  const nx=pts[Math.min(pts.length-1,R.i+2)];const turn=Math.abs(angDiff(hAng(dx,dy),hAng(nx[0]-tx,nx[1]-ty)));if(d<16&&turn>.5)vt=Math.min(vt,turn>1.2?4:6);
+  let left=d;for(let k=R.i+1;k<pts.length-1;k++)left+=Math.hypot(pts[k+1][0]-pts[k][0],pts[k+1][1]-pts[k][1]);
+  vt=Math.min(vt,Math.sqrt(2*2.6*Math.max(0,left-.5))+.4);
+  vt=rideRules(R,vt);
+  R.v+=clamp(vt-R.v,-8*dt,2.6*dt);if(R.v<0)R.v=0;
+  const step=Math.min(d,R.v*dt);if(d>.01){R.x+=dx/d*step;R.y+=dy/d*step;R.h+=angDiff(R.h,hAng(dx,dy))*Math.min(1,dt*4);}
   if(d<.6)R.i++;
-  if(R.phase==='ride'){R.dist+=step;R.meter=R.rate.base+R.dist/1000*R.rate.km;P.x=R.x;P.y=R.y;P.h=R.h;P.s=R.v;P.vx=Math.sin(R.h)*R.v;P.vy=-Math.cos(R.h)*R.v;M4.model(P.M,R.x,0,R.y,-R.h,0,0);Snd.engine(R.v/14,R.v<vt?1:0);
-    const left=pathLen(pts.slice(R.i+1))+Math.hypot(pts[Math.min(R.i+1,pts.length-1)][0]-R.x,pts[Math.min(R.i+1,pts.length-1)][1]-R.y);
-    $('#rideTxt').textContent=R.kind==='lift'?`Riding along · ${Math.round(left)} m to go`:`${R.kind==='auto'?'Auto meter':'Cab fare'} ₹${Math.round(R.meter)} · ${Math.round(left)} m to go`;}
-  else $('#rideTxt').textContent=`Your ${R.rate.name} is ${Math.round(Math.hypot(R.x-P.x,R.y-P.y))} m away`;
+  if(R.phase==='ride'){R.dist+=step;R.meter=R.rate.base+R.dist/1000*R.rate.km;P.x=R.x;P.y=R.y;P.h=R.h;P.s=R.v;P.vx=Math.sin(R.h)*R.v;P.vy=-Math.cos(R.h)*R.v;M4.model(P.M,R.x,0,R.y,-R.h,0,0);Snd.engine(R.v/14,R.v<vt-.5?1:0);
+    $('#rideTxt').textContent=(R.kind==='lift'?'Riding along':`${R.kind==='auto'?'Auto meter':'Cab fare'} ₹${Math.round(R.meter)}`)+` · ${Math.round(left)} m to go`+(R.redWait&&R.v<1?' · waiting at the signal':'');}
+  else $('#rideTxt').textContent=`Your ${R.rate.name} is ${Math.round(Math.hypot(R.x-P.x,R.y-P.y))} m away`+(R.redWait&&R.v<1?' · stopped at a signal':'');
 }
-function endRide(skip){
-  const R=FOOT.ride;if(!R)return;
-  if(skip){const L=pathLen(R.pts.slice(R.i));R.dist+=L;R.meter=R.rate.base+R.dist/1000*R.rate.km;const end=R.pts[R.pts.length-1];R.x=end[0];R.y=end[1];}
-  const fare=R.kind==='lift'?0:Math.round(R.meter);const paid=Math.min(fare,profile.wallet);profile.wallet-=paid;saveProfile();
-  Snd.stopEngine();
-  const n=nearestSeg(R.x,R.y,20);P.x=R.x;P.y=R.y;if(n.seg){const s=n.seg;const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;P.x+=dy*(s.w.hw*.55+1.4);P.y-=dx*(s.w.hw*.55+1.4);}
-  P.s=P.vx=P.vy=0;M4.model(P.M,P.x,0,P.y,-P.h,0,0);
+function arrive(){
+  const R=FOOT.ride;const fare=R.kind==='lift'?0:Math.round(R.meter);const paid=Math.min(fare,profile.wallet);profile.wallet-=paid;saveProfile();
+  Snd.stopEngine();R.v=0;R.phase='alight';R.tt=0;P.len=.6;P.wid=.5;
+  const bp=boardPoint(R);P.x=bp[0];P.y=bp[1];P.s=P.vx=P.vy=0;P.h=R.h;M4.model(P.M,P.x,0,P.y,-P.h,0,0);
   toast(R.kind==='lift'?`Dropped at ${R.dest.name}. Say thanks!`:`Arrived · paid ₹${paid}${paid<fare?' (all you had)':''}`,'good');
-  FOOT.ride=null;FOOT.courtLock=false;$('#rideBar').hidden=true;$('#footBar').hidden=false;
+  $('#rbSkip').hidden=true;$('#rideTxt').textContent='Getting off…';
+}
+function finishRide(){FOOT.ride=null;FOOT.courtLock=false;P.len=.6;P.wid=.5;$('#rideBar').hidden=true;$('#footBar').hidden=false;}
+function endRide(skip){
+  const R=FOOT.ride;if(!R||R.phase!=='ride')return;
+  if(skip){let L=0;for(let k=R.i;k<R.pts.length-1;k++)L+=Math.hypot(R.pts[k+1][0]-R.pts[k][0],R.pts[k+1][1]-R.pts[k][1]);R.dist+=L;R.meter=R.rate.base+R.dist/1000*R.rate.km;
+    const n=R.pts.length;const end=R.pts[n-1],pre=R.pts[Math.max(0,n-2)];R.x=end[0];R.y=end[1];R.h=hAng(end[0]-pre[0],end[1]-pre[1]);R.i=n-1;}
+  arrive();
 }
 $('#rbSkip').addEventListener('click',()=>endRide(true));
-$('#rdCancel').addEventListener('click',()=>{FOOT.ride=null;state='play';show('play');footHud(true);toast('Ride cancelled','');});
+$('#rdCancel').addEventListener('click',()=>{const R=FOOT.ride;if(R)rideToTraffic(R);FOOT.ride=null;P.len=.6;P.wid=.5;state='play';show('play');footHud(true);toast('Ride cancelled','');});
 $('#fbAuto').addEventListener('click',()=>{if(profile.wallet<40){toast('You need at least ₹40 for an auto','bad');return;}sendRide('auto');});
 $('#fbCab').addEventListener('click',()=>{if(profile.wallet<70){toast('You need at least ₹70 for a cab','bad');return;}sendRide('cab');});
 $('#fbLift').addEventListener('click',()=>{if(FOOT.lift||FOOT.liftCool>0){toast('Keep waving…','','lw',1500);return;}FOOT.lift={t:3+Math.random()*3};toast('Waving for a lift…','');});
@@ -203,7 +259,7 @@ $('#fbJob').addEventListener('click',()=>{
 });
 $('#jbClose').addEventListener('click',()=>{state='play';show('play');footHud(true);});
 $('#ulBtn').addEventListener('pointerdown',e=>{e.preventDefault();const u=FOOT.unload;if(!u)return;u.n++;Hap.tick();const need=u.need||30;$('#ulTxt').textContent=`${u.n} / ${need}`;
-  if(u.n>=need){const pay=u.pay||45;profile.wallet+=pay;session.fare+=pay;saveProfile();FOOT.unload=null;$('#unload').hidden=true;$('#ulBtn').textContent='UNLOAD';toast(`Job done · ₹${pay}`,'gold');Snd.chime();}});
+  if(u.n>=need){const pay=u.gym?0:(u.pay||45);FOOT.unload=null;$('#unload').hidden=true;$('#ulBtn').textContent='UNLOAD';if(u.gym){gymDone();return;}profile.wallet+=pay;session.fare+=pay;saveProfile();toast(`Job done · ₹${pay}`,'gold');Snd.chime();}});
 
 /* ---------- paying at the court ---------- */
 function openCourt(){
@@ -239,18 +295,16 @@ function footView(){
 }
 function drawFootPlayer(fv,A,night){
   const R=FOOT.ride;
-  const car=(M,m,inside)=>{drawLit(m.body,M,{emiK:.5+night});if(m.glass&&!inside)drawLit(m.glass,M);if(m.rider&&!inside)drawLit(m.rider,M);lightsFor(m,M,night>.25,false,night);};
-  if(fv.ride){car(P.M,R.model,CAM.mode==='cockpit');return;}
-  if(R){M4.model(TM,R.x,0,R.y,-R.h,0,0);car(TM,R.model,false);}
-  if(CAM.mode!=='cockpit')drawLit(A.ped[FOOT.look][P.s>.3?FOOT.pose:0],P.M);
+  const car=(M,m,inside)=>{drawLit(m.body,M,{emiK:.5+night});if(m.glass&&!inside)drawLit(m.glass,M);if(m.rider&&!(inside&&R.t.two))drawLit(m.rider,M);lightsFor(m,M,night>.25,R&&R.v<.5,night);};
+  if(fv.ride){const inside=CAM.mode==='cockpit';car(P.M,R.model,inside);
+    if(!inside){const an=seatAnchor(R);const w=M4.xform(P.M,an[0],an[1],an[2]);M4.model(TM2,w[0],w[1],w[2],-R.h,0,0);drawPlayerRig(TM2,'seat');}return;}
+  if(R&&R.phase!=='ride'){M4.model(TM,R.x,0,R.y,-R.h,0,0);car(TM,R.model,false);
+    if(R.phase==='wait'){const an=seatAnchor(R);const w=M4.xform(TM,an[0],an[1],an[2]);M4.model(TM2,w[0],w[1],w[2],-R.h,0,0);drawPlayerRig(TM2,'seat');return;}}
+  if(CAM.mode!=='cockpit')drawPlayerRig(P.M,playerPose(),playerWeaponShown());
 }
 function drawFootBeams(ex,ez){
   if(W.court&&(FOOT.on||profile.pending.length)){const d=Math.hypot(W.court.x-ex,W.court.y-ez);drawSprite(beamTex().tex,W.court.x,0,W.court.y,3.4+d*.012,55,[1,.25,.2]);}
   if(FOOT.job&&FOOT.job.kind==='deliver'){const j=FOOT.job,d=Math.hypot(j.x-ex,j.y-ez);drawSprite(beamTex().tex,j.x,0,j.y,3.2+d*.01,45,[1,.85,.2]);}
-}
-function drawCourtSign(ex,ez){
-  const c=W.court;if(!c||Math.hypot(c.sx-ex,c.sy-ez)>320)return;
-  drawSprite(courtTex().tex,c.sx+Math.sin(c.h)*4.2,9.4,c.sy-Math.cos(c.h)*4.2,10,2,1);
 }
 function footMini(m,R,arrow){
   if(W.court&&Math.abs(W.court.x-P.x)<R&&Math.abs(W.court.y-P.y)<R){m.fillStyle='#E53935';m.fillRect(W.court.x-12,W.court.y-12,24,24);m.fillStyle='#FFF';m.fillRect(W.court.x-6,W.court.y-2,12,4);}
@@ -267,7 +321,7 @@ function footHudTick(el){
   const ch=$('#chChip');ch.hidden=!profile.pending.length||profile.seized;ch.textContent=`${profile.pending.length}/${MAXCH} challans`;
   if(!FOOT.on){condLbl.textContent='Condition';return false;}
   el.sig.hidden=true;
-  condLbl.textContent='Stamina';el.condbar.style.width=FOOT.stam+'%';el.condbar.style.background=FOOT.stam>40?'#80DEEA':FOOT.stam>15?'var(--auto-yellow)':'var(--danger)';el.condTxt.textContent=Math.round(FOOT.stam)+'%';
+  condLbl.textContent='Stamina';el.condbar.style.width=(FOOT.stam/maxStam()*100)+'%';el.condbar.style.background=FOOT.stam>40?'#80DEEA':FOOT.stam>15?'var(--auto-yellow)':'var(--danger)';el.condTxt.textContent=Math.round(FOOT.stam)+' / '+maxStam();
   el.trip.innerHTML='';
   const a=document.createElement('div'),b=document.createElement('div');
   if(FOOT.job&&FOOT.job.kind==='deliver'){const j=FOOT.job;a.innerHTML='Deliver to <b></b>';a.querySelector('b').textContent=j.name;b.textContent=`${fm(Math.hypot(j.x-P.x,j.y-P.y))} · ${Math.ceil(j.left)} s left · ₹${j.pay}`;}
@@ -281,4 +335,4 @@ function footHudTick(el){
   if(key!==noticeKey){noticeKey=key;el.notice.hidden=!key;el.notice.innerHTML=html;}
   return true;
 }
-Object.assign(window.__oosht||{},{FOOT,profile,goFoot,findPath,nodeNear,openCourt,caught:()=>caught(),hitPed,pendingTotal,addChallan,sendRide,endRide});
+Object.assign(window.__oosht||{},{inBuilding,FOOT,profile,goFoot,findPath,nodeNear,openCourt,caught:()=>caught(),hitPed,pendingTotal,addChallan,sendRide,endRide});

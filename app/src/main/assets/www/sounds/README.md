@@ -1,6 +1,6 @@
 # Real vehicle sounds (optional)
 
-Oosht Driving synthesises engine and horn sounds by default. To use real recordings instead,
+Wise City synthesises engine and horn sounds by default. To use real recordings instead,
 add audio files to this folder and push. The next APK build includes them automatically.
 
 File names (any of .ogg, .mp3, .m4a, .wav):

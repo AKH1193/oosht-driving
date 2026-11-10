@@ -49,12 +49,15 @@ function updateAgents(dt){
     if(inFront(a.x,a.y,a.h,P.x,P.y,gap+P.len/2+4,a.t.wid/2+P.wid/2+.6)){tgt=0;a.horn+=dt;if(a.horn>2.5&&Math.hypot(a.x-P.x,a.y-P.y)<30){a.horn=-4;Snd.tone([380+Math.random()*120],.25,'square',.04);}}
     for(const b of agents){if(b!==a&&inFront(a.x,a.y,a.h,b.x,b.y,gap+b.t.len/2+1.5,(a.t.wid+b.t.wid)/2+.2))tgt=Math.min(tgt,Math.max(0,b.v-1));}
     for(const c of COP.list)if(inFront(a.x,a.y,a.h,c.x,c.y,gap+4,2.2))tgt=0;
-    for(const p of peds)if((p.state==='cross'||p.state==='play')&&inFront(a.x,a.y,a.h,p.x,p.y,gap+7,a.t.wid/2+1.2))tgt=0;
+    for(const o of OBST)if(inFront(a.x,a.y,a.h,o.x,o.y,gap+o.len/2+1.5,(a.t.wid+o.wid)/2+.2)){a.obT=(a.obT||0)+dt;if(a.obT<5)tgt=0;}
+    for(const w of LIFE.wrecks)if(inFront(a.x,a.y,a.h,w.x,w.y,gap+4,(a.t.wid+1.8)/2)){a.obT=(a.obT||0)+dt;if(a.obT<5)tgt=0;}
+    for(const p of peds)if((p.state==='cross'||p.state==='play'||p.state==='flee'||p.state==='down')&&inFront(a.x,a.y,a.h,p.x,p.y,gap+7,a.t.wid/2+1.2))tgt=0;
     for(const n of animals)if(n.onRoad&&inFront(a.x,a.y,a.h,n.x,n.y,gap+6,a.t.wid/2+1.2))tgt=0;
     const sa=signalAhead(a.x,a.y,a.h,55);
     if(sa&&sa.d>sa.S.R-.5){const arm=sigArmFor(sa.S,a.x,a.y);const st=sigState(sa.S,arm.ph,GT);
       if(st[0]==='R'||(st[0]==='A'&&sa.d-sa.S.R>9)){const stop=sa.d-sa.S.R-a.t.len/2-.6;tgt=Math.min(tgt,Math.sqrt(Math.max(0,2*3.2*stop)));}}
     if(a.stop>0){a.stop-=dt;tgt=0;}
+    if(a.panic>0){a.panic-=dt;tgt=CRUISE[a.w.cls]*1.6;}
     a.brake=tgt<a.v-.5;
     a.v+=clamp(tgt-a.v,-8*dt,2.4*dt);if(a.v<0)a.v=0;
     a.d+=a.v*dt;
@@ -136,9 +139,12 @@ function updatePeds(dt){
       const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
       if(d<.3){if(p.after==='walk'){p.state='walk';p.side=-p.side;}else if(p.after==='back'){p.state='play';p.hurry=false;p.cx=p.x;p.cy=p.y;p.side=-p.side;p.t=-2;}else{p.state='idle';p.t=0;}}
       else{const sp=p.speed*(p.hurry?1.6:1);p.x+=dx/d*Math.min(d,sp*dt);p.y+=dy/d*Math.min(d,sp*dt);p.h=hAng(dx,dy);}
-    }else if(p.state==='down'){if(p.t>25){peds.splice(k,1);continue;}}
+    }else if(p.state==='down'){if(p.ko&&!p.dead&&p.t>2.6){p.ko=false;setFlee(p,P.x,P.y);}else if(p.t>25){peds.splice(k,1);continue;}}
+    else if(p.state==='flee'){const dx=p.x-p.fx,dy=p.y-p.fy,d=Math.hypot(dx,dy)||1;let hx=dx/d,hy=dy/d;const sp=Math.max(3.2,(p.speed||1.3)*2.4);
+      let nx=p.x+hx*sp*dt,ny=p.y+hy*sp*dt;if(inBuilding(nx,ny)){for(const r of[1.2,-1.2,2.2,-2.2]){const a=Math.atan2(hy,hx)+r*(p.side||1);const tx=p.x+Math.cos(a)*sp*dt,ty=p.y+Math.sin(a)*sp*dt;if(!inBuilding(tx,ty)){nx=tx;ny=ty;hx=Math.cos(a);hy=Math.sin(a);break;}}if(inBuilding(nx,ny)){nx=p.x;ny=p.y;}}
+      p.x=nx;p.y=ny;p.h=hAng(hx,hy);if(p.t>10&&Math.hypot(p.x-P.x,p.y-P.y)>30){peds.splice(k,1);continue;}}
     else if(p.state==='idle'){if(p.t>6){peds.splice(k,1);continue;}}
-    if(p.state==='walk'||p.state==='cross'){p.pt+=dt;if(p.pt>(p.run?.2:.32)){p.pt=0;p.pose^=1;}}
+    if(p.state==='walk'||p.state==='cross'||p.state==='flee'){p.pt+=dt;if(p.pt>(p.run?.2:.32)){p.pt=0;p.pose^=1;}}
     if(Math.hypot(p.x-P.x,p.y-P.y)>250){peds.splice(k,1);continue;}
   }
   for(let i=0;i<2&&moving<want;i++){const p=spawnPed();if(p){peds.push(p);moving++;}}
@@ -269,15 +275,15 @@ function suddenCrash(){
 
 /* ---------- Hoysala police ---------- */
 const COP={level:0,list:[],trail:[],lastTr:null,off:[],caughtT:0,lostT:0,pedHit:false,cool:0};
-const FINES={signal:['Jumped a red signal',500],rash:['Rash driving',500],speed:['Overspeeding',400],wrong:['Driving the wrong way',300],ped:['Hit a pedestrian',2000],crash:['Dangerous driving, collision',800]};
+const FINES={signal:['Jumped a red signal',500],rash:['Rash driving',500],speed:['Overspeeding',400],wrong:['Driving the wrong way',300],ped:['Hit a pedestrian',2000],crash:['Dangerous driving, collision',800],assault:['Assault',1500],kill:['Grievous hurt',6000],cop:['Assaulting police',5000],arms:['Firing a weapon in public',3000],theft:['Vehicle theft',3000],damage:['Damage to property',800],nolic:['Driving without a licence',1000],drunk:['Drunk driving',1500]};
 function offence(code,level){
   if(state!=='play')return;
   if(!COP.off.includes(code))COP.off.push(code);
-  const before=COP.level;COP.level=clamp(Math.max(COP.level,level),0,3);
-  if(COP.list.length&&before>=COP.level&&code!=='ped')COP.level=Math.min(3,COP.level+1);
-  const want=COP.level>=3?2:1;
+  const before=COP.level;COP.level=clamp(Math.max(COP.level,level),0,5);
+  if(COP.list.length&&before>=COP.level&&code!=='ped'&&level>=2)COP.level=Math.min(5,COP.level+1);
+  const want=COP.level>=4?3:COP.level>=2?2:1;
   while(COP.list.length<want){const c=spawnCop();if(!c)break;COP.list.push(c);}
-  if(COP.list.length){Snd.sirenOn();if(before===0)toast(code==='ped'?'Hoysala dispatched!':'Hoysala is after you!','bad');}
+  if(COP.list.length){Snd.sirenOn();if(before===0)toast(code==='ped'?'Hoysala dispatched!':FOOT.on?'Police are coming for you!':'Hoysala is after you!','bad');}
   $('#wanted').hidden=false;
 }
 function spawnCop(){
@@ -289,10 +295,11 @@ function spawnCop(){
 function updateCops(dt){
   const tr=COP.trail;
   if(!COP.lastTr||Math.hypot(P.x-COP.lastTr.x,P.y-COP.lastTr.y)>3){COP.lastTr={x:P.x,y:P.y};tr.push(COP.lastTr);if(tr.length>900){tr.splice(0,100);for(const c of COP.list)c.idx=Math.max(0,c.idx-100);}}
-  if(!COP.list.length){if(COP.level>0&&COP.cool<=0){COP.level=0;}return;}
+  if(!COP.list.length){if(COP.level>0&&COP.cool<=0&&!LIFE.copPeds.some(c=>!c.dead)){COP.level=0;}return;}
   let md=1e9;
   for(const c of COP.list){
     const dx=P.x-c.x,dy=P.y-c.y,d=Math.hypot(dx,dy);md=Math.min(md,d);
+    if(c.parked){c.fl+=dt;continue;}
     let tx,ty;
     if(d<40){tx=P.x+P.vx*.4;ty=P.y+P.vy*.4;}
     else{while(c.idx<tr.length-1&&Math.hypot(tr[c.idx].x-c.x,tr[c.idx].y-c.y)<7)c.idx++;tx=tr[Math.min(c.idx,tr.length-1)].x;ty=tr[Math.min(c.idx,tr.length-1)].y;}
@@ -305,10 +312,10 @@ function updateCops(dt){
     c.fl+=dt;
   }
   Snd.sirenVol(clamp(1-md/450,0,1)*.32);
-  if(md<11&&Math.abs(P.s)<3.2)COP.caughtT+=dt;else COP.caughtT=Math.max(0,COP.caughtT-dt*.5);
+  if(md<11&&Math.abs(P.s)<3.2&&!FOOT.on)COP.caughtT+=dt;else COP.caughtT=Math.max(0,COP.caughtT-dt*.5);
   if(COP.caughtT>1.6){caught();return;}
-  if(md>320)COP.lostT+=dt;else COP.lostT=0;
+  if(md>320&&!LIFE.copPeds.some(c=>!c.dead&&Math.hypot(c.x-P.x,c.y-P.y)<90))COP.lostT+=dt;else COP.lostT=0;
   if(COP.lostT>7&&!COP.pedHit){escaped();}
-  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;goFoot('You lost the Hoysala, but your licence is seized. Park it and walk to the court.');}
+  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;if(FOOT.on){escaped();COP.pedHit=false;}else goFoot('You lost the Hoysala, but your licence is seized. Park it and walk to the court.');}
 }
-function escaped(){COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;P.rash=0;Snd.sirenOff();$('#wanted').hidden=true;toast('You lost the Hoysala','good');}
+function escaped(){lfOnEscape();COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;P.rash=0;Snd.sirenOff();$('#wanted').hidden=true;toast('You lost the Hoysala','good');}

@@ -50,18 +50,18 @@ jobs:
           exit 1
 
       - name: Name the APK
-        run: cp app/build/outputs/apk/release/app-release.apk oosht-driving.apk
+        run: cp app/build/outputs/apk/release/app-release.apk wise-city.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: oosht-driving-apk
-          path: oosht-driving.apk
+          name: wise-city.apk
+          path: wise-city.apk
 
       - name: Publish the download
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Oosht Driving 1.0.${{ github.run_number }}
-          body: Install oosht-driving.apk on your Android phone.
-          files: oosht-driving.apk
+          name: Wise City 1.0.${{ github.run_number }}
+          body: Install wise-city.apk on your Android phone.
+          files: wise-city.apk
           make_latest: true

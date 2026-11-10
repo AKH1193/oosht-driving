@@ -91,7 +91,7 @@ function stationAt(mb,dec,g){
 }
 function buildChunk(cx,cy){
   const x0=cx*CH,y0=cy*CH,x1=x0+CH,y1=y0+CH;const inC=(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1;
-  const cas=new MB(),asp=new MB(),mrk=new MB(),dec=new MB(),sol=new MB(),shp=new MB();const glow=[],shad=[];
+  const cas=new MB(),asp=new MB(),mrk=new MB(),dec=new MB(),sol=new MB(),shp=new MB(),ads=new MB();const glow=[],shad=[];
   const segs=[];gQuery(W.sG,x0+CH/2,y0+CH/2,CH*.75,segs);
   const mine=segs.filter(s=>inC((s.ax+s.bx)/2,(s.ay+s.by)/2)).sort((a,b)=>RANK[a.w.cls]-RANK[b.w.cls]);
   const verts=new Map();
@@ -139,7 +139,7 @@ function buildChunk(cx,cy){
   const bl=[];gQuery(W.bG,x0+CH/2,y0+CH/2,CH*.75,bl);
   for(const b of bl){if(!inC(b.cx,b.cy)||b.hide)continue;
     const p=b.pts,n=p.length/2,h=b.h,col=b.col;const ccw=polyArea(p)>0;
-    let run=0;
+    let run=0,adE=null;
     for(let i=0;i<n;i++){const j=(i+1)%n;const ax=p[2*i],ay=p[2*i+1],bx=p[2*j],by=p[2*j+1];const L=Math.hypot(bx-ax,by-ay);if(L<.05)continue;
       const ex=bx-ax,ey=by-ay;const out=ccw?[ey,0,-ex]:[-ey,0,ex];
       const u0=run/13.6,u1=(run+L)/13.6,v1=h/12.4;run+=L;
@@ -147,10 +147,12 @@ function buildChunk(cx,cy){
       if(h>5&&L>3.5){const ol=Math.hypot(out[0],out[2])||1;const mx=(ax+bx)/2+out[0]/ol*1.5,my=(ay+by)/2+out[2]/ol*1.5;const ns=nearestSeg(mx,my,12);
         if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/16.8,r1=run/16.8,su0=ccw?r1:r0,su1=ccw?r0:r1,F=[1,1,1];
           shp.rtri([ax,0,ay],[bx,0,by],[bx,3.4,by],F,out,[su0,1,su1,1,su1,0]);shp.rtri([ax,0,ay],[bx,3.4,by],[ax,3.4,ay],F,out,[su0,1,su1,0,su0,0]);y0=3.4;}}
+      if(!adE&&h>=6&&h<=40&&L>8){const ol2=Math.hypot(out[0],out[2])||1,nx=out[0]/ol2,ny=out[2]/ol2,mx2=(ax+bx)/2,my2=(ay+by)/2;const ns2=nearestSeg(mx2+nx*9,my2+ny*9,16);if(ns2.seg&&RANK[ns2.seg.w.cls]>=2&&!inBuilding(mx2+nx*2,my2+ny*2))adE=[ax,ay,bx,by,L,nx,ny];}
       const vy=(h-y0)/12.4;
       sol.rtri([ax,y0,ay],[bx,y0,by],[bx,h,by],col,out,[u0,vy,u1,vy,u1,0]);
       sol.rtri([ax,y0,ay],[bx,h,by],[ax,h,ay],col,out,[u0,vy,u1,0,u0,0]);
     }
+    if(adE&&h>=6&&h<=40){const hh=hash2(Math.round(b.cx*3),Math.round(b.cy*3));if((hh>>>0)%100<18)hoardingAt(sol,ads,b,adE[0],adE[1],adE[2],adE[3],adE[5],adE[6],hh>>>3);}
     const roof=col.map(v=>v*.78);const tri=triangulate(p);
     for(let i=0;i<tri.length;i+=3){const a=tri[i],bb=tri[i+1],c=tri[i+2];sol.rtri([p[2*a],h,p[2*a+1]],[p[2*bb],h,p[2*bb+1]],[p[2*c],h,p[2*c+1]],roof,[0,1,0],[.01,.01,.01,.01,.01,.01]);}
     if(h>4){for(let i=0;i<n;i++){const j=(i+1)%n;const ax=p[2*i],ay=p[2*i+1],bx=p[2*j],by=p[2*j+1];if(Math.hypot(bx-ax,by-ay)<.5)continue;const ex=bx-ax,ey=by-ay;const out=ccw?[ey,0,-ex]:[-ey,0,ex];
@@ -176,9 +178,9 @@ function buildChunk(cx,cy){
   for(const g of W.garages)if(inC(g.sx,g.sy))shedAt(sol,g);
   for(const g of W.fuels||[])if(inC(g.sx,g.sy))stationAt(sol,dec,g);
   if(W.court&&inC(W.court.sx,W.court.sy))courtAt(sol,W.court);
-  return {cx,cy,v:W.version,cas:cas.mesh(),asp:asp.mesh(),mrk:mrk.mesh(),dec:dec.mesh(),sol:sol.mesh(),shp:shp.mesh(),glow:makeGlowMesh(glow),shad:makeGlowMesh(shad),heads};
+  return {cx,cy,v:W.version,ads:ads.mesh(),cas:cas.mesh(),asp:asp.mesh(),mrk:mrk.mesh(),dec:dec.mesh(),sol:sol.mesh(),shp:shp.mesh(),glow:makeGlowMesh(glow),shad:makeGlowMesh(shad),heads};
 }
-function freeChunk(c){for(const k of['cas','asp','mrk','dec','sol','shp','glow','shad'])freeMesh(c[k]);}
+function freeChunk(c){for(const k of['cas','asp','mrk','dec','sol','shp','ads','glow','shad'])freeMesh(c[k]);}
 function clearChunks(){for(const[,c]of CHUNKS)freeChunk(c);CHUNKS.clear();W.tG=new Map();}
 function updateChunks(px,py,budgetMs){
   const R=settings.gfx==='fast'?360:settings.gfx==='ultra'?560:460;
@@ -252,7 +254,10 @@ function setupCamera(dt,P,V,model){
   }else{
     const far=CAM.mode==='far';const L=model.len||2;
     const dist=far?30:(3.6+L*1.25)+frac*2.2,ht=far?30:(1.7+L*.32)+frac*.4;
-    CAM.eye=[P.x-cyx*dist+jx,ht+jy+bump,P.y-cyz*dist];
+    /* keep the camera out of buildings: pull it in along the line to the player */
+    let cd=dist;if(!far&&!inBuilding(P.x,P.y)){for(let t=.8;t<dist;t+=.35){const b=inBuilding(P.x-cyx*t,P.y-cyz*t);if(b&&b.h>1.3+(ht-1.3)*t/dist){cd=Math.max(.9,t-.4);break;}}}
+    CAM.cd=CAM.cd==null||far?cd:cd<CAM.cd?cd:lerp(CAM.cd,cd,Math.min(1,dt*2.2));const cdx=Math.min(CAM.cd,dist),hh=1.3+(ht-1.3)*cdx/dist;
+    CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump,P.y-cyz*cdx];
     CAM.tgt=[P.x+fx*(far?8:6),far?0:1.1,P.y+fz*(far?8:6)];
     CAM.fov=lerp(CAM.fov,(far?55:62)+frac*(far?0:18),Math.min(1,dt*3));
   }

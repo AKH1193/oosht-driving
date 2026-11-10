@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity() {
         if (!locationEnabled(lm)) {
             AlertDialog.Builder(this)
                 .setTitle("Turn on GPS")
-                .setMessage("Oosht Driving uses your phone's location to load the streets around you. Turn on Location, then come back to the game.")
+                .setMessage("Wise City uses your phone's location to load the streets around you. Turn on Location, then come back to the game.")
                 .setPositiveButton("Open settings") { _, _ ->
                     waitingForGpsSettings = true
                     try {

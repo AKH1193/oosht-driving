@@ -50,7 +50,7 @@ function enterWater(z){
 }
 function crash(rel,what,rashAdd){
   const k=clamp(rel/12,.2,1);Hap.crash();Snd.crash();CAM.shake=Math.max(CAM.shake,12*k);P.bounce=1;
-  const dmg=+(3+10*k).toFixed(1);damage(dmg);P.rash+=rashAdd||0;
+  const dmg=+(3+10*k).toFixed(1);damage(dmg);P.rash+=rashAdd||0;if(rel>9)lfDamage((rel-9)*(VEH[P.type].cat==='two'?3:1.4),'crash');
   toast(`${what} −${Math.round(dmg)}%`,'bad','crash'+what,1200);
 }
 function hitPed(p){
@@ -278,6 +278,7 @@ function updateHud(){
   else if(P.rash>5){el.wanted.hidden=false;el.wanted.querySelectorAll('.stars i').forEach(s=>s.classList.remove('on'));el.wantedTxt.textContent='Drive carefully';}
   else el.wanted.hidden=true;
   el.rashbar.style.width=clamp(P.rash,0,100)+'%';
+  lifeHud();
   if(footHudTick(el))return;
   if(trip){const d=Math.hypot(trip.x-P.x,trip.y-P.y);el.trip.innerHTML='';const a=document.createElement('div');a.innerHTML='Drop at <b></b>';a.querySelector('b').textContent=trip.name;const b=document.createElement('div');b.textContent=`${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'} · fare ₹${trip.fare}`;el.trip.append(a,b);}
   else el.trip.textContent=licenceSuspended()?'No passengers: licence suspended':'Finding a passenger';
@@ -350,7 +351,7 @@ function setFrameUniforms(){
   FU.fog=settings.gfx==='fast'?[90,330]:[130+(1-night)*60,(settings.gfx==='ultra'?560:470)-night*170];
   FU.fogCol=TOD.fog;FU.sunDir=TOD.sunDir;FU.sunCol=TOD.sun;FU.sky=TOD.sky;FU.gnd=TOD.gnd;FU.night=night;
   FU.hl=night>.15?night*1.4:0;
-  const V=playerModel(P.type);const hp=V.lights.head[0];const hw=M4.xform(P.M,hp[0],hp[1],hp[2]);
+  const V=curModel();const hp=V.lights.head[0];const hw=M4.xform(P.M,hp[0],hp[1],hp[2]);
   FU.hlPos=hw;FU.hlDir=(()=>{const d=[Math.sin(P.h),-.12,-Math.cos(P.h)];const l=Math.hypot(...d);return d.map(v=>v/l);})();
 }
 function lightsFor(model,M,headOn,brake,night){
@@ -360,7 +361,7 @@ function lightsFor(model,M,headOn,brake,night){
 }
 function renderScene(dt){
   resizeGL();
-  let V=VEH[P.type],pm=playerModel(P.type);const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
+  let V=VEH[P.type],pm=curModel();const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
   setupCamera(dt,P,V,pm);setFrameUniforms();
   const night=TOD.night;
   gl.viewport(0,0,glc.width,glc.height);
@@ -392,6 +393,7 @@ function renderScene(dt){
   gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
   for(const c of vis)drawLit(c.sol,null,{tex:TEX.wall,emTex:TEX.wallE,emiK:night*1.8});
   for(const c of vis)drawLit(c.shp,null,{tex:TEX.shop,emTex:TEX.shopE});
+  {const at=adsTex().tex;for(const c of vis)drawLit(c.ads,null,{tex:at,emTex:at,emiK:.2+night*.7});}
   /* live signal lamps */
   for(const c of vis)for(const hd of c.heads){if(Math.hypot(hd.x-ex,hd.y-ez)>200)continue;
     const st=sigState(hd.arm.S,hd.arm.ph,GT);const i=st[0]==='R'?0:st[0]==='A'?1:2;
@@ -409,15 +411,16 @@ function renderScene(dt){
       else if(p.kind==='sit'){M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.sit[p.v],TM);}
       else{M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.lie[p.v],TM);}
       continue;}
-    const moving=p.state==='walk'||p.state==='cross'||p.state==='play';const m=A.ped[p.v][moving?p.pose:0];
+    const moving=p.state==='walk'||p.state==='cross'||p.state==='play'||p.state==='flee';const m=A.ped[p.v][moving?p.pose:0];
     if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM);}
   for(const n of animals){if(Math.hypot(n.x-ex,n.y-ez)>200)continue;let m;
     if(n.kind==='cow')m=n.lie?A.cowLie[n.v]:A.cow[n.v*2+(n.state==='wander'||n.state==='cross'?n.pose:0)];
     else if(n.kind==='dog')m=A.dog[n.v][n.state==='idle'?0:n.pose];else m=A.cat[n.v][n.event||n.state!=='idle'?n.pose:0];
     M4.model(TM,n.x,0,n.y,-n.h,0,0,n.event?1.8:1);drawLit(m,TM,{emiK:.6+night});}
+  lifeRender(A,night,ex,ez);drawPoiSigns(night);drawVenues(ex,ez,night,A);drawFixedSigns(ex,ez,night);
   const fl=(GT*4|0)%2;
   for(const c of COP.list){const cm=c.model;M4.model(TM,c.x,0,c.y,-c.h,0,0);drawLit(cm.body,TM,{emiK:.5+night});
-    drawLit(cm.decal.mesh,TM,{tex:cm.decal.tex,emTex:TEX.black});
+    drawLit(cm.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});
     drawLit(cm.lightbar.red,TM,{emiAdd:fl?[1.2,.1,.1]:ZERO3});drawLit(cm.lightbar.blue,TM,{emiAdd:fl?ZERO3:[.1,.25,1.4]});
     const lp=M4.xform(TM,cm.lightbar.pos[0]+(fl?-.26:.26),cm.lightbar.pos[1],cm.lightbar.pos[2]);DGr.bill(lp[0],lp[1],lp[2],2.2,fl?[1,.1,.08]:[.15,.3,1],CAM.right);
     lightsFor(cm,TM,night>.25,false,night);}
@@ -427,7 +430,7 @@ function renderScene(dt){
   else if(CAM.mode==='cockpit'){
     drawLit(pm.body,P.M,{emiK:.4+night*.6});drawLit(pm.cockpit,P.M,{emiK:.6+night*.8,noHL:true});
     if(pm.steer){const sp=pm.steerPos;M4.model(TM,sp[0],sp[1],sp[2],0,-.42,-P.steer*1.9);M4.mul(TM2,P.M,TM);drawLit(pm.steer,TM2,{noHL:true});}
-  }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);}
+  }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);if(pm.decal)drawLit(pm.decal.mesh,P.M,{tex:hoysalaTex().tex,emTex:TEX.black});}
   if(!fv&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
   /* light, glow and signboards */
   gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
@@ -443,10 +446,6 @@ function renderScene(dt){
   if(!FOOT.on&&P.cond<35){const ng=nearestGarage(P.x,P.y);if(ng)drawSprite(beamTex().tex,ng.g.x,0,ng.g.y,3+ng.d*.01,40,[.3,1,.45]);}
   if(!FOOT.on&&P.fuel<15){const nf=nearestFuel(P.x,P.y);if(nf)drawSprite(beamTex().tex,nf.g.x,0,nf.g.y,3+nf.d*.01,40,[.3,.7,1]);}
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-  for(const q of nearPois){const t=boardTex(q);const w=Math.min(7,2.6+q.name.length*.17);drawSprite(t.tex,q.x,3.3,q.y,w,w/4,1-night*.25);}
-  for(const g of W.garages){const d=Math.hypot(g.sx-ex,g.sy-ez);if(d>220)continue;drawSprite(garageTex(g).tex,g.sx,3.6,g.sy,6,1.5,1);}
-  drawCourtSign(ex,ez);
-  for(const g of W.fuels){const d=Math.hypot(g.sx-ex,g.sy-ez);if(d>260)continue;const c=Math.cos(-g.h),s2=Math.sin(-g.h);drawSprite(fuelTex(g).tex,g.sx-6.6*c-3.6*s2,7.4,g.sy+6.6*s2-3.6*c,4.4,2.2,1);}
   gl.disable(gl.BLEND);gl.depthMask(true);
 }
 
@@ -462,10 +461,11 @@ function frame(t){
   requestAnimationFrame(frame);
 }
 function update(dt){
-  if(FOOT.on){updateFoot(dt);updateAgents(dt);updatePeds(dt);updateAnimals(dt);}
+  if(FOOT.on){updateFoot(dt);updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);}
   else{updatePlayer(dt);
   updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);updateIntruder(dt);apshakunTick(dt);
   checkTrip();}
+  lifeUpdate(dt);
   updateChunks(P.x,P.y,settings.gfx==='fast'?5:8);
   if((todT-=dt)<=0){todT=30;computeTod();}
   if((hudT-=dt)<=0){hudT=.1;updateHud();}
@@ -525,7 +525,8 @@ async function startDrive(loc){
   }
 }
 function startPlay(keepPos){
-  const V=VEH[P.type];const pm=playerModel(P.type);P.len=pm.len;P.wid=pm.wid;
+  if(!keepPos)P.skin=null;
+  const V=VEH[P.type];const pm=curModel();P.len=pm.len;P.wid=pm.wid;
   if(!keepPos){
     let best=null,bd=1e9;
     const clear=s=>{const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;for(let t=s.len*.5-6;t<=s.len*.5+12;t+=3){const x=s.ax+dx*t,y=s.ay+dy*t;for(const o of[-1.5,0,1.5])if(inBuilding(x+dy*o,y-dx*o))return false;}return true;};
@@ -552,7 +553,7 @@ function startPlay(keepPos){
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
@@ -654,6 +655,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Sn
 window.__onBack=()=>{
   if(!$('#settings').hidden){closeSettings();return true;}
   if(state==='play'){pause();return true;}if(state==='pause'){resume();return true;}
+  if(state==='venue'){$('#vnClose').click();return true;}if(state==='hosp')return true;
   if(state==='court'){$('#ctLeave').click();return true;}if(state==='ride'){$('#rdCancel').click();return true;}if(state==='job'){$('#jbClose').click();return true;}
   if(state==='repair'||state==='fuel'){resumeDrive();return true;}if(state==='outcome'){$('#outPrimary').click();return true;}
   if(!$('#showroom').hidden){go(changingVehicle?'title':'where');changingVehicle=false;return true;}
