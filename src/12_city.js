@@ -101,7 +101,7 @@ function lineAt(l,s){s=clamp(s,0,l.len);let i=Math.min(l.cum.length-2,Math.max(0
   const p=l.pts,ax=p[2*i],ay=p[2*i+1],bx=p[2*i+2],by=p[2*i+3],L=(l.cum[i+1]-l.cum[i])||1,t=(s-l.cum[i])/L;return {x:ax+(bx-ax)*t,y:ay+(by-ay)*t,h:hAng(bx-ax,by-ay)};}
 function lineProject(l,x,y){let best=1e9,bs=0;const p=l.pts;for(let i=0;i<l.cum.length-1;i++){const ax=p[2*i],ay=p[2*i+1],bx=p[2*i+2],by=p[2*i+3];const L=l.cum[i+1]-l.cum[i]||1;const t=clamp(((x-ax)*(bx-ax)+(y-ay)*(by-ay))/(L*L),0,1);const d=Math.hypot(ax+(bx-ax)*t-x,ay+(by-ay)*t-y);if(d<best){best=d;bs=l.cum[i]+t*L;}}return {d:best,s:bs};}
 function buildMetro(data){
-  for(const s of METRO.sections)freeMesh(s.mesh);METRO.sections=[];METRO.lines=[];METRO.stations=[];METRO.trains=[];
+  for(const s of METRO.sections)freeMesh(s.mesh);METRO.sections=[];METRO.piers=[];METRO.lines=[];METRO.stations=[];METRO.trains=[];
   let raw=[];
   if(data.rails&&data.rails.length)raw=chainRails(data.rails).filter(l=>polyLen(l.pts)>250);
   if(!raw.length){const groups=new Map();for(const w of W.ways){if(RANK[w.cls]<2||w.br)continue;const k=(w.name||w.cls)+(w.oneway?'|1':'');if(!groups.has(k))groups.set(k,[]);groups.get(k).push({pts:w.pts,tun:false,w});}
@@ -135,7 +135,7 @@ function buildMetro(data){
       if(i0===0)for(const st of METRO.stations)if(st.l===l)stationGeo(mb,st);
       const mid=lineAt(l,l.cum[Math.floor((i0+i1)/2)]);METRO.sections.push({mesh:mb.mesh(),x:mid.x,y:mid.y});
       /* pier collisions */
-      for(let i=i0;i<i1;i+=4){const x=l.pts[2*i],y=l.pts[2*i+1];gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),{x,y,r:.9,pier:true,_q:0});}}}
+      for(let i=i0;i<i1;i+=4){const x=(l.pts[2*i]+l.pts[2*i+2])/2,y=(l.pts[2*i+1]+l.pts[2*i+3])/2;const o={x,y,r:1.05,pier:true,_q:0};METRO.piers.push(o);gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),o);}}}
   for(const l of METRO.lines){if(l.tun)continue;for(let k=0;k<2;k++)METRO.trains.push({l,s:k?l.len*.7:l.len*.2,dir:k?-1:1,v:0,dwell:0,cars:3});}
 }
 function stationGeo(mb,st){

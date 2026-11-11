@@ -20,17 +20,19 @@ function updatePatrols(dt){
   if(pc<2){const a=spawnAgent(false);if(a){a.t=POLICE_T;a.col=null;a.model=copModel();a.patrol=true;a.k=.8;placeAgent(a);agents.push(a);}}
   const foot=LIFE.copPeds.filter(c=>c.patrol).length;
   if(foot<2&&W.signals&&W.signals.length){const S=W.signals[Math.floor(Math.random()*W.signals.length)];const d=Math.hypot(S.x-P.x,S.y-P.y);
-    if(d>80&&d<400){const ang=Math.random()*TAU;let x=S.x+Math.cos(ang)*(S.R+3),y=S.y+Math.sin(ang)*(S.R+3);if(!inBuilding(x,y)){const c=newCopPed(x,y);c.patrol=true;LIFE.copPeds.push(c);}}}
+    if(d>80&&d<400){const ang=Math.random()*TAU;let x=S.x+Math.cos(ang)*(S.R+3),y=S.y+Math.sin(ang)*(S.R+3);if(!inBuilding(x,y)){const c=newCopPed(x,y);c.patrol=true;c.h=Math.random()*TAU;LIFE.copPeds.push(c);}}}
   for(let i=LIFE.copPeds.length-1;i>=0;i--){const c=LIFE.copPeds[i];if(c.patrol&&Math.hypot(c.x-P.x,c.y-P.y)>500)LIFE.copPeds.splice(i,1);}
 }
-/* police only respond when a patrol, a constable or a station is close enough to see it */
+/* police only respond when you hurt one of them, or when a cop is right there and can see you */
+function copSees(x,y,h,range){const dx=P.x-x,dy=P.y-y,d=Math.hypot(dx,dy);if(d>range)return false;
+  const copLooks=Math.abs(angDiff(h,hAng(dx,dy)))<1.2,inFront=Math.abs(angDiff(P.h,hAng(-dx,-dy)))<1.0;
+  if(!(copLooks||inFront||d<10))return false;return lineClear(x,y,P.x,P.y)!==false;}
+const chaseNear=()=>COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<70)||LIFE.copPeds.some(c=>!c.dead&&!c.patrol&&Math.hypot(c.x-P.x,c.y-P.y)<45);
 function policeWitness(code){
-  let best=null,bd=code==='ped'?400:330;
-  for(const a of agents){if(!a.patrol)continue;const d=Math.hypot(a.x-P.x,a.y-P.y);if(d<bd){bd=d;best=a;}}
-  if(best){const i=agents.indexOf(best);agents.splice(i,1);COP.list.push({x:best.x,y:best.y,h:best.h,v:Math.max(best.v,6),idx:Math.max(0,COP.trail.length-1),model:best.model,fl:0});return true;}
-  for(const c of LIFE.copPeds)if(c.patrol&&!c.dead&&Math.hypot(c.x-P.x,c.y-P.y)<130){for(const k of LIFE.copPeds)if(k.patrol&&Math.hypot(k.x-P.x,k.y-P.y)<200)k.patrol=false;Snd.whistle();return true;}
-  for(const s of PATROL.stations)if(Math.hypot(s.x-P.x,s.y-P.y)<260)return true;
-  if(GT-PATROL.note>20){PATROL.note=GT;toast(code==='ped'?'No police patrol nearby saw that.':'No police around to see it.','','nopol',2200);}
+  if(code==='cop')return true;
+  for(const a of agents){if(!a.patrol||!copSees(a.x,a.y,a.h,45))continue;const i=agents.indexOf(a);agents.splice(i,1);COP.list.push({x:a.x,y:a.y,h:a.h,v:Math.max(a.v,6),idx:Math.max(0,COP.trail.length-1),model:a.model,fl:0});return true;}
+  for(const c of LIFE.copPeds)if(c.patrol&&!c.dead&&copSees(c.x,c.y,c.h||0,30)){for(const k of LIFE.copPeds)if(k.patrol&&Math.hypot(k.x-P.x,k.y-P.y)<60)k.patrol=false;Snd.whistle();return true;}
+  if(GT-PATROL.note>25){PATROL.note=GT;toast('No police saw that.','','nopol',1800);}
   return false;
 }
 /* after an arrest you are released at the police station with jurisdiction over the spot */

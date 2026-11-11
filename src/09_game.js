@@ -58,7 +58,7 @@ function hitPed(p){
   if(p.state==='static'&&p.kind==='lie'){p.kind='lie';}
   p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);if(p.kind==='lie'||p.kind==='sit'){p.v=0;}
   Snd.crash();Hap.bigCrash();CAM.shake=10;flash();
-  if(COP.level===0&&!COP.list.length&&!policeWitness('ped')){toast('You hit a pedestrian! No police saw it.','bad');panic(p.x,p.y,30);trip=null;return;}
+  if(!chaseNear()&&!policeWitness('ped')){toast('You hit a pedestrian! No police saw it.','bad');panic(p.x,p.y,30);trip=null;return;}
   addChallan('ped');profile.seized=true;saveProfile();
   COP.pedHit=true;toast('You hit a pedestrian! Licence seized','bad');
   offence('ped',3);
@@ -354,7 +354,7 @@ function setFrameUniforms(){
   const night=TOD.night;
   FU.fog=settings.gfx==='fast'?[90,330]:[130+(1-night)*60,(settings.gfx==='ultra'?560:470)-night*170];
   FU.fogCol=TOD.fog;FU.sunDir=TOD.sunDir;FU.sunCol=TOD.sun;FU.sky=TOD.sky;FU.gnd=TOD.gnd;FU.night=night;
-  FU.hl=night>.15?night*1.4:0;
+  FU.hl=night>.15&&!FOOT.on&&!FLY.on?night*1.4:0;
   const V=curModel();const hp=V.lights.head[0];const hw=M4.xform(P.M,hp[0],hp[1],hp[2]);
   FU.hlPos=hw;FU.hlDir=(()=>{const d=[Math.sin(P.h),-.12,-Math.cos(P.h)];const l=Math.hypot(...d);return d.map(v=>v/l);})();
   wxFrame();
@@ -567,11 +567,11 @@ function startPlay(keepPos){
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','lootScr','quitScr','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','lootScr','quitScr','mapScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
-  if(!['play','pause','repair','outcome','fuelScr'].includes(id)){Snd.stopEngine();Snd.sirenOff();}
+  if(!['play','pause','repair','outcome','fuelScr','mapScr'].includes(id)){Snd.stopEngine();Snd.sirenOff();}
   if(id==='title')renderTitle();
 }
 function go(id){

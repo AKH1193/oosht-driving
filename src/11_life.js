@@ -345,7 +345,7 @@ function knockProp(q,vx,vy,vz){q.vx=vx;q.vy=vy;q.vz=vz;q.spin=(Math.random()-.5)
 const nearCop=r=>COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<r)||LIFE.copPeds.some(c=>!c.dead&&Math.hypot(c.x-P.x,c.y-P.y)<r);
 function crime(code,lvl){
   if(state!=='play')return;if(code==='assault'&&!nearCop(140)&&Math.random()<.5)return;
-  if(COP.level===0&&!COP.list.length&&!LIFE.copPeds.some(c=>!c.dead&&!c.patrol)&&!policeWitness(code))return;
+  if(!chaseNear()&&!policeWitness(code))return;
   const st=addHeat(code);const now=GT;if((LIFE.crimeT[code]||-99)>now-4&&st<=COP.level)return;LIFE.crimeT[code]=now;
   offence(code,Math.max(lvl,st));
 }

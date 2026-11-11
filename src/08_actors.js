@@ -279,10 +279,10 @@ const COP={level:0,list:[],trail:[],lastTr:null,off:[],caughtT:0,lostT:0,pedHit:
 const FINES={signal:['Jumped a red signal',500],rash:['Rash driving',500],speed:['Overspeeding',400],wrong:['Driving the wrong way',300],ped:['Hit a pedestrian',2000],crash:['Dangerous driving, collision',800],assault:['Assault',1500],kill:['Grievous hurt',6000],cop:['Assaulting police',5000],arms:['Firing a weapon in public',3000],theft:['Vehicle theft',3000],damage:['Damage to property',800],nolic:['Driving without a licence',1000],drunk:['Drunk driving',1500]};
 function offence(code,level){
   if(state!=='play')return;
-  if(COP.level===0&&!COP.list.length&&!policeWitness(code))return;
+  if(!chaseNear()&&!policeWitness(code))return;
   if(!COP.off.includes(code))COP.off.push(code);
   const before=COP.level;COP.level=clamp(Math.max(COP.level,level),0,5);
-  const want=COP.level>=5?4:COP.level>=4?3:COP.level>=2?2:1;
+  const want=COP.level>=5?3:COP.level>=4?2:1;
   while(COP.list.length<want){const c=spawnCop();if(!c)break;COP.list.push(c);}
   if(COP.list.length){Snd.sirenOn();if(before===0)toast(code==='ped'?'Hoysala dispatched!':FOOT.on?'Police are coming for you!':'Hoysala is after you!','bad');}
   $('#wanted').hidden=false;
@@ -315,8 +315,8 @@ function updateCops(dt){
   Snd.sirenVol(clamp(1-md/450,0,1)*.32);
   if(md<11&&Math.abs(P.s)<3.2&&!FOOT.on)COP.caughtT+=dt;else COP.caughtT=Math.max(0,COP.caughtT-dt*.5);
   if(COP.caughtT>1.6){caught();return;}
-  if(md>320&&!LIFE.copPeds.some(c=>!c.dead&&Math.hypot(c.x-P.x,c.y-P.y)<90))COP.lostT+=dt;else COP.lostT=0;
-  if(COP.lostT>7&&!COP.pedHit){escaped();}
-  else if(COP.lostT>7&&COP.pedHit){COP.lostT=0;if(FOOT.on){escaped();COP.pedHit=false;}else goFoot('You lost the Hoysala, but your licence is seized. Park it and walk to the court.');}
+  const seen=COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<60&&lineClear(c.x,c.y,P.x,P.y)!==false);if((md>140||!seen&&md>40)&&!LIFE.copPeds.some(c=>!c.dead&&Math.hypot(c.x-P.x,c.y-P.y)<40))COP.lostT+=dt;else COP.lostT=0;
+  if(COP.lostT>5&&!COP.pedHit){escaped();}
+  else if(COP.lostT>5&&COP.pedHit){COP.lostT=0;if(FOOT.on){escaped();COP.pedHit=false;}else goFoot('You lost the Hoysala, but your licence is seized. Park it and walk to the court.');}
 }
 function escaped(){lfOnEscape();COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;P.rash=0;Snd.sirenOff();$('#wanted').hidden=true;toast('You lost the Hoysala','good');}

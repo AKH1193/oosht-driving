@@ -139,6 +139,14 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #hud.m-ride .ctl-foot,#hud.m-ride .ctl-right,#hud.m-ride .ctl-act,#hud.m-ride #joyZone{display:none}
 #hud.m-pad #joyZone,#hud.m-pad .ctl-foot,#hud.m-pad .ctl-right,#hud.m-pad .ctl-act{display:none}
 #hud.m-pad .usebtn::before{content:"Y · ";opacity:.7}
+#mini{cursor:pointer}
+#mapScr{background:#0E141B;padding:0;display:block}
+#bigMap{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#mapTop{position:absolute;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:8px 16px;display:flex;gap:12px;align-items:baseline;white-space:nowrap;max-width:calc(100% - 32px)}
+#mapTop span{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis}
+#mapBtns{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;align-items:stretch}
+#mapBtns .btn{min-height:44px}#mapZin,#mapZout{font-size:22px;font-weight:800}
+#wpChip{position:absolute;left:50%;top:calc(140px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap;border-color:rgba(176,108,255,.7)}
 button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
 #padChip{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap}
 
@@ -290,7 +298,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
         <button class="iconbtn hit" id="pauseBtn" aria-label="Pause"><svg viewBox="0 0 20 20"><rect x="4" y="3" width="4" height="14" rx="1"/><rect x="12" y="3" width="4" height="14" rx="1"/></svg></button>
         <button class="iconbtn hit" id="camBtn" aria-label="Change camera view"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zm8 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/></svg></button>
       </div>
-      <canvas id="mini" width="216" height="216"></canvas>
+      <canvas id="mini" class="hit" width="216" height="216" title="Open the map"></canvas>
       <div class="trip panel" id="trip">Finding a passenger</div>
     </div>
     <div id="apsh" class="panel" hidden>
@@ -328,6 +336,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
       <button class="pedal gas hit" id="btnGas">GO</button>
     </div>
     <div class="panel" id="padChip" hidden>Controller · A jump · X run · RT fire / gas · Y use · B exit</div>
+    <div class="panel" id="wpChip" hidden></div>
     <div class="attrib" id="attrib">© OpenStreetMap contributors</div>
   </div>
 
@@ -445,6 +454,11 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
       <p id="vnSub" style="margin:0"></p>
       <div class="vitems" id="vnItems"></div>
     </div>
+  </div>
+  <div class="screen" id="mapScr" hidden>
+    <canvas id="bigMap"></canvas>
+    <div class="panel" id="mapTop"><b id="mapTitle">Map</b><span id="mapInfo">Tap anywhere to drop a pin</span></div>
+    <div id="mapBtns"><button class="btn" id="mapZin" aria-label="Zoom in">+</button><button class="btn" id="mapZout" aria-label="Zoom out">−</button><button class="btn" id="mapMe">Me</button><button class="btn" id="mapClear">Clear pin</button><button class="btn primary" id="mapClose">Back to game</button></div>
   </div>
   <div class="screen scrim" id="lootScr" hidden>
     <div class="card" style="width:min(560px,100%)">

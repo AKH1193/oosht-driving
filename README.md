@@ -40,7 +40,7 @@ People talk as you pass (in Kannada when the phone has a Kannada voice, otherwis
 
 ## Police and the court
 
-The police only react when someone sees it: a patrolling Hoysala, a constable at a junction, or a nearby police station. Patrols show on the map as a blue P (flashing red when they chase you), police stations as a yellow P on navy. Crimes build heat and a five-star wanted level: more Hoysalas join the chase as the stars rise, a police helicopter circles from four stars and fires at five. When you are on foot, constables get out with lathis; at three stars they shoot. Hit back and you knock them down, and they cannot cuff you while you are fighting. If they catch you, you are busted: weapons confiscated, e-challans issued, and you are released from the police station with jurisdiction over that spot. Fines are paid only at the District Magistrate Court; five unpaid challans, or hitting a pedestrian, and your licence is seized until you pay. Lose all your health and you wake up in hospital with a bill.
+The police only react when a cop is right there and can see you (a patrolling Hoysala within about 45 m, a constable within about 30 m, with nothing in between), or when you hurt a police officer. Chases are smaller and easier to shake: break line of sight for a few seconds and they give up. Patrols show on the map as a blue P (flashing red when they chase you), police stations as a yellow P on navy. Crimes build heat and a five-star wanted level: more Hoysalas join the chase as the stars rise, a police helicopter circles from four stars and fires at five. When you are on foot, constables get out with lathis; at three stars they shoot. Hit back and you knock them down, and they cannot cuff you while you are fighting. If they catch you, you are busted: weapons confiscated, e-challans issued, and you are released from the police station with jurisdiction over that spot. Fines are paid only at the District Magistrate Court; five unpaid challans, or hitting a pedestrian, and your licence is seized until you pay. Lose all your health and you wake up in hospital with a bill.
 
 ## Get the app
 
@@ -55,6 +55,7 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 - On foot: HIT / FIRE attacks, the weapon chip under your wallet switches weapons, and the yellow button does whatever is nearby (Get in, Take car, Eat & drink, Work out, Buy weapons).
 - Keyboard: arrows or WASD, F to attack, X to jump, E to get in or out, Q to switch weapons, C for camera.
 - The camera button cycles chase, cockpit and top views.
+- Tap the minimap to open the full map: drag to move, pinch or use + and − to zoom, and tap anywhere to drop a pin. A purple line shows the road route on the map and minimap, a purple beam marks the spot in the city, and the distance counts down as you go. Keyboard: M.
 - Settings let you change button opacity, size and shape, HUD and map opacity and map size.
 - Pause, then Quit & start over wipes your money and progress so you start fresh on a new map.
 

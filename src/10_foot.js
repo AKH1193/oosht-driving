@@ -92,6 +92,12 @@ function footHud(on){
 }
 function leaveFoot(){FOOT.on=false;FOOT.ride=null;footHud(false);const pm=curModel();P.len=pm.len;P.wid=pm.wid;}
 
+/* nearest point just outside the building that contains (x,y) */
+function pushOutOf(x,y){
+  for(let k=0;k<4;k++){const b=inBuilding(x,y);if(!b)break;const p=b.pts,n=p.length/2;let best=null,bd=1e9;
+    for(let i=0;i<n;i++){const j=(i+1)%n;const ax=p[2*i],ay=p[2*i+1],bx=p[2*j],by=p[2*j+1];const L2=(bx-ax)**2+(by-ay)**2||1;const t=clamp(((x-ax)*(bx-ax)+(y-ay)*(by-ay))/L2,0,1);const qx=ax+(bx-ax)*t,qy=ay+(by-ay)*t;const d=Math.hypot(qx-x,qy-y);if(d<bd){bd=d;best=[qx,qy];}}
+    if(!best)break;const dx=best[0]-x,dy=best[1]-y,l=Math.hypot(dx,dy)||1;x=best[0]+dx/l*.45;y=best[1]+dy/l*.45;}
+  return [x,y];}
 /* ---------- walking and running ---------- */
 function updateFoot(dt){
   if(FOOT.ride){updateRide(dt);if(FOOT.ride&&FOOT.ride.phase!=='pickup')return;}
@@ -112,9 +118,9 @@ function updateFoot(dt){
   if(run&&P.s>2.6)FOOT.stam=Math.max(0,FOOT.stam-10*dt*(100/maxStam()));else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
   const ox=P.x,oy=P.y,sx=P.vx*dt,sy=P.vy*dt;
-  const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,1,tq);for(const t of tq)if(Math.hypot(t.x-x,t.y-y)<.5)return true;return false;};
+  const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq)if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};
   const blocked=(x,y)=>treeAt2(x,y)||inBuilding(x,y)||inBuilding(x+fx*.32,y+fy*.32)||inBuilding(x-fy*.24+fx*.1,y+fx*.24+fy*.1)||inBuilding(x+fy*.24+fx*.1,y-fx*.24+fy*.1);
-  if(inBuilding(ox,oy)){P.x+=sx;P.y+=sy;}
+  if(inBuilding(ox,oy)){const o=pushOutOf(ox,oy);P.x=o[0];P.y=o[1];P.s*=.5;}
   else if(!blocked(ox+sx,oy+sy)){P.x=ox+sx;P.y=oy+sy;}
   else if(Math.abs(sx)>1e-4&&!blocked(ox+sx,oy)){P.x=ox+sx;P.s*=.97;}
   else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}

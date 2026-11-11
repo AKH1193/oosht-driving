@@ -41,8 +41,9 @@ for(const ev of['pointerup','pointercancel','lostpointercapture'])lz.addEventLis
 
 /* ---------- weapon button and context clusters ---------- */
 $('#btnWpn').addEventListener('click',()=>{cycleWeapon(false);Snd.tick();});
-const hudEl=$('#hud');let modeKey='';
+const hudEl=$('#hud');let modeKey='',hudWasHidden=true;
 function ctlFrame(){
+  if(hudEl.hidden!==hudWasHidden){hudWasHidden=hudEl.hidden;if(!hudWasHidden&&JOY.id==null)setTimeout(joyReset,0);}
   const ride=METRO.ride||(FOOT.on&&FOOT.ride&&FOOT.ride.phase==='ride');
   const m=ride?'m-ride':FLY.on?'m-fly':FOOT.on?'m-foot':'m-drive';const k=m+(PAD.active?'|pad':'');
   if(k!==modeKey){modeKey=k;for(const c of['m-ride','m-fly','m-foot','m-drive'])hudEl.classList.toggle(c,c===m);hudEl.classList.toggle('m-pad',PAD.active);$('#padChip').hidden=!PAD.active;
