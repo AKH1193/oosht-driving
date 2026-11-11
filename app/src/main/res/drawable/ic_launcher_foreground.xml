@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Auto-rickshaw seen from above, driving up a dashed road -->
+<!-- Wise City: a GPS map pin holding the Bengaluru skyline at night, over a road -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#3A414B" android:pathData="M40,20h28v68h-28z" />
-    <path android:fillColor="#FFC72C" android:pathData="M53,22h2v8h-2zM53,78h2v8h-2z" />
-    <path android:fillColor="#1E8A4C" android:pathData="M47,32h14q9,6 9,15v29q0,4 -4,4h-24q-4,0 -4,-4v-29q0,-9 9,-15z" />
-    <path android:fillColor="#A9D2EA" android:pathData="M46,40h16l4,6h-24z" />
-    <path android:fillColor="#FFC72C" android:pathData="M40,47h28v28q0,4 -4,4h-20q-4,0 -4,-4z" />
-    <path android:fillColor="#E0A912" android:pathData="M41,55h26v1.6h-26zM41,63h26v1.6h-26zM41,71h26v1.6h-26z" />
-    <path android:fillColor="#FFF4C2" android:pathData="M52,32.5h4v2h-4z" />
+    <group android:pivotX="54" android:pivotY="54" android:scaleX="0.86" android:scaleY="0.86">
+        <path android:fillColor="#FFC72C" android:pathData="M54,93 L32.4,62.2 A27,27 0 1,1 75.6,62.2 Z" />
+        <path android:fillColor="#E0A912" android:pathData="M54,93 L32.4,62.2 A27,27 0 0,0 75.6,62.2 Z" />
+        <path android:fillColor="#16294A" android:pathData="M33,46a21,21 0 1,0 42,0a21,21 0 1,0 -42,0z" />
+        <group>
+            <clip-path android:pathData="M33,46a21,21 0 1,0 42,0a21,21 0 1,0 -42,0z" />
+            <path android:fillColor="#24406B" android:pathData="M30,46h48v22h-48z" />
+            <path android:fillColor="#FFF4C2" android:pathData="M59.8,33a4.2,4.2 0 1,0 8.4,0a4.2,4.2 0 1,0 -8.4,0z" />
+            <path android:fillColor="#16294A" android:pathData="M62.4,31.6a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0z" />
+            <path android:fillColor="#0D1116" android:pathData="M35,57V39h7v18zM43,57V45h5v12zM60,57V42h5v15zM66,57V36h6v21zM47,57V50h14v7zM48.5,50a5.5,5.5 0 0,1 11,0zM53.4,44.6h1.2v-3.2h-1.2z" />
+            <path android:fillColor="#FFC72C" android:pathData="M37,42h1.6v1.6h-1.6zM39.6,42h1.6v1.6h-1.6zM37,46h1.6v1.6h-1.6zM39.6,50h1.6v1.6h-1.6zM44.6,48h1.6v1.6h-1.6zM67.6,39h1.6v1.6h-1.6zM69.8,43h1.6v1.6h-1.6zM67.6,47h1.6v1.6h-1.6zM61.6,45h1.6v1.6h-1.6zM62.4,51h1.6v1.6h-1.6zM69.8,51h1.6v1.6h-1.6z" />
+            <path android:fillColor="#FFC72C" android:fillAlpha="0.85" android:pathData="M49,53h2v4h-2zM53,53h2v4h-2zM57,53h2v4h-2z" />
+            <path android:fillColor="#3A414B" android:pathData="M30,57h48v12h-48z" />
+            <path android:fillColor="#FFC72C" android:pathData="M31,61.2h6v1.6h-6zM42,61.2h6v1.6h-6zM53,61.2h6v1.6h-6zM64,61.2h6v1.6h-6zM75,61.2h6v1.6h-6z" />
+            <path android:fillColor="#1E8A4C" android:pathData="M30,56.4h48v0.9h-48z" />
+        </group>
+        <path android:strokeColor="#0D1116" android:strokeWidth="1.2" android:pathData="M33,46a21,21 0 1,0 42,0a21,21 0 1,0 -42,0z" />
+    </group>
 </vector>
