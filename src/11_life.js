@@ -17,7 +17,7 @@ function curModel(){return P.skin?P.skin.model:playerModel(P.type);}
 function vehKeyFor(k){return VEH[k]?k:k==='taxi'?'sedan':k==='tanker'?'truck':'hatch';}
 
 /* ---------- jointed figure for the player and the police: walking, running, fighting, aiming, sitting ---------- */
-const PLOOK={shirt:'#23252B',pants:'#34465E'},COPLOOK={shirt:'#BFA77A',pants:'#A68B5B',cap:'#6B4F2A'};
+const PLOOK={shirt:'#2F6FB2',pants:'#2B2F3A'},COPLOOK={shirt:'#BFA77A',pants:'#A68B5B',cap:'#6B4F2A'};
 function rigPose(n){switch(n){
   case 'walk0':return{lL:.35,lR:-.35,kR:.25,aL:-.35,aR:.35};case 'walk1':return{lL:-.35,lR:.35,kL:.25,aL:.35,aR:-.35};
   case 'run0':return{lL:.8,lR:-.6,kR:1.0,aL:-.9,aR:.9,bend:.2};case 'run1':return{lL:-.6,lR:.8,kL:1.0,aL:.9,aR:-.9,bend:.2};
@@ -556,7 +556,7 @@ function lifeRender(A,night,ex,ez){
   cityRender(A,night,ex,ez);
 }
 /* the player on foot */
-function drawPlayerRig(M,pose,wk){drawLit(rig(PLOOK,SKINS[2],pose,wk),M);}
+function drawPlayerRig(M,pose,wk){const n=TOD.night;drawLit(rig(PLOOK,SKINS[2],pose,wk),M,{tint:[1+n*1.7,1+n*1.7,1+n*1.8],emiAdd:[.03*n,.03*n,.04*n]});}
 
 /* ---------- HUD and controls ---------- */
 function lifeHud(){

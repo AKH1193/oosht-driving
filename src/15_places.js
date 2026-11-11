@@ -31,14 +31,6 @@ let GLT=null;function glassTex(){if(GLT)return GLT;const mk=(lit)=>{const S=256,
     c.fillStyle='rgba(255,255,255,.18)';c.beginPath();c.moveTo(0,S*.8);c.lineTo(S*.8,0);c.lineTo(S,0);c.lineTo(0,S);c.fill();}
   return texFromCanvas(cv,true);};GLT={t:mk(false),e:mk(true)};return GLT;}
 
-/* ---------- joystick ---------- */
-const JOY={id:null,cx:0,cy:0,R:60};
-(function(){const j=$('#joy'),k=$('#joyKnob');if(!j)return;
-  const move=e=>{let dx=(e.clientX-JOY.cx)/JOY.R,dy=(e.clientY-JOY.cy)/JOY.R;const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l;}input.jx=dx;input.jy=-dy;k.style.transform=`translate(${dx*JOY.R*.62}px,${dy*JOY.R*.62}px)`;};
-  j.addEventListener('pointerdown',e=>{e.preventDefault();try{j.setPointerCapture(e.pointerId);}catch(_){}JOY.id=e.pointerId;const r=j.getBoundingClientRect();JOY.cx=r.left+r.width/2;JOY.cy=r.top+r.height/2;JOY.R=r.width/2;move(e);j.classList.add('on');});
-  j.addEventListener('pointermove',e=>{if(e.pointerId===JOY.id)move(e);});
-  const up=e=>{if(e.pointerId!==JOY.id)return;JOY.id=null;input.jx=input.jy=0;k.style.transform='';j.classList.remove('on');};
-  j.addEventListener('pointerup',up);j.addEventListener('pointercancel',up);})();
 input.jx=input.jy=0;
 
 /* ---------- quit and start over ---------- */
@@ -202,8 +194,8 @@ function sitAt(t){const c=t&&t.chairs.find(c=>!c.taken);if(!c){toast('No free se
 function renderInterior(dt){
   const pm=FOOTPM;setupCamera(dt,P,FOOTV,pm);
   const[ix,iz]=toLocal(P.x,P.y);const back=CAM.mode==='cockpit'?-.15:2.6,up=CAM.mode==='far'?INT.H-.3:Math.min(INT.H-.35,2.1);
-  let eix=ix-Math.sin(P.h-hAng(INT.f[0],INT.f[1]))*back,eiz=iz-Math.cos(P.h-hAng(INT.f[0],INT.f[1]))*back;
-  eix=clamp(eix,-INT.W/2+.25,INT.W/2-.25);eiz=clamp(eiz,.25,INT.D-.25);const e=IL(eix,eiz),fw=[Math.sin(P.h),-Math.cos(P.h)];
+  const cy=CAM.mode==='cockpit'?P.h:CAM.yaw;let eix=ix-Math.sin(cy-hAng(INT.f[0],INT.f[1]))*back,eiz=iz-Math.cos(cy-hAng(INT.f[0],INT.f[1]))*back;
+  eix=clamp(eix,-INT.W/2+.25,INT.W/2-.25);eiz=clamp(eiz,.25,INT.D-.25);const e=IL(eix,eiz),fw=[Math.sin(cy),-Math.cos(cy)];
   const eye=[e[0],CAM.mode==='cockpit'?1.6:up,e[1]],tgt=CAM.mode==='cockpit'?[P.x+fw[0]*4,1.5,P.y+fw[1]*4]:[P.x+fw[0]*1.2,1.2,P.y+fw[1]*1.2];
   CAM.eye=eye;CAM.tgt=tgt;M4.lookAt(CAM.view,eye,tgt,[0,1,0]);M4.mul(CAM.vp,CAM.proj,CAM.view);M4.invert(CAM.inv,CAM.vp);CAM.right=[CAM.view[0],0,CAM.view[8]];
   setFrameUniforms();
@@ -255,4 +247,4 @@ function doorContext(){
   if(best){const k=kindOf(best);return {k:'enterb',b:best,label:'Enter '+({house:'house',apartment:'apartment',shop:'shop',restaurant:'restaurant',cafe:'cafe',bar:'bar',mall:'mall',office:'office',police:'police station',gym:'gym'}[k]||'building')};}
   return null;
 }
-Object.assign(window.__oosht||{},{INT,enterBuilding,leaveBuilding,doorOf,kindOf,poshAt,JOY,LIFEx:LIFE});
+Object.assign(window.__oosht||{},{INT,enterBuilding,leaveBuilding,doorOf,kindOf,poshAt,LIFEx:LIFE});

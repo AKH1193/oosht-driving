@@ -217,8 +217,8 @@ function solar(date,lat,lon){
 const TODFIX={dawn:{el:-2,az:-1.7,haH:-6},noon:{el:78,az:.3,haH:0},evening:{el:6,az:1.6,haH:5.4},night:{el:-25,az:2.5,haH:9}};
 /* keyframes by sun elevation: sky top, horizon, ground ambient, sky ambient, sun colour */
 const TODK=[
-  [-14,{top:[.02,.03,.08],hor:[.07,.09,.16],sky:[.1,.12,.2],gnd:[.05,.05,.07],sun:[.18,.22,.34],fog:[.06,.08,.14]}],
-  [-5,{top:[.08,.1,.24],hor:[.42,.3,.4],sky:[.2,.2,.3],gnd:[.1,.09,.1],sun:[.3,.24,.3],fog:[.36,.28,.38]}],
+  [-14,{top:[.03,.05,.12],hor:[.12,.13,.22],sky:[.22,.24,.34],gnd:[.11,.11,.13],sun:[.3,.34,.48],fog:[.1,.12,.2]}],
+  [-5,{top:[.08,.1,.24],hor:[.42,.3,.4],sky:[.27,.27,.36],gnd:[.13,.12,.13],sun:[.36,.3,.38],fog:[.36,.28,.38]}],
   [2,{top:[.2,.3,.55],hor:[.95,.6,.45],sky:[.36,.34,.42],gnd:[.18,.15,.14],sun:[.75,.45,.3],fog:[.82,.58,.48]}],
   [10,{top:[.3,.52,.82],hor:[.98,.8,.6],sky:[.44,.44,.5],gnd:[.24,.21,.18],sun:[.95,.72,.5],fog:[.86,.78,.68]}],
   [25,{top:[.25,.52,.88],hor:[.72,.84,.94],sky:[.46,.5,.58],gnd:[.27,.25,.22],sun:[.92,.88,.78],fog:[.72,.82,.9]}],
@@ -247,8 +247,11 @@ const CAM={mode:settings.cam||'chase',eye:[0,5,10],tgt:[0,0,0],fov:62,yaw:0,shak
 function setupCamera(dt,P,V,model){
   const sp=Math.abs(P.s),top=V.top/3.6,frac=clamp(sp/top,0,1);
   const fx=Math.sin(P.h),fz=-Math.cos(P.h);
-  CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
-  const cyx=Math.sin(CAM.yaw),cyz=-Math.cos(CAM.yaw);
+  /* on foot the camera stays where you put it (swipe to turn it); in vehicles it follows the heading, plus a swipe offset that springs back */
+  CAM.free=FOOT.on&&!FOOT.ride&&!METRO.ride&&CAM.mode!=='cockpit';
+  if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
+  if(CAM.free||CAM.mode==='cockpit')CAM.look=0;else if(!CAM.lookHeld)CAM.look=(CAM.look||0)*Math.pow(.25,dt);
+  const yawC=CAM.yaw+(CAM.look||0),cyx=Math.sin(yawC),cyz=-Math.cos(yawC);
   const sh=CAM.shake;const jx=(Math.random()-.5)*sh*.08,jy=(Math.random()-.5)*sh*.08;
   const bump=P.bounce*.12+P.air*.6;
   let near=.2;
@@ -263,7 +266,7 @@ function setupCamera(dt,P,V,model){
     let cd=dist;if(!far&&!inBuilding(P.x,P.y)){for(let t=.8;t<dist;t+=.35){const b=inBuilding(P.x-cyx*t,P.y-cyz*t);if(b&&b.h>1.3+(ht-1.3)*t/dist){cd=Math.max(.9,t-.4);break;}}}
     CAM.cd=CAM.cd==null||far?cd:cd<CAM.cd?cd:lerp(CAM.cd,cd,Math.min(1,dt*2.2));const cdx=Math.min(CAM.cd,dist),hh=1.3+(ht-1.3)*cdx/dist;
     CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump,P.y-cyz*cdx];
-    CAM.tgt=[P.x+fx*(far?8:6),far?0:1.1,P.y+fz*(far?8:6)];
+    const lf=CAM.free||CAM.look?[cyx,cyz]:[fx,fz];CAM.tgt=[P.x+lf[0]*(far?8:6),far?0:1.1+(CAM.pitch||0),P.y+lf[1]*(far?8:6)];
     CAM.fov=lerp(CAM.fov,(far?55:62)+frac*(far?0:18),Math.min(1,dt*3));
   }
   CAM.shake*=Math.pow(.02,dt);

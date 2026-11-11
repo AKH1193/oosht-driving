@@ -117,10 +117,31 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #carry{position:absolute;left:50%;top:calc(88px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;font-size:13px;font-weight:700}
 #ctList,#outChallan{max-height:30vh;overflow:auto}#footBar{flex-wrap:nowrap;gap:6px}#footBar .sbtn{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
 #rideBar .notice{display:inline-block}
-#joy{position:relative;width:136px;height:136px;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.08) 0 38%,rgba(12,16,22,.45) 39% 100%);border:2px solid rgba(255,255,255,.22);touch-action:none}
-#joyRing{position:absolute;inset:18px;border-radius:50%;border:1px dashed rgba(255,255,255,.18);pointer-events:none}
-#joyKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.55),rgba(255,255,255,.18) 60%,rgba(255,255,255,.1));border:2px solid rgba(255,255,255,.45);box-shadow:0 4px 12px rgba(0,0,0,.35);pointer-events:none;transition:transform .08s}
-#joy.on{border-color:var(--auto-yellow)}#joy.on #joyKnob{transition:none;border-color:var(--auto-yellow)}
+/* ===== controls v2: floating joystick, swipe camera, context clusters ===== */
+#lookZone{position:absolute;inset:0;touch-action:none}
+#joyZone{position:absolute;left:0;bottom:0;width:40vw;height:72vh;touch-action:none}
+#joy{position:absolute;width:calc(128px*var(--bs));height:calc(128px*var(--bs));border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.07) 0 34%,rgba(10,14,20,.38) 35% 100%);border:2px solid rgba(255,255,255,.28);pointer-events:none;opacity:calc(var(--bo)*.55);transition:opacity .15s}
+#joyRing{position:absolute;inset:22%;border-radius:50%;border:1.5px solid rgba(255,255,255,.16)}
+#joyKnob{position:absolute;left:50%;top:50%;width:44%;height:44%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 38% 32%,rgba(255,255,255,.75),rgba(255,255,255,.28) 62%,rgba(255,255,255,.16));border:2px solid rgba(255,255,255,.6);box-shadow:0 3px 10px rgba(0,0,0,.4)}
+#joyZone.on #joy{opacity:var(--bo);border-color:rgba(255,199,44,.8)}
+#joyZone.run #joyKnob{background:radial-gradient(circle at 38% 32%,#FFE58A,#FFC72C 62%,#C99812);border-color:#FFF3C4}
+.ctl-foot{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:206px;height:196px;transform:scale(var(--bs));transform-origin:right bottom;opacity:var(--bo)}
+.ctl-foot .abtn{position:absolute}
+.ctl-foot #btnAtk{right:0;bottom:0;width:92px;height:92px;font-size:15px}
+.ctl-foot #btnJump{right:106px;bottom:6px;width:66px;height:66px}
+.ctl-foot #btnRun{right:16px;bottom:108px;width:66px;height:66px}
+.ctl-foot #btnWpn{right:100px;bottom:92px;width:54px;height:54px;font-size:10px;letter-spacing:.04em;background:rgba(255,199,44,.18);border-color:rgba(255,199,44,.6)}
+.abtn{display:grid;place-items:center;color:var(--text);user-select:none;-webkit-user-select:none}
+.abtn:active,.abtn.on{transform:scale(.94)}
+#hud.m-foot .ctl-right,#hud.m-foot .ctl-act{display:none}
+#hud.m-foot .usebtn{right:calc(16px + 92px*var(--bs) + env(safe-area-inset-right,0px));bottom:calc(16px + 160px*var(--bs) + env(safe-area-inset-bottom,0px))}
+#hud.m-drive .ctl-foot,#hud.m-fly .ctl-foot{display:none}
+#hud.m-ride .ctl-foot,#hud.m-ride .ctl-right,#hud.m-ride .ctl-act,#hud.m-ride #joyZone{display:none}
+#hud.m-pad #joyZone,#hud.m-pad .ctl-foot,#hud.m-pad .ctl-right,#hud.m-pad .ctl-act{display:none}
+#hud.m-pad .usebtn::before{content:"Y · ";opacity:.7}
+button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
+#padChip{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+
 #flyHud{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;font-weight:800;font-size:14px;letter-spacing:.04em;white-space:nowrap}
 #apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 #apsh .n{font-family:var(--display);font-size:42px;line-height:1;color:var(--auto-yellow);min-width:1.2ch;text-align:center}
@@ -236,6 +257,8 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
   <div id="flash"></div>
 
   <div id="hud" hidden>
+    <div id="lookZone" class="hit"></div>
+    <div id="joyZone" class="hit"><div id="joy"><div id="joyRing"></div><div id="joyKnob"></div></div></div>
     <div id="hitfx"></div>
     <div class="panel" id="rep" hidden><b id="repTxt">Lift on the beat</b><div class="track"><div class="zone" id="repZone"></div><div class="cur" id="repCur"></div></div><div id="repSub" style="font-size:12px;color:var(--muted)"></div><button class="btn primary" id="repBtn">LIFT</button></div>
     <div class="panel" id="carry" hidden></div>
@@ -288,16 +311,14 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <button class="btn primary" id="ulBtn">UNLOAD</button>
       <div class="s" id="ulTime">15 s</div>
     </div>
-    <div class="ctl-left2">
-      <button class="abtn hit" id="btnRun" hidden>RUN</button>
-      <button class="abtn hit" id="btnJump" hidden>JUMP</button>
-    </div>
-    <div class="ctl-left">
-      <div id="joy" class="hit" aria-label="Joystick: steer, walk and run"><div id="joyRing"></div><div id="joyKnob"></div></div>
-    </div>
     <div id="flyHud" class="panel" hidden></div>
+    <div class="ctl-foot">
+      <button class="abtn hit" id="btnRun">RUN</button>
+      <button class="abtn hit" id="btnJump">JUMP</button>
+      <button class="abtn sm hit" id="btnWpn">FIST</button>
+      <button class="abtn atk hit" id="btnAtk">HIT</button>
+    </div>
     <div class="ctl-act">
-      <button class="abtn atk hit" id="btnAtk" hidden>HIT</button>
       <button class="abtn hit" id="btnExit">EXIT</button>
     </div>
     <button class="usebtn hit" id="btnUse" hidden>Get in</button>
@@ -306,6 +327,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <button class="pedal brake hit" id="btnBrake">BRAKE</button>
       <button class="pedal gas hit" id="btnGas">GO</button>
     </div>
+    <div class="panel" id="padChip" hidden>Controller · A jump · X run · RT fire / gas · Y use · B exit</div>
     <div class="attrib" id="attrib">© OpenStreetMap contributors</div>
   </div>
 
@@ -2330,8 +2352,8 @@ function solar(date,lat,lon){
 const TODFIX={dawn:{el:-2,az:-1.7,haH:-6},noon:{el:78,az:.3,haH:0},evening:{el:6,az:1.6,haH:5.4},night:{el:-25,az:2.5,haH:9}};
 /* keyframes by sun elevation: sky top, horizon, ground ambient, sky ambient, sun colour */
 const TODK=[
-  [-14,{top:[.02,.03,.08],hor:[.07,.09,.16],sky:[.1,.12,.2],gnd:[.05,.05,.07],sun:[.18,.22,.34],fog:[.06,.08,.14]}],
-  [-5,{top:[.08,.1,.24],hor:[.42,.3,.4],sky:[.2,.2,.3],gnd:[.1,.09,.1],sun:[.3,.24,.3],fog:[.36,.28,.38]}],
+  [-14,{top:[.03,.05,.12],hor:[.12,.13,.22],sky:[.22,.24,.34],gnd:[.11,.11,.13],sun:[.3,.34,.48],fog:[.1,.12,.2]}],
+  [-5,{top:[.08,.1,.24],hor:[.42,.3,.4],sky:[.27,.27,.36],gnd:[.13,.12,.13],sun:[.36,.3,.38],fog:[.36,.28,.38]}],
   [2,{top:[.2,.3,.55],hor:[.95,.6,.45],sky:[.36,.34,.42],gnd:[.18,.15,.14],sun:[.75,.45,.3],fog:[.82,.58,.48]}],
   [10,{top:[.3,.52,.82],hor:[.98,.8,.6],sky:[.44,.44,.5],gnd:[.24,.21,.18],sun:[.95,.72,.5],fog:[.86,.78,.68]}],
   [25,{top:[.25,.52,.88],hor:[.72,.84,.94],sky:[.46,.5,.58],gnd:[.27,.25,.22],sun:[.92,.88,.78],fog:[.72,.82,.9]}],
@@ -2360,8 +2382,11 @@ const CAM={mode:settings.cam||'chase',eye:[0,5,10],tgt:[0,0,0],fov:62,yaw:0,shak
 function setupCamera(dt,P,V,model){
   const sp=Math.abs(P.s),top=V.top/3.6,frac=clamp(sp/top,0,1);
   const fx=Math.sin(P.h),fz=-Math.cos(P.h);
-  CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
-  const cyx=Math.sin(CAM.yaw),cyz=-Math.cos(CAM.yaw);
+  /* on foot the camera stays where you put it (swipe to turn it); in vehicles it follows the heading, plus a swipe offset that springs back */
+  CAM.free=FOOT.on&&!FOOT.ride&&!METRO.ride&&CAM.mode!=='cockpit';
+  if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
+  if(CAM.free||CAM.mode==='cockpit')CAM.look=0;else if(!CAM.lookHeld)CAM.look=(CAM.look||0)*Math.pow(.25,dt);
+  const yawC=CAM.yaw+(CAM.look||0),cyx=Math.sin(yawC),cyz=-Math.cos(yawC);
   const sh=CAM.shake;const jx=(Math.random()-.5)*sh*.08,jy=(Math.random()-.5)*sh*.08;
   const bump=P.bounce*.12+P.air*.6;
   let near=.2;
@@ -2376,7 +2401,7 @@ function setupCamera(dt,P,V,model){
     let cd=dist;if(!far&&!inBuilding(P.x,P.y)){for(let t=.8;t<dist;t+=.35){const b=inBuilding(P.x-cyx*t,P.y-cyz*t);if(b&&b.h>1.3+(ht-1.3)*t/dist){cd=Math.max(.9,t-.4);break;}}}
     CAM.cd=CAM.cd==null||far?cd:cd<CAM.cd?cd:lerp(CAM.cd,cd,Math.min(1,dt*2.2));const cdx=Math.min(CAM.cd,dist),hh=1.3+(ht-1.3)*cdx/dist;
     CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump,P.y-cyz*cdx];
-    CAM.tgt=[P.x+fx*(far?8:6),far?0:1.1,P.y+fz*(far?8:6)];
+    const lf=CAM.free||CAM.look?[cyx,cyz]:[fx,fz];CAM.tgt=[P.x+lf[0]*(far?8:6),far?0:1.1+(CAM.pitch||0),P.y+lf[1]*(far?8:6)];
     CAM.fov=lerp(CAM.fov,(far?55:62)+frac*(far?0:18),Math.min(1,dt*3));
   }
   CAM.shake*=Math.pow(.02,dt);
@@ -3079,6 +3104,7 @@ function lightsFor(model,M,headOn,brake,night){
   if(headOn)for(const p of model.lights.head){const w=M4.xform(M,p[0],p[1],p[2]-.05);DGr.bill(w[0],w[1],w[2],.55,[1,.9,.7],CAM.right);}
   const tk=brake?1:night*.6;if(tk>.05)for(const p of model.lights.tail){const w=M4.xform(M,p[0],p[1],p[2]+.05);DGr.bill(w[0],w[1],w[2],brake?.5:.35,[1*tk,.1*tk,.05*tk],CAM.right);}
 }
+const PEDLIT={tint:[1,1,1]};
 function renderScene(dt){
   resizeGL();
   let V=VEH[P.type],pm=curModel();const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
@@ -3123,7 +3149,7 @@ function renderScene(dt){
     drawLit(LAMP,TM2,{tint:col,emiAdd:col.map(v=>v*1.1),noHL:true});
     const w=M4.xform(TM2,0,0,-.05);DGr.bill(w[0],w[1],w[2],.6,col,CAM.right);}
   /* traffic, people, animals */
-  const A=animalModels();
+  const A=animalModels();PEDLIT.tint=[1+night*1.2,1+night*1.2,1+night*1.3];
   for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);if(a.patrol&&a.model.decal){drawLit(a.model.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});const lb=a.model.lightbar;if(lb){drawLit(lb.red,TM,{emiAdd:[.25,.02,.02]});drawLit(lb.blue,TM,{emiAdd:[.02,.05,.3]});}}if(a.model.decal2&&d<120){const tx=a.model.decal2.tex().tex;drawLit(a.model.decal2.mesh,TM,{tex:tx,emTex:tx,emiK:.15+night*.4});}
     if(d<160)lightsFor(a.model,TM,night>.25,a.brake&&a.v>.5,night);}
   for(const p of peds){if(Math.hypot(p.x-ex,p.y-ez)>180)continue;
@@ -3134,7 +3160,7 @@ function renderScene(dt){
       continue;}
     if(p.rp||p.strip||p.culprit||p.state==='stalk'||p.state==='hostile'||p.state==='argue'||p.state==='brawl'||(p.state==='down'&&Math.hypot(p.x-ex,p.y-ez)<40)){pedRig(p);continue;}
     const moving=p.state==='walk'||p.state==='cross'||p.state==='play'||p.state==='flee';const m=A.ped[p.v][moving?p.pose:0];
-    if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM);}
+    if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM,PEDLIT);}
   for(const n of animals){if(Math.hypot(n.x-ex,n.y-ez)>200)continue;let m;
     if(n.kind==='cow')m=n.lie?A.cowLie[n.v]:A.cow[n.v*2+(n.state==='wander'||n.state==='cross'?n.pose:0)];
     else if(n.kind==='dog')m=A.dog[n.v][n.state==='idle'?0:n.pose];else m=A.cat[n.v][n.event||n.state!=='idle'?n.pose:0];
@@ -3557,11 +3583,14 @@ function updateFoot(dt){
   if(FOOT.ride){updateRide(dt);if(FOOT.ride&&FOOT.ride.phase!=='pickup')return;}
   if(LIFE.dead||METRO.ride)return;
   const jm=Math.min(1,Math.hypot(input.jx||0,input.jy||0));
-  const carrying=FOOT.job&&FOOT.job.carry;const run=(input.horn||jm>.96&&FOOT.runHold>.6)&&FOOT.stam>2&&!carrying;const top=carrying?1.8:run?6.2:2.3;
-  FOOT.runHold=jm>.96?(FOOT.runHold||0)+dt:0;
+  const carrying=FOOT.job&&FOOT.job.carry;const run=(input.horn||input.sprint||jm>.97&&FOOT.runHold>.35)&&FOOT.stam>2&&!carrying;const top=carrying?1.8:run?6.2:2.3;
+  FOOT.runHold=jm>.97?(FOOT.runHold||0)+dt:0;
   if(jm>.15){/* joystick: push the way you want to go, relative to the camera; push all the way to run */
-    const tgt=(CAM.yaw??P.h)+Math.atan2(input.jx,input.jy);P.h+=angDiff(P.h,tgt)*Math.min(1,dt*(input.jy<-.5?4:7));
-    P.s+=clamp(top*Math.min(1,jm*1.15)-P.s,-8*dt,6*dt);}
+    if(CAM.mode==='cockpit'){P.h+=input.jx*2.2*dt;P.s+=clamp(top*Math.max(0,input.jy)-P.s,-8*dt,6*dt);}
+    else{const rel=Math.atan2(input.jx,input.jy),tgt=CAM.yaw+rel;P.h+=angDiff(P.h,tgt)*Math.min(1,dt*10);
+      P.s+=clamp(top*Math.min(1,jm*1.1)-P.s,-8*dt,6*dt);
+      /* the camera drifts in behind you only while you walk roughly away from it */
+      if(Math.abs(rel)<1.1&&!CAM.lookHeld)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*.9);}}
   else{let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
     P.h+=steerIn*2.4*dt;
     if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);}
@@ -3800,7 +3829,7 @@ function footHudTick(el){
   if(FOOT.ride)key='';
   else if(FOOT.stam<8){key='tired';html='<b>Out of breath.</b> Walk for a bit to get your stamina back.';}
   else if(INT.on){key='int'+INT.kind;html=`Inside · <b>${({house:'a family home',apartment:'apartment lobby',shop:'shop',restaurant:'restaurant',cafe:'cafe',bar:'bar',mall:'shopping mall',office:'office',police:'police station',gym:'gym'})[INT.kind]||'building'}</b> · walk to the door to go out`;}
-  else if(FOOT.tip>0){key='tip';html=`On foot · <b>+₹5</b> for every 10 s you keep moving · hold <b>RUN</b> to run`;}
+  else if(FOOT.tip>0){key='tip';html=`On foot · push the joystick all the way to <b>run</b> · swipe the screen to look around · <b>+₹5</b> every 10 s on the move`;}
   else key='';
   if(key!==noticeKey){noticeKey=key;el.notice.hidden=!key;el.notice.innerHTML=html;}
   return true;
@@ -3826,7 +3855,7 @@ function curModel(){return P.skin?P.skin.model:playerModel(P.type);}
 function vehKeyFor(k){return VEH[k]?k:k==='taxi'?'sedan':k==='tanker'?'truck':'hatch';}
 
 /* ---------- jointed figure for the player and the police: walking, running, fighting, aiming, sitting ---------- */
-const PLOOK={shirt:'#23252B',pants:'#34465E'},COPLOOK={shirt:'#BFA77A',pants:'#A68B5B',cap:'#6B4F2A'};
+const PLOOK={shirt:'#2F6FB2',pants:'#2B2F3A'},COPLOOK={shirt:'#BFA77A',pants:'#A68B5B',cap:'#6B4F2A'};
 function rigPose(n){switch(n){
   case 'walk0':return{lL:.35,lR:-.35,kR:.25,aL:-.35,aR:.35};case 'walk1':return{lL:-.35,lR:.35,kL:.25,aL:.35,aR:-.35};
   case 'run0':return{lL:.8,lR:-.6,kR:1.0,aL:-.9,aR:.9,bend:.2};case 'run1':return{lL:-.6,lR:.8,kL:1.0,aL:.9,aR:-.9,bend:.2};
@@ -4365,7 +4394,7 @@ function lifeRender(A,night,ex,ez){
   cityRender(A,night,ex,ez);
 }
 /* the player on foot */
-function drawPlayerRig(M,pose,wk){drawLit(rig(PLOOK,SKINS[2],pose,wk),M);}
+function drawPlayerRig(M,pose,wk){const n=TOD.night;drawLit(rig(PLOOK,SKINS[2],pose,wk),M,{tint:[1+n*1.7,1+n*1.7,1+n*1.8],emiAdd:[.03*n,.03*n,.04*n]});}
 
 /* ---------- HUD and controls ---------- */
 function lifeHud(){
@@ -4949,9 +4978,9 @@ rig=function(look,sk,pn,wk){
 function pedLook(p){return p.strip?UNDIES:PED_LOOKS[p.v%PED_LOOKS.length]||PED_LOOKS[0];}
 function pedRig(p){
   const look=pedLook(p),sk=SKINS[(p.v||0)%SKINS.length];
-  if(p.state==='down'){M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);drawLit(rig(look,sk,'pose'),TM);return;}
+  if(p.state==='down'){M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);drawLit(rig(look,sk,'pose'),TM,PEDLIT);return;}
   const pn=p.rp||(p.state==='flee'||p.state==='walk'||p.state==='cross'?(p.run?(p.pose?'run1':'run0'):(p.pose?'walk1':'walk0')):'pose');
-  M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(rig(look,sk,pn,p.rw||null),TM);
+  M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(rig(look,sk,pn,p.rw||null),TM,PEDLIT);
   if(p.culprit&&!p.caught){const b=2.35+Math.sin(GT*5)*.08;DGr.bill(p.x,b,p.y,.45,[1,.15,.1],CAM.right);}
 }
 
@@ -5172,14 +5201,6 @@ let GLT=null;function glassTex(){if(GLT)return GLT;const mk=(lit)=>{const S=256,
     c.fillStyle='rgba(255,255,255,.18)';c.beginPath();c.moveTo(0,S*.8);c.lineTo(S*.8,0);c.lineTo(S,0);c.lineTo(0,S);c.fill();}
   return texFromCanvas(cv,true);};GLT={t:mk(false),e:mk(true)};return GLT;}
 
-/* ---------- joystick ---------- */
-const JOY={id:null,cx:0,cy:0,R:60};
-(function(){const j=$('#joy'),k=$('#joyKnob');if(!j)return;
-  const move=e=>{let dx=(e.clientX-JOY.cx)/JOY.R,dy=(e.clientY-JOY.cy)/JOY.R;const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l;}input.jx=dx;input.jy=-dy;k.style.transform=`translate(${dx*JOY.R*.62}px,${dy*JOY.R*.62}px)`;};
-  j.addEventListener('pointerdown',e=>{e.preventDefault();try{j.setPointerCapture(e.pointerId);}catch(_){}JOY.id=e.pointerId;const r=j.getBoundingClientRect();JOY.cx=r.left+r.width/2;JOY.cy=r.top+r.height/2;JOY.R=r.width/2;move(e);j.classList.add('on');});
-  j.addEventListener('pointermove',e=>{if(e.pointerId===JOY.id)move(e);});
-  const up=e=>{if(e.pointerId!==JOY.id)return;JOY.id=null;input.jx=input.jy=0;k.style.transform='';j.classList.remove('on');};
-  j.addEventListener('pointerup',up);j.addEventListener('pointercancel',up);})();
 input.jx=input.jy=0;
 
 /* ---------- quit and start over ---------- */
@@ -5343,8 +5364,8 @@ function sitAt(t){const c=t&&t.chairs.find(c=>!c.taken);if(!c){toast('No free se
 function renderInterior(dt){
   const pm=FOOTPM;setupCamera(dt,P,FOOTV,pm);
   const[ix,iz]=toLocal(P.x,P.y);const back=CAM.mode==='cockpit'?-.15:2.6,up=CAM.mode==='far'?INT.H-.3:Math.min(INT.H-.35,2.1);
-  let eix=ix-Math.sin(P.h-hAng(INT.f[0],INT.f[1]))*back,eiz=iz-Math.cos(P.h-hAng(INT.f[0],INT.f[1]))*back;
-  eix=clamp(eix,-INT.W/2+.25,INT.W/2-.25);eiz=clamp(eiz,.25,INT.D-.25);const e=IL(eix,eiz),fw=[Math.sin(P.h),-Math.cos(P.h)];
+  const cy=CAM.mode==='cockpit'?P.h:CAM.yaw;let eix=ix-Math.sin(cy-hAng(INT.f[0],INT.f[1]))*back,eiz=iz-Math.cos(cy-hAng(INT.f[0],INT.f[1]))*back;
+  eix=clamp(eix,-INT.W/2+.25,INT.W/2-.25);eiz=clamp(eiz,.25,INT.D-.25);const e=IL(eix,eiz),fw=[Math.sin(cy),-Math.cos(cy)];
   const eye=[e[0],CAM.mode==='cockpit'?1.6:up,e[1]],tgt=CAM.mode==='cockpit'?[P.x+fw[0]*4,1.5,P.y+fw[1]*4]:[P.x+fw[0]*1.2,1.2,P.y+fw[1]*1.2];
   CAM.eye=eye;CAM.tgt=tgt;M4.lookAt(CAM.view,eye,tgt,[0,1,0]);M4.mul(CAM.vp,CAM.proj,CAM.view);M4.invert(CAM.inv,CAM.vp);CAM.right=[CAM.view[0],0,CAM.view[8]];
   setFrameUniforms();
@@ -5396,7 +5417,7 @@ function doorContext(){
   if(best){const k=kindOf(best);return {k:'enterb',b:best,label:'Enter '+({house:'house',apartment:'apartment',shop:'shop',restaurant:'restaurant',cafe:'cafe',bar:'bar',mall:'mall',office:'office',police:'police station',gym:'gym'}[k]||'building')};}
   return null;
 }
-Object.assign(window.__oosht||{},{INT,enterBuilding,leaveBuilding,doorOf,kindOf,poshAt,JOY,LIFEx:LIFE});
+Object.assign(window.__oosht||{},{INT,enterBuilding,leaveBuilding,doorOf,kindOf,poshAt,LIFEx:LIFE});
 
 /* ================= WISE CITY: Kempegowda International Airport, planes, flying ================= */
 const AIR={runways:[],planes:[],ops:[],t:30,isKIA:false};
@@ -5491,6 +5512,112 @@ AREAS.splice(AREAS.length-1,0,{label:'Kempegowda Airport',sub:'Devanahalli · fl
   b.addEventListener('click',()=>{currentLoc={lat:a.lat,lon:a.lon,label:a.label};go('showroom');});box.insertBefore(b,box.lastElementChild);})();
 Object.assign(window.__oosht||{},{AIR,FLY,startFlight,exitPlane,buildAirport,planeContext,INT,enterBuilding,leaveBuilding,doorOf,kindOf,poshAt,STREET,openLoot,peopleContext,peopleUse,policeWitness,PATROL,LIFE,FOOT,profile,crime,hurtPed,
   applyEffect:(e,v)=>applyEffect(e,v),openVenue:v=>openVenue(v),MENUS,clearChunks,findContext,exitVehicle,show,caught,settings,COP,peds:()=>peds,agents:()=>agents,goFoot,setLoc(v){currentLoc=v;},getRelease(){return RELEASE;},setState(v){state=v;},updatePatrols,W,pedLook});
+
+/* ================= WISE CITY: controls v2 =================
+   floating joystick with a radial dead zone, swipe-to-look camera, context-swapped button clusters
+   (on foot / driving / flying / riding), and physical gamepad support that hides the touch overlay */
+for(const[k,v]of Object.entries({joyMode:'float',lookSens:'med'}))if(settings[k]==null)settings[k]=v;
+SETS.splice(1,0,['joyMode','Joystick',[['float','Floating'],['fixed','Fixed']]],['lookSens','Camera swipe',[['low','Slow'],['med','Medium'],['high','Fast']]]);
+
+/* ---------- joystick ---------- */
+const JOY={id:null,cx:0,cy:0,R:64,dz:.14,run:false};
+const jz=$('#joyZone'),jb=$('#joy'),jk=$('#joyKnob');
+function joyR(){return 64*(+settings.btnSize||1);}
+function joyRest(){const z=jz.getBoundingClientRect(),R=joyR();return [z.left+Math.max(24,parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal'))||0)+R+10,z.bottom-R-18];}
+function joyPlace(cx,cy){const z=jz.getBoundingClientRect(),R=joyR();jb.style.left=(cx-z.left-R)+'px';jb.style.top=(cy-z.top-R)+'px';}
+function joyKnob(dx,dy){jk.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;}
+function joyReset(){JOY.id=null;input.jx=input.jy=0;JOY.run=false;jz.classList.remove('on','run');joyKnob(0,0);const r=joyRest();joyPlace(r[0],r[1]);}
+function joyMove(e){const R=JOY.R;let dx=(e.clientX-JOY.cx)/R,dy=(e.clientY-JOY.cy)/R;const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m;}
+  const mm=Math.min(1,m);const k=mm<JOY.dz?0:(mm-JOY.dz)/(1-JOY.dz)/(mm||1);
+  input.jx=dx*k;input.jy=-dy*k;joyKnob(dx*R*.62,dy*R*.62);
+  const run=mm>.97;if(run!==JOY.run){JOY.run=run;jz.classList.toggle('run',run&&FOOT.on);}}
+jz.addEventListener('pointerdown',e=>{if(JOY.id!=null)return;e.preventDefault();try{jz.setPointerCapture(e.pointerId);}catch(_){}
+  JOY.id=e.pointerId;JOY.R=joyR();const z=jz.getBoundingClientRect();
+  if(settings.joyMode==='fixed'){const r=joyRest();JOY.cx=r[0];JOY.cy=r[1];}
+  else{JOY.cx=clamp(e.clientX,z.left+JOY.R+6,z.right-JOY.R-6);JOY.cy=clamp(e.clientY,z.top+JOY.R+6,z.bottom-JOY.R-6);}
+  joyPlace(JOY.cx,JOY.cy);jz.classList.add('on');joyMove(e);});
+jz.addEventListener('pointermove',e=>{if(e.pointerId===JOY.id)joyMove(e);});
+for(const ev of['pointerup','pointercancel','lostpointercapture'])jz.addEventListener(ev,e=>{if(e.pointerId===JOY.id)joyReset();});
+window.addEventListener('resize',()=>{if(JOY.id==null)setTimeout(joyReset,60);});
+setTimeout(joyReset,0);
+
+/* ---------- swipe anywhere else to look around ---------- */
+const LOOK={id:null,x:0,y:0,t:0,lastTap:0,moved:0};
+const lz=$('#lookZone');
+const lookK=()=>({low:.0045,med:.0075,high:.012}[settings.lookSens]||.0075);
+function lookBy(dx,dy){
+  if(CAM.mode==='cockpit'){if(FOOT.on&&!FOOT.ride)P.h+=dx*lookK();return;}
+  if(CAM.free)CAM.yaw+=dx*lookK();else CAM.look=clamp((CAM.look||0)+dx*lookK(),-2.8,2.8);
+  CAM.pitch=clamp((CAM.pitch||0)-dy*.012,-.6,2.6);}
+lz.addEventListener('pointerdown',e=>{if(LOOK.id!=null)return;e.preventDefault();try{lz.setPointerCapture(e.pointerId);}catch(_){}LOOK.id=e.pointerId;LOOK.x=e.clientX;LOOK.y=e.clientY;LOOK.t=performance.now();LOOK.moved=0;CAM.lookHeld=true;});
+lz.addEventListener('pointermove',e=>{if(e.pointerId!==LOOK.id)return;const dx=e.clientX-LOOK.x,dy=e.clientY-LOOK.y;LOOK.x=e.clientX;LOOK.y=e.clientY;LOOK.moved+=Math.abs(dx)+Math.abs(dy);if(state==='play')lookBy(dx,dy);});
+for(const ev of['pointerup','pointercancel','lostpointercapture'])lz.addEventListener(ev,e=>{if(e.pointerId!==LOOK.id)return;LOOK.id=null;CAM.lookHeld=false;
+  const now=performance.now();if(LOOK.moved<10&&now-LOOK.t<250){/* double tap: snap the camera behind you */if(now-LOOK.lastTap<350){CAM.yaw=P.h;CAM.look=0;CAM.pitch=0;}LOOK.lastTap=now;}});
+
+/* ---------- weapon button and context clusters ---------- */
+$('#btnWpn').addEventListener('click',()=>{cycleWeapon(false);Snd.tick();});
+const hudEl=$('#hud');let modeKey='';
+function ctlFrame(){
+  const ride=METRO.ride||(FOOT.on&&FOOT.ride&&FOOT.ride.phase==='ride');
+  const m=ride?'m-ride':FLY.on?'m-fly':FOOT.on?'m-foot':'m-drive';const k=m+(PAD.active?'|pad':'');
+  if(k!==modeKey){modeKey=k;for(const c of['m-ride','m-fly','m-foot','m-drive'])hudEl.classList.toggle(c,c===m);hudEl.classList.toggle('m-pad',PAD.active);$('#padChip').hidden=!PAD.active;
+    if(m!=='m-foot'){input.sprint=0;}if(JOY.id==null)joyReset();
+    $('#padChip').textContent=m==='m-foot'?'Controller · RT hit/fire · A jump · X sprint · Y use · RB weapon · right stick camera':m==='m-fly'?'Controller · RT throttle up · LT throttle down · left stick fly · Y exit':'Controller · RT gas · LT brake · left stick steer · Y exit · X horn';}
+  if(FOOT.on){const w=WPN[LIFE.cur];const t=(w.name.split(' ')[0]||'').toUpperCase().slice(0,6)+(w.gun?' '+(profile.inv.ammo[w.gun]||0):'');const b=$('#btnWpn');if(b.textContent!==t)b.textContent=t;}
+}
+
+/* ---------- physical controllers (Xbox, PlayStation, Backbone, Kishi) via the Gamepad API ---------- */
+const PAD={active:false,prev:[],focus:-1,navT:0,wrote:false};
+window.addEventListener('gamepadconnected',e=>{toast(`Controller connected · ${(e.gamepad.id||'gamepad').replace(/\(.*\)/,'').slice(0,28)}`,'good','pad',2500);});
+window.addEventListener('gamepaddisconnected',()=>{padOff();toast('Controller disconnected · touch controls are back','', 'pad',2500);});
+document.addEventListener('pointerdown',e=>{if(PAD.active&&e.pointerType!=='mouse')padOff();},true);
+function padOff(){if(!PAD.active)return;PAD.active=false;if(PAD.wrote){input.jx=input.jy=0;input.gas=input.brake=input.atk=input.sprint=input.horn=0;Snd.hornOff();PAD.wrote=false;}document.querySelectorAll('.padfocus').forEach(x=>x.classList.remove('padfocus'));}
+function padGet(){const gs=navigator.getGamepads?navigator.getGamepads():[];for(const g of gs)if(g&&g.connected)return g;return null;}
+function padPoll(dt){
+  const g=padGet();if(!g){if(PAD.active)padOff();return;}
+  const B=i=>{const x=g.buttons[i];return !!x&&(x.pressed||x.value>.45);},BV=i=>{const x=g.buttons[i];return x?x.value:0;};
+  const AX=i=>{const v=g.axes[i]||0;return Math.abs(v)<.16?0:(v-Math.sign(v)*.16)/.84;};
+  if(!PAD.active){if(g.buttons.some(x=>x.pressed)||g.axes.some(v=>Math.abs(v)>.4)){PAD.active=true;toast('Controller active · touch the screen to go back to touch controls','good','pad',2500);}else{PAD.prev=g.buttons.map((_,i)=>B(i));return;}}
+  const P1=i=>B(i)&&!PAD.prev[i];
+  if(state==='play'){
+    PAD.wrote=true;
+    const lx=AX(0),ly=AX(1),rx=AX(2),ry=AX(3);
+    input.jx=lx;input.jy=-ly;
+    if(rx||ry){CAM.lookHeld=true;lookBy(rx*dt*340,ry*dt*200);}else CAM.lookHeld=false;
+    const dpL=B(14),dpR=B(15);input.L=dpL?1:0;input.R=dpR?1:0;
+    if(FOOT.on&&!FOOT.ride){
+      input.atk=B(7)?1:0;if(P1(7)&&LIFE.atkT<=0)doAttack();
+      if(B(6)&&WPN[LIFE.cur].gun)LIFE.aimT=Math.max(LIFE.aimT,.3);
+      if(P1(0))input.jump=1;input.sprint=B(2)?1:0;
+      if(P1(3)||P1(12))useContext();if(P1(5))cycleWeapon(false);if(P1(4))cycleWeapon(true);
+      if(P1(1)&&INT.on){const c=interiorContext();if(c&&c.k==='exitb')leaveBuilding();}
+      input.gas=0;input.brake=0;}
+    else if(!FOOT.on){
+      input.gas=BV(7)>.15?1:0;if(P1(6)||P1(0))brakeDown();if(!B(6)&&!B(0)&&input.brake){input.brake=0;P.brakeUp=performance.now();}
+      if(P1(2)||P1(4)){input.horn=1;Snd.hornOn(VEH[P.type].horn);scareAnimals();}if((!B(2)&&!B(4))&&input.horn&&!FOOT.on){input.horn=0;Snd.hornOff();}
+      if(P1(3))exitVehicle();}
+    if(P1(9))pause();if(P1(8))$('#camBtn').click();
+  }else padMenu(g,B,P1,AX,dt);
+  PAD.prev=g.buttons.map((_,i)=>B(i));
+}
+/* menus: d-pad or stick moves a highlight, A presses, B backs out */
+function padMenu(g,B,P1,AX,dt){
+  const scr=[...document.querySelectorAll('.screen')].filter(s=>!s.hidden&&s.offsetParent!==null).pop();if(!scr)return;
+  const list=[...scr.querySelectorAll('button')].filter(b=>!b.disabled&&b.offsetParent!==null);if(!list.length)return;
+  PAD.navT-=dt;const v=AX(1)+(B(13)?1:0)-(B(12)?1:0)+AX(0)+(B(15)?1:0)-(B(14)?1:0);
+  let f=list.indexOf(document.querySelector('.padfocus'));if(f<0){f=0;list[0].classList.add('padfocus');}
+  if(Math.abs(v)>.5&&PAD.navT<=0){PAD.navT=.18;list[f].classList.remove('padfocus');f=(f+(v>0?1:list.length-1))%list.length;list[f].classList.add('padfocus');list[f].scrollIntoView({block:'nearest'});}
+  if(Math.abs(v)<=.5)PAD.navT=0;
+  if(P1(0)){const b=list[f];b.classList.remove('padfocus');b.click();}
+  if(P1(1)||P1(9)){const back=list.find(b=>/close|resume|no$|back|done|leave|keep/i.test(b.id+' '+b.textContent));if(back){back.classList.remove('padfocus');back.click();}}
+}
+/* controller rumble mirrors the phone's vibration */
+{const _play=Hap.play.bind(Hap);Hap.play=function(times,amps,force){_play(times,amps,force);if(!PAD.active)return;const g=padGet();const va=g&&g.vibrationActuator;if(!va||!va.playEffect)return;
+  const dur=times.reduce((a,b)=>a+b,0),mx=Math.max(...amps)/255*this.scale();try{va.playEffect('dual-rumble',{duration:Math.min(600,dur||80),strongMagnitude:mx,weakMagnitude:mx*.6});}catch(_){}};}
+
+/* ---------- per-frame driver ---------- */
+{let last=performance.now();const tick=t=>{const dt=Math.min(.05,(t-last)/1000);last=t;try{padPoll(dt);ctlFrame();}catch(e){console.error(e);}requestAnimationFrame(tick);};requestAnimationFrame(tick);}
+Object.assign(window.__oosht||{},{JOY,PAD,LOOK,lookBy,ctlFrame});
 
 })();
 </script>

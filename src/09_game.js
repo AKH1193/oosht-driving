@@ -364,6 +364,7 @@ function lightsFor(model,M,headOn,brake,night){
   if(headOn)for(const p of model.lights.head){const w=M4.xform(M,p[0],p[1],p[2]-.05);DGr.bill(w[0],w[1],w[2],.55,[1,.9,.7],CAM.right);}
   const tk=brake?1:night*.6;if(tk>.05)for(const p of model.lights.tail){const w=M4.xform(M,p[0],p[1],p[2]+.05);DGr.bill(w[0],w[1],w[2],brake?.5:.35,[1*tk,.1*tk,.05*tk],CAM.right);}
 }
+const PEDLIT={tint:[1,1,1]};
 function renderScene(dt){
   resizeGL();
   let V=VEH[P.type],pm=curModel();const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
@@ -408,7 +409,7 @@ function renderScene(dt){
     drawLit(LAMP,TM2,{tint:col,emiAdd:col.map(v=>v*1.1),noHL:true});
     const w=M4.xform(TM2,0,0,-.05);DGr.bill(w[0],w[1],w[2],.6,col,CAM.right);}
   /* traffic, people, animals */
-  const A=animalModels();
+  const A=animalModels();PEDLIT.tint=[1+night*1.2,1+night*1.2,1+night*1.3];
   for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);if(a.patrol&&a.model.decal){drawLit(a.model.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});const lb=a.model.lightbar;if(lb){drawLit(lb.red,TM,{emiAdd:[.25,.02,.02]});drawLit(lb.blue,TM,{emiAdd:[.02,.05,.3]});}}if(a.model.decal2&&d<120){const tx=a.model.decal2.tex().tex;drawLit(a.model.decal2.mesh,TM,{tex:tx,emTex:tx,emiK:.15+night*.4});}
     if(d<160)lightsFor(a.model,TM,night>.25,a.brake&&a.v>.5,night);}
   for(const p of peds){if(Math.hypot(p.x-ex,p.y-ez)>180)continue;
@@ -419,7 +420,7 @@ function renderScene(dt){
       continue;}
     if(p.rp||p.strip||p.culprit||p.state==='stalk'||p.state==='hostile'||p.state==='argue'||p.state==='brawl'||(p.state==='down'&&Math.hypot(p.x-ex,p.y-ez)<40)){pedRig(p);continue;}
     const moving=p.state==='walk'||p.state==='cross'||p.state==='play'||p.state==='flee';const m=A.ped[p.v][moving?p.pose:0];
-    if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM);}
+    if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM,PEDLIT);}
   for(const n of animals){if(Math.hypot(n.x-ex,n.y-ez)>200)continue;let m;
     if(n.kind==='cow')m=n.lie?A.cowLie[n.v]:A.cow[n.v*2+(n.state==='wander'||n.state==='cross'?n.pose:0)];
     else if(n.kind==='dog')m=A.dog[n.v][n.state==='idle'?0:n.pose];else m=A.cat[n.v][n.event||n.state!=='idle'?n.pose:0];

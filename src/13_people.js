@@ -72,9 +72,9 @@ rig=function(look,sk,pn,wk){
 function pedLook(p){return p.strip?UNDIES:PED_LOOKS[p.v%PED_LOOKS.length]||PED_LOOKS[0];}
 function pedRig(p){
   const look=pedLook(p),sk=SKINS[(p.v||0)%SKINS.length];
-  if(p.state==='down'){M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);drawLit(rig(look,sk,'pose'),TM);return;}
+  if(p.state==='down'){M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);drawLit(rig(look,sk,'pose'),TM,PEDLIT);return;}
   const pn=p.rp||(p.state==='flee'||p.state==='walk'||p.state==='cross'?(p.run?(p.pose?'run1':'run0'):(p.pose?'walk1':'walk0')):'pose');
-  M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(rig(look,sk,pn,p.rw||null),TM);
+  M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(rig(look,sk,pn,p.rw||null),TM,PEDLIT);
   if(p.culprit&&!p.caught){const b=2.35+Math.sin(GT*5)*.08;DGr.bill(p.x,b,p.y,.45,[1,.15,.1],CAM.right);}
 }
 

@@ -117,10 +117,31 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #carry{position:absolute;left:50%;top:calc(88px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;font-size:13px;font-weight:700}
 #ctList,#outChallan{max-height:30vh;overflow:auto}#footBar{flex-wrap:nowrap;gap:6px}#footBar .sbtn{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
 #rideBar .notice{display:inline-block}
-#joy{position:relative;width:136px;height:136px;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.08) 0 38%,rgba(12,16,22,.45) 39% 100%);border:2px solid rgba(255,255,255,.22);touch-action:none}
-#joyRing{position:absolute;inset:18px;border-radius:50%;border:1px dashed rgba(255,255,255,.18);pointer-events:none}
-#joyKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.55),rgba(255,255,255,.18) 60%,rgba(255,255,255,.1));border:2px solid rgba(255,255,255,.45);box-shadow:0 4px 12px rgba(0,0,0,.35);pointer-events:none;transition:transform .08s}
-#joy.on{border-color:var(--auto-yellow)}#joy.on #joyKnob{transition:none;border-color:var(--auto-yellow)}
+/* ===== controls v2: floating joystick, swipe camera, context clusters ===== */
+#lookZone{position:absolute;inset:0;touch-action:none}
+#joyZone{position:absolute;left:0;bottom:0;width:40vw;height:72vh;touch-action:none}
+#joy{position:absolute;width:calc(128px*var(--bs));height:calc(128px*var(--bs));border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.07) 0 34%,rgba(10,14,20,.38) 35% 100%);border:2px solid rgba(255,255,255,.28);pointer-events:none;opacity:calc(var(--bo)*.55);transition:opacity .15s}
+#joyRing{position:absolute;inset:22%;border-radius:50%;border:1.5px solid rgba(255,255,255,.16)}
+#joyKnob{position:absolute;left:50%;top:50%;width:44%;height:44%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 38% 32%,rgba(255,255,255,.75),rgba(255,255,255,.28) 62%,rgba(255,255,255,.16));border:2px solid rgba(255,255,255,.6);box-shadow:0 3px 10px rgba(0,0,0,.4)}
+#joyZone.on #joy{opacity:var(--bo);border-color:rgba(255,199,44,.8)}
+#joyZone.run #joyKnob{background:radial-gradient(circle at 38% 32%,#FFE58A,#FFC72C 62%,#C99812);border-color:#FFF3C4}
+.ctl-foot{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:206px;height:196px;transform:scale(var(--bs));transform-origin:right bottom;opacity:var(--bo)}
+.ctl-foot .abtn{position:absolute}
+.ctl-foot #btnAtk{right:0;bottom:0;width:92px;height:92px;font-size:15px}
+.ctl-foot #btnJump{right:106px;bottom:6px;width:66px;height:66px}
+.ctl-foot #btnRun{right:16px;bottom:108px;width:66px;height:66px}
+.ctl-foot #btnWpn{right:100px;bottom:92px;width:54px;height:54px;font-size:10px;letter-spacing:.04em;background:rgba(255,199,44,.18);border-color:rgba(255,199,44,.6)}
+.abtn{display:grid;place-items:center;color:var(--text);user-select:none;-webkit-user-select:none}
+.abtn:active,.abtn.on{transform:scale(.94)}
+#hud.m-foot .ctl-right,#hud.m-foot .ctl-act{display:none}
+#hud.m-foot .usebtn{right:calc(16px + 92px*var(--bs) + env(safe-area-inset-right,0px));bottom:calc(16px + 160px*var(--bs) + env(safe-area-inset-bottom,0px))}
+#hud.m-drive .ctl-foot,#hud.m-fly .ctl-foot{display:none}
+#hud.m-ride .ctl-foot,#hud.m-ride .ctl-right,#hud.m-ride .ctl-act,#hud.m-ride #joyZone{display:none}
+#hud.m-pad #joyZone,#hud.m-pad .ctl-foot,#hud.m-pad .ctl-right,#hud.m-pad .ctl-act{display:none}
+#hud.m-pad .usebtn::before{content:"Y · ";opacity:.7}
+button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
+#padChip{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+
 #flyHud{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;font-weight:800;font-size:14px;letter-spacing:.04em;white-space:nowrap}
 #apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 #apsh .n{font-family:var(--display);font-size:42px;line-height:1;color:var(--auto-yellow);min-width:1.2ch;text-align:center}
@@ -236,6 +257,8 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
   <div id="flash"></div>
 
   <div id="hud" hidden>
+    <div id="lookZone" class="hit"></div>
+    <div id="joyZone" class="hit"><div id="joy"><div id="joyRing"></div><div id="joyKnob"></div></div></div>
     <div id="hitfx"></div>
     <div class="panel" id="rep" hidden><b id="repTxt">Lift on the beat</b><div class="track"><div class="zone" id="repZone"></div><div class="cur" id="repCur"></div></div><div id="repSub" style="font-size:12px;color:var(--muted)"></div><button class="btn primary" id="repBtn">LIFT</button></div>
     <div class="panel" id="carry" hidden></div>
@@ -288,16 +311,14 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <button class="btn primary" id="ulBtn">UNLOAD</button>
       <div class="s" id="ulTime">15 s</div>
     </div>
-    <div class="ctl-left2">
-      <button class="abtn hit" id="btnRun" hidden>RUN</button>
-      <button class="abtn hit" id="btnJump" hidden>JUMP</button>
-    </div>
-    <div class="ctl-left">
-      <div id="joy" class="hit" aria-label="Joystick: steer, walk and run"><div id="joyRing"></div><div id="joyKnob"></div></div>
-    </div>
     <div id="flyHud" class="panel" hidden></div>
+    <div class="ctl-foot">
+      <button class="abtn hit" id="btnRun">RUN</button>
+      <button class="abtn hit" id="btnJump">JUMP</button>
+      <button class="abtn sm hit" id="btnWpn">FIST</button>
+      <button class="abtn atk hit" id="btnAtk">HIT</button>
+    </div>
     <div class="ctl-act">
-      <button class="abtn atk hit" id="btnAtk" hidden>HIT</button>
       <button class="abtn hit" id="btnExit">EXIT</button>
     </div>
     <button class="usebtn hit" id="btnUse" hidden>Get in</button>
@@ -306,6 +327,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <button class="pedal brake hit" id="btnBrake">BRAKE</button>
       <button class="pedal gas hit" id="btnGas">GO</button>
     </div>
+    <div class="panel" id="padChip" hidden>Controller · A jump · X run · RT fire / gas · Y use · B exit</div>
     <div class="attrib" id="attrib">© OpenStreetMap contributors</div>
   </div>
 

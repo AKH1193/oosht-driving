@@ -97,11 +97,14 @@ function updateFoot(dt){
   if(FOOT.ride){updateRide(dt);if(FOOT.ride&&FOOT.ride.phase!=='pickup')return;}
   if(LIFE.dead||METRO.ride)return;
   const jm=Math.min(1,Math.hypot(input.jx||0,input.jy||0));
-  const carrying=FOOT.job&&FOOT.job.carry;const run=(input.horn||jm>.96&&FOOT.runHold>.6)&&FOOT.stam>2&&!carrying;const top=carrying?1.8:run?6.2:2.3;
-  FOOT.runHold=jm>.96?(FOOT.runHold||0)+dt:0;
+  const carrying=FOOT.job&&FOOT.job.carry;const run=(input.horn||input.sprint||jm>.97&&FOOT.runHold>.35)&&FOOT.stam>2&&!carrying;const top=carrying?1.8:run?6.2:2.3;
+  FOOT.runHold=jm>.97?(FOOT.runHold||0)+dt:0;
   if(jm>.15){/* joystick: push the way you want to go, relative to the camera; push all the way to run */
-    const tgt=(CAM.yaw??P.h)+Math.atan2(input.jx,input.jy);P.h+=angDiff(P.h,tgt)*Math.min(1,dt*(input.jy<-.5?4:7));
-    P.s+=clamp(top*Math.min(1,jm*1.15)-P.s,-8*dt,6*dt);}
+    if(CAM.mode==='cockpit'){P.h+=input.jx*2.2*dt;P.s+=clamp(top*Math.max(0,input.jy)-P.s,-8*dt,6*dt);}
+    else{const rel=Math.atan2(input.jx,input.jy),tgt=CAM.yaw+rel;P.h+=angDiff(P.h,tgt)*Math.min(1,dt*10);
+      P.s+=clamp(top*Math.min(1,jm*1.1)-P.s,-8*dt,6*dt);
+      /* the camera drifts in behind you only while you walk roughly away from it */
+      if(Math.abs(rel)<1.1&&!CAM.lookHeld)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*.9);}}
   else{let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
     P.h+=steerIn*2.4*dt;
     if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);}
@@ -340,7 +343,7 @@ function footHudTick(el){
   if(FOOT.ride)key='';
   else if(FOOT.stam<8){key='tired';html='<b>Out of breath.</b> Walk for a bit to get your stamina back.';}
   else if(INT.on){key='int'+INT.kind;html=`Inside · <b>${({house:'a family home',apartment:'apartment lobby',shop:'shop',restaurant:'restaurant',cafe:'cafe',bar:'bar',mall:'shopping mall',office:'office',police:'police station',gym:'gym'})[INT.kind]||'building'}</b> · walk to the door to go out`;}
-  else if(FOOT.tip>0){key='tip';html=`On foot · <b>+₹5</b> for every 10 s you keep moving · hold <b>RUN</b> to run`;}
+  else if(FOOT.tip>0){key='tip';html=`On foot · push the joystick all the way to <b>run</b> · swipe the screen to look around · <b>+₹5</b> every 10 s on the move`;}
   else key='';
   if(key!==noticeKey){noticeKey=key;el.notice.hidden=!key;el.notice.innerHTML=html;}
   return true;

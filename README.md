@@ -52,7 +52,7 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 
 - The joystick on the left steers; on foot, push it the way you want to walk and all the way to run. GO accelerates; BRAKE stops and holds. Tap BRAKE twice quickly while stopped to reverse.
 - HORN scares animals off the road; on foot it becomes RUN.
-- On foot: RUN and JUMP sit beside the joystick; HIT / FIRE attacks, the weapon chip under your wallet switches weapons, and the yellow button does whatever is nearby (Get in, Take car, Eat & drink, Work out, Buy weapons).
+- On foot: HIT / FIRE attacks, the weapon chip under your wallet switches weapons, and the yellow button does whatever is nearby (Get in, Take car, Eat & drink, Work out, Buy weapons).
 - Keyboard: arrows or WASD, F to attack, X to jump, E to get in or out, Q to switch weapons, C for camera.
 - The camera button cycles chase, cockpit and top views.
 - Settings let you change button opacity, size and shape, HUD and map opacity and map size.
