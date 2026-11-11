@@ -26,6 +26,11 @@ People talk as you pass (in Kannada when the phone has a Kannada voice, otherwis
 
 ## Street life
 
+- Metro stations: walk up the staircases onto the platform, and tap Take the metro there.
+- Crashes hurt: you fall and get up, a hard bike crash throws you off, and people and you bleed when hit or shot.
+- Poles, lamp posts, bus shelters, fuel station pumps and canopies, compound walls and metro pillars are solid.
+- You keep your own clothes on bikes and in autos.
+
 - You don't have to follow traffic rules (everyone else does): no signal, speed, one-way or rash-driving penalties, no licence seizure, and potholes, breakers and water logging only shake you.
 - If a vehicle runs into you from behind, a crowd comes running and beats up its driver.
 - Anyone badly hurt, and you when your health is low, gets an ambulance that drives in and takes them to hospital.

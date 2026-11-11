@@ -65,7 +65,7 @@ function updatePlayer(dt){
   P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?3.4:6));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
-  const cap=top,back=(input.jy||0)<-.45;
+  let back=(input.jy||0)<-.45;const cap=top;P.wheelie=V.cat==='two'&&input.gas&&back&&P.s>2.5;if(P.wheelie)back=false;P.wh=(P.wh||0)+((P.wheelie?.55:0)-(P.wh||0))*Math.min(1,dt*(P.wheelie?3:6));
   /* GO accelerates; GO with the joystick pulled back reverses */
   if(input.gas&&!back){if(P.s<-.3)P.s+=V.brake*dt;else if(P.s<cap){const f=1-Math.pow(clamp(P.s/cap,0,1),1.7);P.s+=V.accel*f*dt*(P.s<3?1.25:1);}}
   else if(input.gas&&back){if(P.s>.3)P.s-=V.brake*dt;else if(P.s>-Math.min(top*.4,8))P.s-=V.accel*.7*dt;}
@@ -96,8 +96,8 @@ function updatePlayer(dt){
     const ox=P.x,oy=P.y;P.x+=P.vx*dt/n;P.y+=P.vy*dt/n;
     const sg=Math.sign(P.s||1);const px=P.x+fx*P.len*.5*sg,py=P.y+fy*P.len*.5*sg;
     if(inBuilding(px,py)||inBuilding(P.x,P.y)){if(slideWall(ox,oy,fx,fy,sg,n,dt))continue;P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
-    gQuery(W.tG,P.x,P.y,2,tq);let tree=null;for(const t of tq)if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*.5)tree=t;
-    if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>1.5){crash(rel,'Hit a tree!');if(!tree.pier)damage(rel*1.3);}else Hap.rumble();break;}
+    gQuery(W.tG,P.x,P.y,2.5,tq);let tree=null;for(const t of tq)if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*(t.pier?.42:.5))tree=t;
+    if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>1.5){crash(rel,'Hit a tree!');if(!tree.pier&&!tree.col)damage(rel*1.3);}else Hap.rumble();break;}
   }
   /* stuck against a wall with the throttle open: put the vehicle back on the road */
   if(P.bumped&&(input.gas||input.brake))P.stuckT=(P.stuckT||0)+dt;else P.stuckT=Math.max(0,(P.stuckT||0)-dt);P.bumped=false;
@@ -128,7 +128,7 @@ function updatePlayer(dt){
   {const F=FUEL[P.type];P.fuel=Math.max(0,P.fuel-Math.hypot(P.vx,P.vy)*dt/1000/F[0]*100*(input.gas?1.15:.8));
    if(P.fuel<=0&&!P.dry){P.dry=true;Snd.stopEngine();toast(F[2]==='ev'?'Battery empty':'Out of fuel','bad');}}
   const pitch=-P.bounce*.05*Math.sin(now/45)-(input.brake&&sp>3?.02:0)+(input.gas&&sp<top*.5?.012:0);
-  M4.model(P.M,P.x,P.bounce*.05+P.air*.5,P.y,-P.h,pitch,V.cat==='two'?-P.lean:0);
+  M4.model(P.M,P.x,P.bounce*.05+P.air*.5+Math.sin(P.wh||0)*P.len*.42,P.y,-P.h,pitch+(P.wh||0),V.cat==='two'?-P.lean:0);
   rules(dt,nr,sp);
   Snd.engine(sp/top,input.gas?1:0);
 }

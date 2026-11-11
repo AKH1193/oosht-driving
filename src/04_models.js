@@ -163,7 +163,7 @@ function buildAuto(o){
   /* cockpit: hands on handlebar, the fare meter glowing */
   for(const s of[-1,1])ck.box(s*.3,hbY,hbZ,.09,.09,.1,SKINS[2]);
   ck.box(.3,1.11,hbZ-.066,.1,.04,.004,[1,.35,.2],1);
-  buildRider(rd,{seat:[.7,-.22],grip:[.3,hbY,hbZ],peg:[.15,.48,-.7],lean:.08,shirt:C.khaki,pants:C.khaki,skin:SKINS[3],noHelmet:true,sleeve:C.khaki});
+  const lk=o.look;buildRider(rd,{seat:[.7,-.22],grip:[.3,hbY,hbZ],peg:[.15,.48,-.7],lean:.08,shirt:lk?hexRGB(lk.shirt):C.khaki,pants:lk?hexRGB(lk.pants):C.khaki,skin:lk?SKINS[2]:SKINS[3],noHelmet:true,sleeve:lk?SKINS[2]:C.khaki});
   return {body:mb.mesh(),glass:gm.mesh(),cockpit:ck.mesh(),rider:rd.mesh(),eye:[0,1.42,-.2],len:2.7,wid:1.34,lights:{head:[[0,.66,-1.26]],tail:[[-.55,.62,1.1],[.55,.62,1.1]]}};
 }
 
@@ -423,9 +423,9 @@ const VKEYS=Object.keys(VEH);
 const VCATS=[['two','Two-wheelers'],['three','Auto'],['car','Cars'],['posh','Luxury & sports'],['heavy','Bus & lorry']];
 const MODELS=new Map();
 function playerModel(k){
-  const key='p:'+k;let m=MODELS.get(key);if(m)return m;
-  if(TWO_SPECS[k])m=buildTwo(TWO_SPECS[k]);
-  else if(k==='auto')m=buildAuto();
+  const lk=typeof PLOOK!=='undefined'?PLOOK:{shirt:'#2F6FB2',pants:'#2B2F3A'};const key='p:'+k+'|'+lk.shirt+lk.pants;let m=MODELS.get(key);if(m)return m;
+  if(TWO_SPECS[k])m=buildTwo(Object.assign({},TWO_SPECS[k],{shirt:lk.shirt,pants:lk.pants}));
+  else if(k==='auto')m=buildAuto({look:lk});
   else if(k==='bus'){m=buildBMTC('vajra');}
   else if(k==='lorry'){m=buildLorry(VEH.lorry.col);}
   else if(k==='tractor'){m=buildTractor(VEH.tractor.col);}

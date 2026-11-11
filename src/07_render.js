@@ -45,6 +45,7 @@ function treeAt(mb,x,y,r,sh){
   else{mb.blob(x,4.0*s,y,2.4*s,2.1*s,2.4*s,[.24,.4,.2]);}
 }
 function lampAt(mb,x,y,ax,ay){
+  colAdd(x,y,.14);
   mb.box(x,3.6,y,.14,7.2,.14,[.45,.47,.5],0,true);
   const hx=x+ax*1.6,hy=y+ay*1.6;
   limbW(mb,[x,7.1,y],[hx,7.2,hy],.08,[.45,.47,.5]);
@@ -88,6 +89,7 @@ function stationAt(mb,dec,g){
   mb.restore();
   const c=Math.cos(-g.h),s2=Math.sin(-g.h);const P2=(x,z)=>[g.sx+x*c+z*s2,g.sy-x*s2+z*c];
   const pad=[P2(-7,-5),P2(7,-5),P2(7,6),P2(-7,6)].flat();gpoly(dec,pad,[.62,.62,.6]);
+  for(const x of[-4.5,4.5])for(const z of[-2.6,2.6])colAdd(...P2(x,z),.3);for(const x of[-2.5,2.5])colAdd(...P2(x,0),.55);for(let x=-3;x<=3;x+=1.5)colAdd(...P2(x,4.6),1.1);colAdd(...P2(-6.6,-3.6),.25);
 }
 function buildChunk(cx,cy){
   const x0=cx*CH,y0=cy*CH,x1=x0+CH,y1=y0+CH;const inC=(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1;
@@ -244,6 +246,7 @@ function computeTod(){
 
 /* ---------- camera ---------- */
 const CAM={mode:settings.cam||'chase',eye:[0,5,10],tgt:[0,0,0],fov:62,yaw:0,shake:0,vp:new Float32Array(16),proj:new Float32Array(16),view:new Float32Array(16),inv:new Float32Array(16),right:[1,0,0],fwd:[0,0,-1]};
+function colAdd(x,y,r){gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),{x,y,r,col:true,_q:0});}
 function pierAt(x,y){const q=[];gQuery(W.tG,x,y,2,q);for(const t of q)if(t.pier&&Math.hypot(t.x-x,t.y-y)<t.r+.35)return true;return false;}
 function setupCamera(dt,P,V,model){
   const sp=Math.abs(P.s),top=V.top/3.6,frac=clamp(sp/top,0,1);
@@ -264,10 +267,10 @@ function setupCamera(dt,P,V,model){
     const far=CAM.mode==='far';const L=model.len||2;
     const dist=far?30:(3.6+L*1.25)+frac*2.2,ht=far?30:(1.7+L*.32)+frac*.4;
     /* keep the camera out of buildings: pull it in along the line to the player */
-    let cd=dist;if(!far&&!inBuilding(P.x,P.y)){for(let t=.8;t<dist;t+=.35){const qx=P.x-cyx*t,qy=P.y-cyz*t,b=inBuilding(qx,qy);if((b&&b.h>1.3+(ht-1.3)*t/dist)||pierAt(qx,qy)){cd=Math.max(.9,t-.4);break;}}}
+    let cd=dist;if(!far&&!inBuilding(P.x,P.y)&&!(FOOT.on&&P.elev>3)){for(let t=.8;t<dist;t+=.35){const qx=P.x-cyx*t,qy=P.y-cyz*t,b=inBuilding(qx,qy);if((b&&b.h>1.3+(ht-1.3)*t/dist)||pierAt(qx,qy)){cd=Math.max(.9,t-.4);break;}}}
     CAM.cd=CAM.cd==null||far?cd:cd<CAM.cd?cd:lerp(CAM.cd,cd,Math.min(1,dt*2.2));const cdx=Math.min(CAM.cd,dist),hh=1.3+(ht-1.3)*cdx/dist;
-    CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump,P.y-cyz*cdx];
-    const lf=CAM.free||CAM.look?[cyx,cyz]:[fx,fz];CAM.tgt=[P.x+lf[0]*(far?8:6),far?0:1.1+(CAM.pitch||0),P.y+lf[1]*(far?8:6)];
+    const EL=FOOT.on?(P.elev||0):0;CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump+EL,P.y-cyz*cdx];
+    const lf=CAM.free||CAM.look?[cyx,cyz]:[fx,fz];CAM.tgt=[P.x+lf[0]*(far?8:6),(far?0:1.1+(CAM.pitch||0))+EL,P.y+lf[1]*(far?8:6)];
     CAM.fov=lerp(CAM.fov,(far?55:62)+frac*(far?0:18),Math.min(1,dt*3));
   }
   CAM.shake*=Math.pow(.02,dt);

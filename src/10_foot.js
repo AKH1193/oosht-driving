@@ -120,7 +120,8 @@ function updateFoot(dt){
   const ox=P.x,oy=P.y,sx=P.vx*dt,sy=P.vy*dt;
   const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq)if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};
   const blocked=(x,y)=>treeAt2(x,y)||inBuilding(x,y)||inBuilding(x+fx*.32,y+fy*.32)||inBuilding(x-fy*.24+fx*.1,y+fx*.24+fy*.1)||inBuilding(x+fy*.24+fx*.1,y-fx*.24+fy*.1);
-  if(inBuilding(ox,oy)){const o=pushOutOf(ox,oy);P.x=o[0];P.y=o[1];P.s*=.5;}
+  if(metroWalk(ox,oy,sx,sy,dt)){}
+  else if(inBuilding(ox,oy)){const o=pushOutOf(ox,oy);P.x=o[0];P.y=o[1];P.s*=.5;}
   else if(!blocked(ox+sx,oy+sy)){P.x=ox+sx;P.y=oy+sy;}
   else if(Math.abs(sx)>1e-4&&!blocked(ox+sx,oy)){P.x=ox+sx;P.s*=.97;}
   else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}
@@ -131,7 +132,7 @@ function updateFoot(dt){
   /* sweat coins: every 10 seconds on the move earns 5 */
   if(P.s>.9){FOOT.walk+=dt;if(FOOT.walk>=10){FOOT.walk-=10;profile.wallet+=5;session.fare+=5;saveProfile();toast('+5 sweat coins (₹5)','good','sweat',500);Snd.coin();}}
   FOOT.pt+=dt*(P.s>.3?Math.min(P.s,4.5)/1.2:0);if(FOOT.pt>.33){FOOT.pt=0;FOOT.pose^=1;}
-  M4.model(P.M,P.x,LIFE.z,P.y,-P.h,0,0);
+  M4.model(P.M,P.x,LIFE.z+(P.elev||0),P.y,-P.h,0,0);
   session.m+=P.s*dt;
   if(FOOT.lift){FOOT.lift.t-=dt;if(FOOT.lift.t<=0){const ok=Math.random()<.4;FOOT.lift=null;if(ok)sendRide('lift');else{toast('Nobody stopped. Try again in a bit.','');FOOT.liftCool=6;}}}
   FOOT.liftCool-=dt;FOOT.begCool-=dt;FOOT.tip-=dt;

@@ -407,6 +407,7 @@ function enterVehicle(ctx){
     cond=a.hp!=null?clamp(a.hp/1.6,15,100):100;fuel=30+Math.random()*50;if(!ctx.silent){ejectDriver(a);
     if(nearCop(90)||peds.some(p=>!p.dead&&Math.hypot(p.x-x,p.y-y)<18))crime('theft',1);}toast(`You took the ${VEH[type].sub.toLowerCase()}`,'');}
   else if(ctx.k==='pjack'){const c=ctx.c;const i=COP.list.indexOf(c);if(i<0)return;COP.list.splice(i,1);type='suv';skin={model:c.model,k:'police'};x=c.x;y=c.y;h=c.h;fuel=60;crime('cop',3);toast('You stole a Hoysala!','bad');}
+  if(skin&&(TWO_SPECS[type]||type==='auto'))skin=null;P.elev=0;
   leaveFoot();P.type=type;P.skin=skin;P.x=x;P.y=y;P.h=h;P.s=0;P.vx=P.vy=0;P.cond=cond;if(fuel!=null)P.fuel=fuel;P.dry=false;P.broke=false;LIFE.z=0;
   const pm=curModel();P.len=pm.len;P.wid=pm.wid;M4.model(P.M,P.x,0,P.y,-P.h,0,0);CAM.yaw=P.h;
   Snd.startEngine(VEH[type].engine,type);Hap.tick();
@@ -476,7 +477,7 @@ function lifeUpdate(dt){
     if(input.jump&&LIFE.z<=0&&FOOT.stam>4){LIFE.vz=4.4;FOOT.stam-=4;input.jump=0;Snd.tone([300],.04,'triangle',.03);}
     if(LIFE.z>0||LIFE.vz>0){LIFE.z+=LIFE.vz*dt;LIFE.vz-=13*dt;if(LIFE.z<=0){LIFE.z=0;LIFE.vz=0;Hap.tick();}}
     if(input.atk&&LIFE.atkT<=0&&!FOOT.unload)doAttack();
-    if(LIFE.z>0)M4.model(P.M,P.x,LIFE.z,P.y,-P.h,0,0);
+    if(LIFE.z>0)M4.model(P.M,P.x,LIFE.z+(P.elev||0),P.y,-P.h,0,0);
   }else{LIFE.z=0;LIFE.vz=0;}
   /* nearby props, every so often */
   if((LIFE.nearT-=dt)<=0){LIFE.nearT=.35;const t=[];gQuery(W.prG||new Map(),P.x,P.y,110,t);LIFE.near=t;}

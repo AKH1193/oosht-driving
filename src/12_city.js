@@ -135,7 +135,7 @@ function buildMetro(data){
       if(i0===0)for(const st of METRO.stations)if(st.l===l)stationGeo(mb,st);
       const mid=lineAt(l,l.cum[Math.floor((i0+i1)/2)]);METRO.sections.push({mesh:mb.mesh(),x:mid.x,y:mid.y});
       /* pier collisions */
-      for(let i=i0;i<i1;i+=4){const x=(l.pts[2*i]+l.pts[2*i+2])/2,y=(l.pts[2*i+1]+l.pts[2*i+3])/2;const o={x,y,r:1.05,pier:true,_q:0};METRO.piers.push(o);gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),o);}}}
+      for(let i=Math.ceil(i0/4)*4;i<i1;i+=4){const x=(l.pts[2*i]+l.pts[2*i+2])/2,y=(l.pts[2*i+1]+l.pts[2*i+3])/2;const o={x,y,r:.95,pier:true,_q:0};METRO.piers.push(o);gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),o);}}}
   for(const l of METRO.lines){if(l.tun)continue;for(let k=0;k<2;k++)METRO.trains.push({l,s:k?l.len*.7:l.len*.2,dir:k?-1:1,v:0,dwell:0,cars:3});}
 }
 function stationGeo(mb,st){
@@ -282,7 +282,7 @@ function cityChunk(sol,dec,mine,inC){
     const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;const hs=hash2(Math.round(s.ax*11),Math.round(s.ay*13))>>>0;const r=mulberry32(hs);
     const side=(hs&1)?1:-1,off=w.hw+3.0;const poles=[];
     for(let t=6+r()*8;t<s.len-4;t+=32){const x=s.ax+dx*t+dy*off*side,y=s.ay+dy*t-dx*off*side;if(inBuilding(x,y)||nearSignal(x,y,6)){poles.push(null);continue;}
-      sol.box(x,4.25,y,.24,8.5,.24,cem);sol.save();sol.tr(x,7.9,y);sol.rotY(-s.h);sol.box(0,0,0,1.6,.12,.12,cem);for(const q of[-.7,0,.7])sol.box(q,.13,0,.06,.14,.06,[.85,.85,.8]);sol.restore();
+      sol.box(x,4.25,y,.24,8.5,.24,cem);colAdd(x,y,.22);sol.save();sol.tr(x,7.9,y);sol.rotY(-s.h);sol.box(0,0,0,1.6,.12,.12,cem);for(const q of[-.7,0,.7])sol.box(q,.13,0,.06,.14,.06,[.85,.85,.8]);sol.restore();
       if(poles.length%4===2){sol.box(x-dy*side*.55,5.2,y+dx*side*.55,.9,1.2,.7,[.4,.42,.4]);sol.box(x-dy*side*.55,4.4,y+dx*side*.55,1,.12,.8,[.3,.3,.3]);}
       poles.push([x,y]);}
     for(let i=1;i<poles.length;i++){const a=poles[i-1],b=poles[i];if(!a||!b)continue;const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const h=hAng(b[0]-a[0],b[1]-a[1]);
@@ -299,6 +299,7 @@ function cityChunk(sol,dec,mine,inC){
     else if(r()<.1){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.2)*sd,y=s.ay+dy*t-dx*(w.hw+1.2)*sd;if(!inBuilding(x,y)){sol.save();sol.tr(x,0,y);sol.rotY(-s.h);
       sol.box(-.4,.5,0,.7,1,.6,[.15,.45,.2]);sol.box(.4,.5,0,.7,1,.6,[.2,.35,.7]);sol.box(-.4,1.03,0,.74,.06,.64,[.1,.3,.15]);sol.box(.4,1.03,0,.74,.06,.64,[.12,.22,.5]);sol.restore();}}
   }
+  for(const b of W.busStops||[]){if(!inC(b.x,b.y))continue;{const fx=Math.sin(b.h),fy=-Math.cos(b.h),nx=-Math.cos(b.h)*b.side,ny=-Math.sin(b.h)*b.side;for(const k of[-1.6,0,1.6])colAdd(b.x+fx*k+nx*.9,b.y+fy*k+ny*.9,.45);}}
   for(const b of W.busStops||[]){if(!inC(b.x,b.y))continue;sol.save();sol.tr(b.x,0,b.y);sol.rotY(-b.h+(b.side>0?Math.PI/2:-Math.PI/2));
     for(const x of[-1.9,1.9])sol.box(x,1.25,.6,.1,2.5,.1,[.55,.56,.58]);sol.box(0,2.55,0,4.6,.12,1.8,[.2,.35,.6]);sol.box(1.9,1.3,.4,.05,1.8,.9,[.85,.75,.2],.3);sol.box(0,.45,.45,3.4,.08,.45,[.6,.6,.62]);for(const x of[-1.5,1.5])sol.box(x,.22,.45,.08,.44,.08,[.4,.4,.42]);sol.restore();}
   for(const l of W.lots||[]){if(!inC(l.x,l.y))continue;const fx=Math.sin(l.h),fy=-Math.cos(l.h),rx=-fy,ry=fx;const c=(u,v)=>[l.x+rx*u+fx*v,.035,l.y+ry*u+fy*v];
