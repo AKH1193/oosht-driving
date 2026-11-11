@@ -294,7 +294,7 @@ function cityChunk(sol,dec,mine,inC){
       for(let t=6;t<s.len-4;t+=16)for(const sd of[-1,1]){const x=s.ax+dx*t+dy*(w.hw+1.5)*sd,y=s.ay+dy*t-dx*(w.hw+1.5)*sd;if(inBuilding(x,y)||nearSignal(x,y,4))continue;
         sol.box(x,.3,y,.9,.6,.9,[.42,.42,.44]);sol.blob(x,.85,y,.5,.42,.5,[.16,.42,.2]);const bx2=x+dx*4,by2=y+dy*4;sol.cyl(bx2,.45,by2,.08,.9,'y',8,[.18,.18,.2]);sol.box(bx2,.93,by2,.14,.06,.14,[1,.95,.8],.9);}}
     if(r()<.12&&!poshS){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.3)*sd,y=s.ay+dy*t-dx*(w.hw+1.3)*sd;if(!inBuilding(x,y)){
-      for(let k=0;k<9;k++){const a=r()*TAU,rr=r()*.9;const c=[[.1,.1,.11],[.15,.25,.55],[.85,.85,.82],[.35,.25,.15],[.2,.45,.2]][Math.floor(r()*5)];sol.blob(x+Math.cos(a)*rr,.18+r()*.2,y+Math.sin(a)*rr,.22+r()*.12,.18+r()*.1,.22+r()*.12,c);}
+      {const hk=W.props._hk||(W.props._hk=new Set());const key='heap'+Math.round(x*10)+'_'+Math.round(y*10);if(!hk.has(key)){hk.add(key);for(let k=0;k<7;k++){const a=r()*TAU,rr=r()*.8;const kk=key+'_'+k;const st=LIFE.propState.get(kk);const o={key:kk,kind:'bag',x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr,h:r()*TAU,z:0,vx:0,vy:0,vz:0,down:false,pitch:0,col:k%5};if(st)Object.assign(o,st);W.props.push(o);gAddBox(W.prG,o.x,o.y,o.x,o.y,o);}}}
       dec.quad([x-1.3,.04,y-1.1],[x+1.3,.04,y-1.1],[x+1.3,.04,y+1.1],[x-1.3,.04,y+1.1],[.24,.22,.18],[0,1,0]);}}
     else if(r()<.1){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.2)*sd,y=s.ay+dy*t-dx*(w.hw+1.2)*sd;if(!inBuilding(x,y)){sol.save();sol.tr(x,0,y);sol.rotY(-s.h);
       sol.box(-.4,.5,0,.7,1,.6,[.15,.45,.2]);sol.box(.4,.5,0,.7,1,.6,[.2,.35,.7]);sol.box(-.4,1.03,0,.74,.06,.64,[.1,.3,.15]);sol.box(.4,1.03,0,.74,.06,.64,[.12,.22,.5]);sol.restore();}}

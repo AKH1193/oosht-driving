@@ -8,7 +8,7 @@ let GROUND=null,LAMP=null,BEAM=null,nearPois=[];
 
 function toast(msg,cls,key,gap){
   const now=performance.now();if(key){if(lastToast[key]&&now-lastToast[key]<(gap||2600))return;lastToast[key]=now;}
-  const box=$('#toast');while(box.children.length>2)box.firstChild.remove();
+  const box=$('#toast');while(box.children.length>1)box.firstChild.remove();
   const d=document.createElement('div');d.className='toast '+(cls||'');d.textContent=msg;box.appendChild(d);setTimeout(()=>d.remove(),2250);
 }
 function flash(){const f=$('#flash');f.style.transition='none';f.style.opacity='.9';requestAnimationFrame(()=>{f.style.transition='opacity .6s';f.style.opacity='0';});}
@@ -16,7 +16,7 @@ function damage(n,silent){
   P.cond=Math.max(0,P.cond-n);P.lastBad=performance.now();if(trip)trip.clean=false;
   if(P.cond<=0&&!P.broke){P.broke=true;toast('Your vehicle broke down','bad');Snd.stopEngine();setTimeout(()=>{if(state==='play'&&P.cond<=0&&!P.dry)Snd.startEngine(Object.assign({},VEH[P.type].engine,{vol:.4}),P.type);},400);}
 }
-const licenceSuspended=()=>!!profile.seized;
+const licenceSuspended=()=>false;profile.seized=false;
 const timeStr=ms=>new Date(ms).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
 
 /* ---------- hazards felt in the seat ---------- */
@@ -24,8 +24,6 @@ function hitPothole(z){
   const V=VEH[P.type];const sev=clamp(Math.abs(P.s)/13,.15,1);const k=clamp(sev*V.susp,0,1.6);
   P.s*=1-.18*clamp(k,0,1);P.bounce=Math.min(1.3,P.bounce+.6*k);CAM.shake=Math.max(CAM.shake,6*k);
   Hap.pothole(clamp(k,0,1));Snd.thud(clamp(k,0,1));
-  const dmg=+(1+3.2*k).toFixed(1);damage(dmg);
-  if(sev>.35)toast(`Pothole! −${Math.round(dmg)}%`,'bad','pot',2200);
 }
 function hitBump(z){
   const V=VEH[P.type];const kmh=Math.abs(P.s)*3.6;
@@ -34,34 +32,26 @@ function hitBump(z){
     const sev=clamp((kmh-25)/40,.12,1);const k=sev*V.susp;
     P.s*=.75;P.bounce=Math.min(1.5,P.bounce+.9*k);P.air=V.cat==='two'?.2*k:.12*k;CAM.shake=Math.max(CAM.shake,10*k);
     Hap.bump(clamp(k,0,1),gap);Snd.thud(clamp(k,0,1));setTimeout(()=>Snd.thud(clamp(k*.8,0,1)),gap);
-    const dmg=+(1.5+6.5*k).toFixed(1);damage(dmg);P.rash+=10*k;
-    toast(`Speed breaker at ${Math.round(kmh)} km/h! −${Math.round(dmg)}%`,'bad','bump',1500);
   }else{
     Hap.bump(.12,gap);Snd.thud(.1);
-    if(kmh>4){profile.wallet+=2;session.fare+=2;toast('Gently over the breaker +₹2','good','gentle',3500);Snd.coin();}
   }
 }
 function enterWater(z){
   const kmh=Math.abs(P.s)*3.6;const s=clamp(kmh/50,.1,1);
   Hap.water(s);Snd.splash(s);
-  if(kmh>15)toast('Water logging! Slippery','','wet',4000);
-  if(kmh>45)damage(1);
-  if(z.hidden&&!z.revealed){z.revealed=true;setTimeout(()=>{if(state!=='play')return;const k=clamp(kmh/40,.2,1)*VEH[P.type].susp;P.bounce+=.8*k;CAM.shake=Math.max(CAM.shake,6*k);Hap.pothole(clamp(k,0,1));Snd.thud(clamp(k,0,1));damage(+(2+4*k).toFixed(1));toast('Hidden pothole under the water!','bad','hidden',1500);},140);}
+  if(z.hidden&&!z.revealed){z.revealed=true;setTimeout(()=>{if(state!=='play')return;const k=clamp(kmh/40,.2,1)*VEH[P.type].susp;P.bounce+=.8*k;CAM.shake=Math.max(CAM.shake,6*k);Hap.pothole(clamp(k,0,1));Snd.thud(clamp(k,0,1));},140);}
 }
 function crash(rel,what,rashAdd){
   const k=clamp(rel/12,.2,1);Hap.crash();Snd.crash();CAM.shake=Math.max(CAM.shake,12*k);P.bounce=1;
-  const dmg=+(3+10*k).toFixed(1);damage(dmg);P.rash+=rashAdd||0;if(rel>9)lfDamage((rel-9)*(VEH[P.type].cat==='two'?3:1.4),'crash');
-  toast(`${what} −${Math.round(dmg)}%`,'bad','crash'+what,1200);
+  const dmg=+(3+10*k).toFixed(1);damage(dmg);if(rel>9)lfDamage((rel-9)*(VEH[P.type].cat==='two'?3:1.4),'crash');
 }
 function hitPed(p){
   if(p.state==='static'&&p.kind==='vendor'){p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);p.cart=null;}
   if(p.state==='static'&&p.kind==='lie'){p.kind='lie';}
   p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);if(p.kind==='lie'||p.kind==='sit'){p.v=0;}
   Snd.crash();Hap.bigCrash();CAM.shake=10;flash();
-  if(!chaseNear()&&!policeWitness('ped')){toast('You hit a pedestrian! No police saw it.','bad');panic(p.x,p.y,30);trip=null;return;}
-  addChallan('ped');profile.seized=true;saveProfile();
-  COP.pedHit=true;toast('You hit a pedestrian! Licence seized','bad');
-  offence('ped',3);
+  panic(p.x,p.y,30);if(!chaseNear()&&!policeWitness('ped')){trip=null;return;}
+  offence('ped',2);
   trip=null;
 }
 
@@ -72,19 +62,21 @@ function updatePlayer(dt){
   let top=V.top/3.6;
   if(P.dry)top=6/3.6;else if(P.cond<=0)top=10/3.6;else if(P.cond<50)top*=.55+.45*P.cond/50;
   let steerIn=clamp((input.R?1:0)-(input.L?1:0)+(input.jx||0)*1.1,-1,1);if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
-  P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?6:9));
+  P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?3.4:6));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
-  const cap=P.offroad?Math.min(top,26/3.6):top;
-  if(input.gas){if(P.s<cap){const f=1-Math.pow(clamp(P.s/cap,0,1),1.7);P.s+=V.accel*f*dt*(P.s<0?3:1)*(P.s<3?1.25:1);}}
-  /* holding brake keeps you stopped; tap brake twice quickly to reverse */
-  if(input.brake){if(P.s>.3)P.s-=V.brake*dt;else if(P.rev){if(P.s>-4)P.s-=2.4*dt;}else if(P.s<-.3)P.s+=V.brake*dt;else P.s=0;}
-  else if(P.rev&&P.s<0){P.s=Math.min(0,P.s+3*dt);}
+  const cap=top,back=(input.jy||0)<-.45;
+  /* GO accelerates; GO with the joystick pulled back reverses */
+  if(input.gas&&!back){if(P.s<-.3)P.s+=V.brake*dt;else if(P.s<cap){const f=1-Math.pow(clamp(P.s/cap,0,1),1.7);P.s+=V.accel*f*dt*(P.s<3?1.25:1);}}
+  else if(input.gas&&back){if(P.s>.3)P.s-=V.brake*dt;else if(P.s>-Math.min(top*.4,8))P.s-=V.accel*.7*dt;}
+  /* BRAKE slows and holds; BRAKE while steering at speed drifts */
+  P.drift=input.brake&&Math.abs(P.steer)>.3&&P.s>7;
+  if(input.brake){if(P.drift)P.s-=V.brake*.2*dt;else if(P.s>.3)P.s-=V.brake*dt;else if(P.s<-.3)P.s+=V.brake*dt;else P.s=0;}
   if(!input.gas&&!input.brake){const c=(1.0+Math.abs(P.s)*.02)*dt;P.s=Math.abs(P.s)<c?0:P.s-Math.sign(P.s)*c;}
-  if(P.offroad){P.s-=P.s*1.5*dt;if(P.s>cap)P.s-=5*dt;}
   if(P.s>top+.5)P.s-=4*dt;
   const sp=Math.abs(P.s);
-  const turn=P.steer*V.handling*1.8*clamp(sp/3,0,1)/(1+sp/24)*Math.sign(P.s||1);
+  let turn=P.steer*V.handling*1.8*clamp(sp/3,0,1)/(1+sp/18)*Math.sign(P.s||1);if(P.drift)turn*=1.75;
+  steerAssist(dt,sp);
   P.h+=turn*dt;
   if(V.cat==='two'){const tl=clamp(Math.atan(sp*turn/9.8),-.5,.5);P.lean+=(tl-P.lean)*Math.min(1,dt*6);}else P.lean=0;
   /* hazards */
@@ -96,16 +88,16 @@ function updatePlayer(dt){
     else if(z.type==='water'){const ca=Math.cos(z.ang),sa=Math.sin(z.ang);const al=(dx*ca+dy*sa)/(z.r*1.6),ac=(-dx*sa+dy*ca)/z.r;if(al*al+ac*ac<1){P.wet=true;if(z.cd<now)enterWater(z);z.cd=now+700;}}}
   if(P.wet)P.s-=P.s*1.0*dt;
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);
-  const grip=P.wet?1.6:P.offroad?4:9;
+  const grip=P.drift?1.25:P.wet?2.4:8;if(P.drift||(input.brake&&sp>9))addSkid();
   P.vx+=(fx*P.s-P.vx)*Math.min(1,grip*dt);P.vy+=(fy*P.s-P.vy)*Math.min(1,grip*dt);
   /* move in small steps so fast vehicles cannot skip through walls */
   const dist=Math.hypot(P.vx,P.vy)*dt;const n=Math.max(1,Math.ceil(dist/.45));
   for(let i=0;i<n;i++){
     const ox=P.x,oy=P.y;P.x+=P.vx*dt/n;P.y+=P.vy*dt/n;
     const sg=Math.sign(P.s||1);const px=P.x+fx*P.len*.5*sg,py=P.y+fy*P.len*.5*sg;
-    if(inBuilding(px,py)||inBuilding(P.x,P.y)){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
+    if(inBuilding(px,py)||inBuilding(P.x,P.y)){if(slideWall(ox,oy,fx,fy,sg,n,dt))continue;P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
     gQuery(W.tG,P.x,P.y,2,tq);let tree=null;for(const t of tq)if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*.5)tree=t;
-    if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a tree!',rel>8?20:0);else Hap.rumble();break;}
+    if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>1.5){crash(rel,'Hit a tree!');if(!tree.pier)damage(rel*1.3);}else Hap.rumble();break;}
   }
   /* stuck against a wall with the throttle open: put the vehicle back on the road */
   if(P.bumped&&(input.gas||input.brake))P.stuckT=(P.stuckT||0)+dt;else P.stuckT=Math.max(0,(P.stuckT||0)-dt);P.bumped=false;
@@ -114,7 +106,7 @@ function updatePlayer(dt){
   for(const c of animals){const d=Math.hypot(c.x-P.x,c.y-P.y);const r=c.kind==='cow'?1.1:c.kind==='dog'?.45:.3;
     if(d<r+P.wid*.55){const rel=Math.abs(P.s);const nx=(P.x-c.x)/(d||1),ny=(P.y-c.y)/(d||1);
       if(c.kind==='cow'){P.x=c.x+nx*(r+P.wid*.55+.02);P.y=c.y+ny*(r+P.wid*.55+.02);P.s*=.1;P.vx=P.vy=0;if(rel>1.5){crash(rel,'Hit a cow!',25);Snd.moo();}}
-      else if(rel>2&&!c.event){c.state='flee';c.tx=c.x-nx*8;c.ty=c.y-ny*8;c.speed=6;c.t=1.5;Snd.yelp();damage(2);P.rash+=15;toast(c.kind==='dog'?'You hit a street dog!':'You hit a cat!','bad','ani',2000);}}}
+      else if(rel>2&&!c.event){c.state='flee';c.tx=c.x-nx*8;c.ty=c.y-ny*8;c.speed=6;c.t=1.5;Snd.yelp();damage(2);}}}
   /* traffic */
   for(const a of agents){
     const dx=P.x-a.x,dy=P.y-a.y;const lim=(P.len+a.t.len)*.5;if(Math.abs(dx)>lim+2||Math.abs(dy)>lim+2)continue;
@@ -129,9 +121,8 @@ function updatePlayer(dt){
   for(const p of peds){if(p.state==='down')continue;
     if(p.cart!=null){const d=Math.hypot(p.cx-P.x,p.cy-P.y);if(d<1.1+P.wid*.5){const rel=Math.abs(P.s);const nx=(P.x-p.cx)/(d||1),ny=(P.y-p.cy)/(d||1);P.x=p.cx+nx*(1.12+P.wid*.5);P.y=p.cy+ny*(1.12+P.wid*.5);P.s*=.1;P.vx=P.vy=0;if(rel>1.5)crash(rel,'Hit a vendor cart!',25);}}
     const dx=p.x-P.x,dy=p.y-P.y;const al=dx*fx+dy*fy,ac=Math.abs(dx*-fy+dy*fx);const pr=p.state==='static'&&p.kind==='lie'?.9:.3;
-    if(Math.abs(al)<P.len*.5+pr&&ac<P.wid*.5+pr){if(Math.abs(P.s)>1.2)hitPed(p);else if(p.state!=='static'){p.x+=(-fy)*Math.sign(dx*-fy+dy*fx||1)*.5;p.y+=fx*Math.sign(dx*-fy+dy*fx||1)*.5;toast('Careful! Pedestrian','', 'pedn',3000);}else{P.s=0;P.vx=P.vy=0;}}}
+    if(Math.abs(al)<P.len*.5+pr&&ac<P.wid*.5+pr){if(Math.abs(P.s)>1.2)hitPed(p);else if(p.state!=='static'){p.x+=(-fy)*Math.sign(dx*-fy+dy*fx||1)*.5;p.y+=fx*Math.sign(dx*-fy+dy*fx||1)*.5;}else{P.s=0;P.vx=P.vy=0;}}}
   if(P.offroad&&sp>1.5){offT-=dt;if(offT<=0){offT=.16;Hap.rumble();}}
-  if(P.offroad&&sp>3)toast('Off the road','','off',5000);
   P.bounce*=Math.pow(.02,dt);P.air=Math.max(0,P.air-dt);
   session.m+=Math.hypot(P.vx,P.vy)*dt;
   {const F=FUEL[P.type];P.fuel=Math.max(0,P.fuel-Math.hypot(P.vx,P.vy)*dt/1000/F[0]*100*(input.gas?1.15:.8));
@@ -153,18 +144,11 @@ function rules(dt,nr,sp){
   gQuery(W.sigG,P.x,P.y,40,tmpS);
   for(const S of tmpS){const d=Math.hypot(S.x-P.x,S.y-P.y);const inside=d<S.R;const was=sigInside.get(S);
     if(inside&&was===false){const arm=sigArmFor(S,P.px,P.py);const st=sigState(S,arm.ph,GT);
-      if(st[0]==='R'&&sp>2.5){toast('You jumped a red signal!','bad');offence('signal',1);Snd.whistle();}
-      else if(S.waited){S.waited=false;profile.wallet+=5;session.fare+=5;toast('Waited at the signal +₹5','good','sigok',4000);}}
+      if(S.waited){S.waited=false;profile.wallet+=5;session.fare+=5;toast('Waited at the signal +₹5','good','sigok',4000);}}
     sigInside.set(S,inside);if(!inside&&d>S.R+20)S.waited=false;}
   if(sigInside.size>40)sigInside=new Map();
   P.px=P.x;P.py=P.y;
-  /* speed limit and one-way */
-  if(nr.seg&&!P.offroad){const w=nr.seg.w;P.limit=w.limit;
-    if(sp*3.6>w.limit+25){P.overT+=dt;P.rash+=6*dt;if(P.overT>3)toast(`Overspeeding! Limit ${w.limit} km/h`,'bad','over',6000);}else P.overT=Math.max(0,P.overT-dt);
-    if(w.oneway&&sp>3){const allowed=nr.seg.h+(w.rev?Math.PI:0);if(Math.cos(angDiff(P.h,allowed))<-.5){P.wrongT+=dt;P.rash+=12*dt;if(P.wrongT>1)toast('Wrong way on a one-way road!','bad','wrong',5000);}else P.wrongT=0;}
-  }
-  P.rash=Math.max(0,P.rash-2.5*dt);rashCool-=dt;
-  if(P.rash>=100&&rashCool<=0){rashCool=12;P.rash=70;offence(P.overT>1?'speed':P.wrongT>1?'wrong':'rash',1);}
+  if(nr.seg)P.limit=nr.seg.w.limit;P.rash=0;
 }
 
 /* ---------- police outcome ---------- */
@@ -278,11 +262,10 @@ function updateHud(){
   if(sigHud&&sigHud.d<85){el.sig.hidden=false;const c=sigHud.st[0];el.sig.querySelectorAll('.lamps i').forEach(i=>i.classList.toggle('on',i.classList.contains(c==='R'?'r':c==='A'?'a':'g')));el.sigN.textContent=Math.ceil(sigHud.st[1]);el.sigT.textContent=(c==='R'?'Stop at the line':c==='A'?'Signal changing':'Go')+'\n'+Math.max(0,Math.round(sigHud.d))+' m';el.sigT.style.whiteSpace='pre';}
   else el.sig.hidden=true;
   if(COP.list.length){el.wanted.hidden=false;el.wanted.querySelectorAll('.stars i').forEach((s,i)=>s.classList.toggle('on',i<COP.level));let md=1e9;for(const c of COP.list)md=Math.min(md,Math.hypot(c.x-P.x,c.y-P.y));el.wantedTxt.textContent=`Hoysala ${Math.round(md)} m behind`;}
-  else if(P.rash>5){el.wanted.hidden=false;el.wanted.querySelectorAll('.stars i').forEach(s=>s.classList.remove('on'));el.wantedTxt.textContent='Drive carefully';}
   else el.wanted.hidden=true;
   el.rashbar.style.width=clamp(P.rash,0,100)+'%';
   lifeHud();
-  el.limit.hidden=FOOT.on||FLY.on;
+  el.limit.hidden=true;
   if(FLY.on){el.sig.hidden=true;el.trip.innerHTML='<div><b>Flying</b></div><div>Land on a runway and stop to get out</div>';if(noticeKey!=='fly'){noticeKey='fly';el.notice.hidden=true;}return;}
   if(footHudTick(el))return;
   if(trip){const d=Math.hypot(trip.x-P.x,trip.y-P.y);el.trip.innerHTML='';const a=document.createElement('div');a.innerHTML='Drop at <b></b>';a.querySelector('b').textContent=trip.name;const b=document.createElement('div');b.textContent=`${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'} · fare ₹${trip.fare}`;el.trip.append(a,b);}
@@ -355,7 +338,7 @@ function setFrameUniforms(){
   const night=TOD.night;
   FU.fog=settings.gfx==='fast'?[90,330]:[130+(1-night)*60,(settings.gfx==='ultra'?560:470)-night*170];
   FU.fogCol=TOD.fog;FU.sunDir=TOD.sunDir;FU.sunCol=TOD.sun;FU.sky=TOD.sky;FU.gnd=TOD.gnd;FU.night=night;
-  FU.hl=night>.15&&!FOOT.on&&!FLY.on?night*1.4:0;
+  FU.hl=night>.15&&!FOOT.on&&!FLY.on?night*.85:0;
   const V=curModel();const hp=V.lights.head[0];const hw=M4.xform(P.M,hp[0],hp[1],hp[2]);
   FU.hlPos=hw;FU.hlDir=(()=>{const d=[Math.sin(P.h),-.12,-Math.cos(P.h)];const l=Math.hypot(...d);return d.map(v=>v/l);})();
   wxFrame();
@@ -395,7 +378,7 @@ function renderScene(dt){
   for(const p of peds){if(p.state==='down')continue;if(p.cart!=null)sh(p.cx,p.cy,p.h,1.1,.7);sh(p.x,p.y,p.h,p.kind==='lie'?1:.35*(p.sc||1),.35*(p.sc||1));}
   for(const n of animals)sh(n.x,n.y,n.h,n.kind==='cow'?1.1:.45,n.kind==='cow'?.6:.25);
   if(intruder)sh(intruder.x,intruder.y,intruder.h,intruder.t.len*.6,intruder.t.wid*.72);
-  DS.draw(1,.42*(1-night*.6));
+  DS.draw(1,.42*(1-night*.6));drawSkids();
   gl.disable(gl.BLEND);
   /* solid world */
   gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
@@ -715,7 +698,7 @@ function hold(e,on,off){
 }
 const scareAnimals=()=>{for(const a of animals){if(a.event||a.lie)continue;const d=Math.hypot(a.x-P.x,a.y-P.y);if(d<24&&d>.1&&a.kind!=='cow'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*7;a.ty=a.y+(a.y-P.y)/d*7;a.speed=5;a.t=1.5;}else if(a.kind==='cow'&&d<20&&!a.lie&&a.state!=='cross'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*4;a.ty=a.y+(a.y-P.y)/d*4;a.speed=1;a.t=3;}}};
 hold($('#btnGas'),()=>{input.gas=1;P.rev=false;},()=>input.gas=0);hold($('#btnBrake'),brakeDown,()=>{input.brake=0;P.brakeUp=performance.now();});
-function brakeDown(){input.brake=1;if(Math.abs(P.s)<.5&&performance.now()-(P.brakeUp||0)<400){P.rev=true;toast('Reverse','', 'rev',800);}else if(P.s>.5)P.rev=false;}
+function brakeDown(){input.brake=1;P.rev=false;}
 hold($('#btnHorn'),()=>{input.horn=1;if(FOOT.on)return;Snd.hornOn(VEH[P.type].horn);scareAnimals();},()=>{input.horn=0;Snd.hornOff();});
 function releaseAll(){input.L=input.R=input.gas=input.brake=input.horn=0;document.querySelectorAll('.on').forEach(e=>{if(e.closest('#hud'))e.classList.remove('on');});Snd.hornOff();}
 const KEYS={ArrowLeft:'L',a:'L',ArrowRight:'R',d:'R',ArrowUp:'gas',w:'gas',ArrowDown:'brake',s:'brake',' ':'brake'};

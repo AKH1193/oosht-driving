@@ -4,7 +4,7 @@ const MAXCH=5;
 if(!Array.isArray(profile.pending))profile.pending=[];
 if(profile.seized==null)profile.seized=false;
 const pendingTotal=()=>profile.pending.reduce((s,c)=>s+c.f,0);
-function addChallan(code){const f=FINES[code];if(!f)return;profile.pending.push({c:code,l:f[0],f:f[1],t:Date.now()});if(profile.pending.length>=MAXCH)profile.seized=true;saveProfile();}
+function addChallan(code){const f=FINES[code];if(!f)return;profile.pending.push({c:code,l:f[0],f:f[1],t:Date.now()});saveProfile();}
 
 /* ---------- the court: a real courthouse from the map, otherwise one on a main road ---------- */
 function buildCourt(){
@@ -115,7 +115,7 @@ function updateFoot(dt){
     P.h+=steerIn*2.4*dt;
     if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);}
   if(input.brake)P.s=Math.max(0,P.s-14*dt);
-  if(run&&P.s>2.6)FOOT.stam=Math.max(0,FOOT.stam-10*dt*(100/maxStam()));else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
+  if(false)FOOT.stam=0;else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
   const ox=P.x,oy=P.y,sx=P.vx*dt,sy=P.vy*dt;
   const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq)if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};

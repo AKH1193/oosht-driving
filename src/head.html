@@ -75,8 +75,8 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #wanted .t{font-size:13px;font-weight:600}
 #wanted .rash{display:grid;gap:2px}
 #wanted .rash label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-#toast{position:absolute;top:30%;left:50%;transform:translateX(-50%);display:grid;gap:6px;justify-items:center}
-.toast{padding:7px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:16px;font-weight:600;white-space:nowrap;animation:toast 2.2s ease forwards}
+#toast{position:absolute;top:calc(176px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:grid;gap:4px;justify-items:center;pointer-events:none;opacity:.78}
+.toast{padding:4px 11px;border-radius:999px;background:rgba(13,17,22,.45);border:1px solid rgba(255,255,255,.12);font-size:12px;font-weight:600;white-space:nowrap;animation:toast 2.2s ease forwards}
 .toast.bad{border-color:rgba(255,90,78,.6);color:#FFD2CE}
 .toast.good{border-color:rgba(83,214,142,.6);color:#D2F7E2}
 .toast.gold{border-color:rgba(255,199,44,.7);color:var(--auto-yellow)}
@@ -286,7 +286,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
     <div id="wanted" class="panel" hidden>
       <div class="stars"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="t" id="wantedTxt">Hoysala on your tail</div>
-      <div class="rash"><label>Rash driving</label><div class="bar"><i id="rashbar" style="width:0;background:var(--danger)"></i></div></div>
+      <div class="rash" hidden><label>Rash driving</label><div class="bar"><i id="rashbar" style="width:0;background:var(--danger)"></i></div></div>
     </div>
     <div class="hud-tc">
       <div class="chip" id="road">Finding road</div>

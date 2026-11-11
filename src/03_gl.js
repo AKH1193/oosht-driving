@@ -49,7 +49,7 @@ void main(){
   vec3 c=base*(amb+uSunCol*dif);
   if(uHL>0.0){vec3 L=vW-uHLPos;float d=length(L);vec3 Ld=L/max(d,0.001);
     float s=smoothstep(0.78,0.93,dot(Ld,uHLDir));float fall=1.0/(1.0+d*d*0.003);
-    c+=base*vec3(1.0,0.93,0.78)*s*fall*uHL*(0.25+0.75*max(dot(n,-Ld),0.0))*2.4;}
+    c+=min(base*vec3(1.0,0.93,0.78)*s*fall*uHL*(0.25+0.75*max(dot(n,-Ld),0.0))*1.6,vec3(0.55));}
   if(uUseTex>0.5){c+=texture2D(uEmTex,vUv).rgb*uNight;}
   if(uWet>0.0&&up>0.8){vec3 v=normalize(uCam-vW);float fr=pow(1.0-max(dot(v,n),0.0),4.0);c=mix(c,uSky*0.9+uFogCol*0.2,fr*0.55*uWet);
     vec3 h=normalize(v+uSunDir);c+=uSunCol*pow(max(dot(n,h),0.0),60.0)*0.6*uWet;}

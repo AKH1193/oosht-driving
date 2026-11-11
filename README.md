@@ -24,6 +24,16 @@ Every house and building has a door or gate, and you can walk in: family homes, 
 
 People talk as you pass (in Kannada when the phone has a Kannada voice, otherwise in Kanglish): men, women, kids, elders and vendors. Pickpockets work the crowds, people argue and come to blows, drivers get out for road rage, and some carry guns and will shoot back. Catch or knock down a thief (red marker) for a ₹10,000 police reward.
 
+## Street life
+
+- You don't have to follow traffic rules (everyone else does): no signal, speed, one-way or rash-driving penalties, no licence seizure, and potholes, breakers and water logging only shake you.
+- If a vehicle runs into you from behind, a crowd comes running and beats up its driver.
+- Anyone badly hurt, and you when your health is low, gets an ambulance that drives in and takes them to hospital.
+- Cigarettes and beedis at stalls, hotels and bars; a ganja dealer hangs around nearby (illegal if the police see).
+- Inside homes and offices, talk to the people there or hit them; they run, and the family may call the police.
+- Garbage heaps are loose bags that scatter when you hit them. Trees and buildings damage your vehicle.
+- Lose the police by getting out of their sight for 5 seconds, going into any building, or staying still for 5 seconds with no cop right next to you.
+
 ## On foot
 
 - Tap EXIT to get out of any vehicle; walk back to it and tap Get in. Walk up to a car, auto or bike in traffic and tap Take car to steal it.
@@ -53,7 +63,7 @@ Replays pay half. Getting busted or knocked out fails a mission; Retry starts it
 
 ## Police and the court
 
-The police only react when a cop is right there and can see you (a patrolling Hoysala within about 45 m, a constable within about 30 m, with nothing in between), or when you hurt a police officer. Chases are smaller and easier to shake: break line of sight for a few seconds and they give up. Patrols show on the map as a blue P (flashing red when they chase you), police stations as a yellow P on navy. Crimes build heat and a five-star wanted level: more Hoysalas join the chase as the stars rise, a police helicopter circles from four stars and fires at five. When you are on foot, constables get out with lathis; at three stars they shoot. Hit back and you knock them down, and they cannot cuff you while you are fighting. If they catch you, you are busted: weapons confiscated, e-challans issued, and you are released from the police station with jurisdiction over that spot. Fines are paid only at the District Magistrate Court; five unpaid challans, or hitting a pedestrian, and your licence is seized until you pay. Lose all your health and you wake up in hospital with a bill.
+The police only react when a cop is right there and can see you (a patrolling Hoysala within about 45 m, a constable within about 30 m, with nothing in between), or when you hurt a police officer. Chases are smaller and easier to shake: break line of sight for a few seconds and they give up. Patrols show on the map as a blue P (flashing red when they chase you), police stations as a yellow P on navy. Crimes build heat and a five-star wanted level: more Hoysalas join the chase as the stars rise, a police helicopter circles from four stars and fires at five. When you are on foot, constables get out with lathis; at three stars they shoot. Hit back and you knock them down, and they cannot cuff you while you are fighting. If they catch you, you are busted: weapons confiscated, e-challans issued, and you are released from the police station with jurisdiction over that spot. Fines are paid only at the District Magistrate Court. Lose all your health and you wake up in hospital with a bill.
 
 ## Get the app
 
@@ -63,7 +73,7 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 
 ## Controls
 
-- The joystick on the left steers; on foot, push it the way you want to walk and all the way to run. GO accelerates; BRAKE stops and holds. Tap BRAKE twice quickly while stopped to reverse.
+- The joystick on the left steers; on foot, push it the way you want to walk and all the way to run.
 - HORN scares animals off the road; on foot it becomes RUN.
 - On foot: HIT / FIRE attacks, the weapon chip under your wallet switches weapons, and the yellow button does whatever is nearby (Get in, Take car, Eat & drink, Work out, Buy weapons).
 - Keyboard: arrows or WASD, F to attack, X to jump, E to get in or out, Q to switch weapons, C for camera.
