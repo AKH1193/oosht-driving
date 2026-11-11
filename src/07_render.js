@@ -178,6 +178,7 @@ function buildChunk(cx,cy){
   for(const g of W.garages)if(inC(g.sx,g.sy))shedAt(sol,g);
   for(const g of W.fuels||[])if(inC(g.sx,g.sy))stationAt(sol,dec,g);
   if(W.court&&inC(W.court.sx,W.court.sy))courtAt(sol,W.court);
+  cityChunk(sol,dec,mine,inC);
   return {cx,cy,v:W.version,ads:ads.mesh(),cas:cas.mesh(),asp:asp.mesh(),mrk:mrk.mesh(),dec:dec.mesh(),sol:sol.mesh(),shp:shp.mesh(),glow:makeGlowMesh(glow),shad:makeGlowMesh(shad),heads};
 }
 function freeChunk(c){for(const k of['cas','asp','mrk','dec','sol','shp','ads','glow','shad'])freeMesh(c[k]);}

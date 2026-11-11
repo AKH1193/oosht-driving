@@ -280,8 +280,7 @@ function offence(code,level){
   if(state!=='play')return;
   if(!COP.off.includes(code))COP.off.push(code);
   const before=COP.level;COP.level=clamp(Math.max(COP.level,level),0,5);
-  if(COP.list.length&&before>=COP.level&&code!=='ped'&&level>=2)COP.level=Math.min(5,COP.level+1);
-  const want=COP.level>=4?3:COP.level>=2?2:1;
+  const want=COP.level>=5?4:COP.level>=4?3:COP.level>=2?2:1;
   while(COP.list.length<want){const c=spawnCop();if(!c)break;COP.list.push(c);}
   if(COP.list.length){Snd.sirenOn();if(before===0)toast(code==='ped'?'Hoysala dispatched!':FOOT.on?'Police are coming for you!':'Hoysala is after you!','bad');}
   $('#wanted').hidden=false;

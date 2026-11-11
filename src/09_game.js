@@ -103,7 +103,7 @@ function updatePlayer(dt){
     const ox=P.x,oy=P.y;P.x+=P.vx*dt/n;P.y+=P.vy*dt/n;
     const sg=Math.sign(P.s||1);const px=P.x+fx*P.len*.5*sg,py=P.y+fy*P.len*.5*sg;
     if(inBuilding(px,py)||inBuilding(P.x,P.y)){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
-    gQuery(W.tG,P.x,P.y,2,tq);let tree=null;for(const t of tq)if(Math.hypot(t.x-P.x,t.y-P.y)<.45+P.wid*.5)tree=t;
+    gQuery(W.tG,P.x,P.y,2,tq);let tree=null;for(const t of tq)if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*.5)tree=t;
     if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a tree!',rel>8?20:0);else Hap.rumble();break;}
   }
   /* stuck against a wall with the throttle open: put the vehicle back on the road */
@@ -353,6 +353,7 @@ function setFrameUniforms(){
   FU.hl=night>.15?night*1.4:0;
   const V=curModel();const hp=V.lights.head[0];const hw=M4.xform(P.M,hp[0],hp[1],hp[2]);
   FU.hlPos=hw;FU.hlDir=(()=>{const d=[Math.sin(P.h),-.12,-Math.cos(P.h)];const l=Math.hypot(...d);return d.map(v=>v/l);})();
+  wxFrame();
 }
 function lightsFor(model,M,headOn,brake,night){
   if(!model.lights)return;
@@ -362,12 +363,12 @@ function lightsFor(model,M,headOn,brake,night){
 function renderScene(dt){
   resizeGL();
   let V=VEH[P.type],pm=curModel();const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
-  setupCamera(dt,P,V,pm);setFrameUniforms();
+  setupCamera(dt,P,V,pm);metroCam();setFrameUniforms();shadowPass(dt);
   const night=TOD.night;
   gl.viewport(0,0,glc.width,glc.height);
-  gl.clearColor(TOD.fog[0],TOD.fog[1],TOD.fog[2],1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.clearColor(FU.fogCol[0],FU.fogCol[1],FU.fogCol[2],1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.disable(gl.BLEND);
-  drawSky(TOD.top,TOD.hor,TOD.gnd.map(v=>v*1.2),TOD.sunC,night*.9);
+  {const sk=wxSky();drawSky(sk[0],sk[1],sk[2],TOD.sunC.map(v=>v*(1-WX.rain*.9)),night*.9*(1-WX.rain));}
   /* ground layers are painted in order, without depth */
   gl.disable(gl.DEPTH_TEST);gl.depthMask(false);
   M4.model(TM,Math.round(P.x/100)*100,0,Math.round(P.y/100)*100,0,0,0);drawLit(GROUND,TM,{cull:false,tex:TEX.dirt,emTex:TEX.black});
@@ -378,7 +379,7 @@ function renderScene(dt){
   for(const c of vis)drawLit(c.asp,null,{cull:false,tex:TEX.asph,emTex:TEX.black});
   for(const L of['mrk','dec'])for(const c of vis)drawLit(c[L],null,{cull:false});
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-  for(const c of vis)drawGlowMesh(c.shad,1,.32*(1-night*.7));
+  if(!FU.shOn)for(const c of vis)drawGlowMesh(c.shad,1,.32*(1-night*.7)*(1-WX.rain*.6));
   DS.reset();
   const sh=(x,y,h,l,w)=>DS.quad(x,.03,y,Math.sin(h),-Math.cos(h),l,w,ZERO3);
   if(fv&&fv.foot){sh(P.x,P.y,P.h,.35,.35);if(FOOT.ride)sh(FOOT.ride.x,FOOT.ride.y,FOOT.ride.h,FOOT.ride.t.len*.6,FOOT.ride.t.wid*.72);}else sh(P.x,P.y,P.h,(pm.len||P.len)*.62,(pm.wid||P.wid)*.75);
@@ -403,7 +404,7 @@ function renderScene(dt){
     const w=M4.xform(TM2,0,0,-.05);DGr.bill(w[0],w[1],w[2],.6,col,CAM.right);}
   /* traffic, people, animals */
   const A=animalModels();
-  for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);
+  for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);if(a.model.decal2&&d<120){const tx=a.model.decal2.tex().tex;drawLit(a.model.decal2.mesh,TM,{tex:tx,emTex:tx,emiK:.15+night*.4});}
     if(d<160)lightsFor(a.model,TM,night>.25,a.brake&&a.v>.5,night);}
   for(const p of peds){if(Math.hypot(p.x-ex,p.y-ez)>180)continue;
     if(p.state==='static'){
@@ -430,7 +431,7 @@ function renderScene(dt){
   else if(CAM.mode==='cockpit'){
     drawLit(pm.body,P.M,{emiK:.4+night*.6});drawLit(pm.cockpit,P.M,{emiK:.6+night*.8,noHL:true});
     if(pm.steer){const sp=pm.steerPos;M4.model(TM,sp[0],sp[1],sp[2],0,-.42,-P.steer*1.9);M4.mul(TM2,P.M,TM);drawLit(pm.steer,TM2,{noHL:true});}
-  }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);if(pm.decal)drawLit(pm.decal.mesh,P.M,{tex:hoysalaTex().tex,emTex:TEX.black});}
+  }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);if(pm.decal)drawLit(pm.decal.mesh,P.M,{tex:hoysalaTex().tex,emTex:TEX.black});if(pm.decal2){const tx=pm.decal2.tex().tex;drawLit(pm.decal2.mesh,P.M,{tex:tx,emTex:tx,emiK:.15});}}
   if(!fv&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
   /* light, glow and signboards */
   gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
@@ -440,6 +441,7 @@ function renderScene(dt){
     for(const a of agents){if(Math.hypot(a.x-ex,a.y-ez)>140)continue;a.model._h=a.h;M4.model(TM,a.x,0,a.y,-a.h,0,0);beam(TM,a.model);}
     DGb.draw(2,night*.55);}
   DGr.draw(0,.75+night*.6);DGr.reset();
+  drawRain();
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
   if(trip){const d=Math.hypot(trip.x-ex,trip.y-ez);drawSprite(beamTex().tex,trip.x,0,trip.y,3.2+d*.01,45,[1,.8,.25]);}
   drawFootBeams(ex,ez);
@@ -553,7 +555,7 @@ function startPlay(keepPos){
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
@@ -655,7 +657,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Sn
 window.__onBack=()=>{
   if(!$('#settings').hidden){closeSettings();return true;}
   if(state==='play'){pause();return true;}if(state==='pause'){resume();return true;}
-  if(state==='venue'){$('#vnClose').click();return true;}if(state==='hosp')return true;
+  if(state==='venue'){$('#vnClose').click();return true;}if(state==='metro'){$('#mtClose').click();return true;}if(state==='hosp')return true;
   if(state==='court'){$('#ctLeave').click();return true;}if(state==='ride'){$('#rdCancel').click();return true;}if(state==='job'){$('#jbClose').click();return true;}
   if(state==='repair'||state==='fuel'){resumeDrive();return true;}if(state==='outcome'){$('#outPrimary').click();return true;}
   if(!$('#showroom').hidden){go(changingVehicle?'title':'where');changingVehicle=false;return true;}
@@ -681,6 +683,7 @@ function buildSettings(){
         if(key==='sound')Snd.setOn(val);if(key==='haptics'&&val!=='off')Hap.play([0,60],[0,180],true);
         if(key==='tod'){computeTod();clockT=0;}if(key==='cam')CAM.mode=val;if(key==='gfx'){clearChunks();for(const k in THUMBS)delete THUMBS[k];}
         if(key==='steer'){if(val==='tilt')requestTilt();calibrateTilt();}
+        applyHudStyle();
         buildSettings();});seg.appendChild(b);}
     row.append(sp,seg);box.appendChild(row);}
 }

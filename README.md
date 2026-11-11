@@ -12,18 +12,22 @@ Ten two-wheelers, an auto-rickshaw, three everyday cars, four luxury and sports 
 
 Potholes, speed breakers and water logging you feel through vibration; traffic signals with countdowns; pedestrians of every age, street vendors and kids at play; cows, dogs and cats. A black cat crossing your path asks you to stop for five seconds (the apshakun bonus). Shop names and rooftop hoardings are fixed to the buildings.
 
+The city has real sunlight shadows (Balanced and Ultra graphics), rain spells with wet roads and thunder, electric poles and wires, garbage heaps and twin bins, BMTC buses in four liveries that stop at bus shelters, lorries with "Horn OK Please" tailgates, tractors with trolleys, cars and bikes parked along the kerb, and parking lots. An elevated metro runs over the main road (the real Namma Metro alignment where the map has it), with stations, trains and a smart card you top up to ride.
+
 ## On foot
 
 - Tap EXIT to get out of any vehicle; walk back to it and tap Get in. Walk up to a car, auto or bike in traffic and tap Take car to steal it.
 - Walking or running earns ₹5 (sweat coins) every 10 seconds.
-- Hail an auto or cab, or wave for a free lift: the driver obeys signals, you climb on, ride as a passenger and get off at the end.
+- Hail an auto or cab, wait at a bus stop for a BMTC bus, or wave for a free lift: the driver keeps to the road and the left lane, stops at signals, for traffic and for people, and you climb on, ride and get off at the end.
+- Metro: walk to a station staircase, buy a smart card, top it up and ride to another station.
+- Work: Work lists the nearest jobs. Load or unload a lorry by carrying sacks between the lorry and the godown (₹20 a sack plus a bonus), wash a parked car by scrubbing all four sides, or deliver a parcel. Gym workouts are a rhythm game.
 - Hotels and darshinis, cafes, juice and healthy food stalls restore health and stamina. Bars make you tipsy (do not drive). Gyms raise your stamina and punching strength.
 - Green plus holograms on the footpath restore health; you also find cash, armour and ammo lying around.
 - Fight with fists and kicks, a cricket bat or a knife, or buy a pistol and SMG at an arms dealer. People flee, cars wreck, street props go flying.
 
 ## Police and the court
 
-Crimes raise a five-star wanted level. Hoysala cars chase you; when you are on foot, constables get out and run after you, and at three stars they shoot. If they catch you, you are busted: weapons confiscated and e-challans issued. Fines are paid only at the District Magistrate Court; five unpaid challans, or hitting a pedestrian, and your licence is seized until you pay. Lose all your health and you wake up in hospital with a bill.
+Crimes build heat and a five-star wanted level: more Hoysalas join the chase as the stars rise, a police helicopter circles from four stars and fires at five. When you are on foot, constables get out with lathis; at three stars they shoot. Hit back and you knock them down, and they cannot cuff you while you are fighting. If they catch you, you are busted: weapons confiscated and e-challans issued. Fines are paid only at the District Magistrate Court; five unpaid challans, or hitting a pedestrian, and your licence is seized until you pay. Lose all your health and you wake up in hospital with a bill.
 
 ## Get the app
 
@@ -35,9 +39,10 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 
 - Left and right pads steer; GO accelerates (walks on foot); BRAKE stops and holds. Tap BRAKE twice quickly while stopped to reverse.
 - HORN scares animals off the road; on foot it becomes RUN.
-- On foot: HIT / FIRE attacks, JUMP jumps, the weapon chip under your wallet switches weapons, and the yellow button does whatever is nearby (Get in, Take car, Eat & drink, Work out, Buy weapons).
+- On foot: RUN and JUMP sit on the left above the steering pads; HIT / FIRE attacks, the weapon chip under your wallet switches weapons, and the yellow button does whatever is nearby (Get in, Take car, Eat & drink, Work out, Buy weapons).
 - Keyboard: arrows or WASD, F to attack, X to jump, E to get in or out, Q to switch weapons, C for camera.
 - The camera button cycles chase, cockpit and top views.
+- Settings let you change button opacity, size and shape, HUD and map opacity, map size, and the weather.
 
 ## Where things live
 

@@ -1,7 +1,7 @@
 /* ================= WebGL engine ================= */
 let gl=null,glc=null;
 const IDENT=M4.create();
-let PL,PG,PS,PK; /* programs: lit, glow, sprite, sky */
+let PL,PG,PS,PK,PD; /* programs: lit, glow, sprite, sky, shadow depth */
 let curProg=null,frameId=0;
 const FU={}; /* per-frame uniforms */
 let TEX={};
@@ -14,30 +14,51 @@ precision mediump float;
 `;
 const LIT_VS=`precision highp float;
 attribute vec3 aPos;attribute vec3 aNor;attribute vec3 aCol;attribute vec2 aUv;attribute float aEmi;
-uniform mat4 uVP;uniform mat4 uM;
-varying vec3 vNor;varying vec3 vCol;varying vec2 vUv;varying float vEmi;varying vec3 vW;
-void main(){vec4 w=uM*vec4(aPos,1.0);vW=w.xyz;vNor=(uM*vec4(aNor,0.0)).xyz;vCol=aCol;vUv=aUv;vEmi=aEmi;gl_Position=uVP*w;}`;
+uniform mat4 uVP;uniform mat4 uM;uniform mat4 uLVP;
+varying vec3 vNor;varying vec3 vCol;varying vec2 vUv;varying float vEmi;varying vec3 vW;varying vec4 vL;
+void main(){vec4 w=uM*vec4(aPos,1.0);vW=w.xyz;vNor=(uM*vec4(aNor,0.0)).xyz;vCol=aCol;vUv=aUv;vEmi=aEmi;vL=uLVP*w;gl_Position=uVP*w;}`;
 const LIT_FS=PREC+`
 varying vec3 vNor;varying vec3 vCol;varying vec2 vUv;varying float vEmi;varying vec3 vW;
 uniform vec3 uSunDir;uniform vec3 uSunCol;uniform vec3 uSky;uniform vec3 uGnd;uniform vec3 uFogCol;uniform vec3 uCam;
 uniform vec3 uTint;uniform vec3 uEmiAdd;uniform vec3 uHLPos;uniform vec3 uHLDir;
 uniform vec2 uFog;uniform float uUseTex;uniform float uNight;uniform float uHL;uniform float uEmiK;uniform float uAlpha;
-uniform sampler2D uTex;uniform sampler2D uEmTex;
+uniform sampler2D uTex;uniform sampler2D uEmTex;uniform sampler2D uShadow;uniform float uShOn;uniform float uWet;uniform float uShTx;
+varying vec4 vL;
+float unpackD(vec4 c){return dot(c,vec4(1.0,1.0/255.0,1.0/65025.0,1.0/16581375.0));}
+float shadowAt(vec3 n){
+  vec3 p=vL.xyz/vL.w*0.5+0.5;
+  if(p.x<0.0||p.x>1.0||p.y<0.0||p.y>1.0||p.z>1.0)return 1.0;
+  float b=0.0012+0.004*(1.0-clamp(dot(n,uSunDir),0.0,1.0));float s=0.0;
+  s+=step(p.z-b,unpackD(texture2D(uShadow,p.xy+vec2(-0.6,-0.6)*uShTx)));
+  s+=step(p.z-b,unpackD(texture2D(uShadow,p.xy+vec2(0.6,-0.6)*uShTx)));
+  s+=step(p.z-b,unpackD(texture2D(uShadow,p.xy+vec2(-0.6,0.6)*uShTx)));
+  s+=step(p.z-b,unpackD(texture2D(uShadow,p.xy+vec2(0.6,0.6)*uShTx)));
+  s*=0.25;
+  float e=max(abs(p.x*2.0-1.0),abs(p.y*2.0-1.0));
+  return mix(s,1.0,smoothstep(0.85,1.0,e));
+}
 void main(){
   vec3 n=normalize(vNor);
   vec3 base=vCol*uTint;
   if(uUseTex>0.5){base*=texture2D(uTex,vUv).rgb;}
+  float up=clamp(n.y,0.0,1.0);
+  if(uWet>0.0){base*=1.0-0.38*uWet*up;}
   float dif=max(dot(n,uSunDir),0.0);
+  if(uShOn>0.5&&dif>0.0)dif*=shadowAt(n);
   vec3 amb=mix(uGnd,uSky,n.y*0.5+0.5);
   vec3 c=base*(amb+uSunCol*dif);
   if(uHL>0.0){vec3 L=vW-uHLPos;float d=length(L);vec3 Ld=L/max(d,0.001);
     float s=smoothstep(0.78,0.93,dot(Ld,uHLDir));float fall=1.0/(1.0+d*d*0.003);
     c+=base*vec3(1.0,0.93,0.78)*s*fall*uHL*(0.25+0.75*max(dot(n,-Ld),0.0))*2.4;}
   if(uUseTex>0.5){c+=texture2D(uEmTex,vUv).rgb*uNight;}
+  if(uWet>0.0&&up>0.8){vec3 v=normalize(uCam-vW);float fr=pow(1.0-max(dot(v,n),0.0),4.0);c=mix(c,uSky*0.9+uFogCol*0.2,fr*0.55*uWet);
+    vec3 h=normalize(v+uSunDir);c+=uSunCol*pow(max(dot(n,h),0.0),60.0)*0.6*uWet;}
   c+=vCol*vEmi*uEmiK+uEmiAdd;
   float f=clamp((length(vW-uCam)-uFog.x)/(uFog.y-uFog.x),0.0,1.0);
   gl_FragColor=vec4(mix(c,uFogCol,f*f*(3.0-2.0*f)),uAlpha);
 }`;
+const SHD_VS=`precision highp float;attribute vec3 aPos;uniform mat4 uLVP;uniform mat4 uM;void main(){gl_Position=uLVP*(uM*vec4(aPos,1.0));}`;
+const SHD_FS=PREC+`void main(){vec4 e=vec4(1.0,255.0,65025.0,16581375.0)*gl_FragCoord.z;e=fract(e);e-=e.yzww*vec4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);gl_FragColor=e;}`;
 const GLOW_VS=`precision highp float;
 attribute vec3 aPos;attribute vec2 aUv;attribute vec3 aCol;uniform mat4 uVP;
 varying vec2 vUv;varying vec3 vCol;varying vec3 vW;
@@ -86,6 +107,7 @@ function initGL(){
   PG=mkProg(GLOW_VS,GLOW_FS,[['aPos',0],['aCol',2],['aUv',3]]);
   PS=mkProg(SPR_VS,SPR_FS,[['aPos',0]]);
   PK=mkProg(SKY_VS,SKY_FS,[['aPos',0]]);
+  PD=mkProg(SHD_VS,SHD_FS,[['aPos',0]]);
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.frontFace(gl.CCW);gl.cullFace(gl.BACK);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
   R.quadBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,R.quadBuf);
@@ -113,6 +135,11 @@ function useProg(P){
     if(u.uHLDir)gl.uniform3fv(u.uHLDir,FU.hlDir);
     if(u.uTex)gl.uniform1i(u.uTex,0);
     if(u.uEmTex)gl.uniform1i(u.uEmTex,1);
+    if(u.uShadow)gl.uniform1i(u.uShadow,2);
+    if(u.uShOn)gl.uniform1f(u.uShOn,FU.shOn||0);
+    if(u.uShTx)gl.uniform1f(u.uShTx,FU.shTx||0.0005);
+    if(u.uWet)gl.uniform1f(u.uWet,FU.wet||0);
+    if(u.uLVP&&P!==PD)gl.uniformMatrix4fv(u.uLVP,false,FU.lvp||IDENT);
   }
 }
 function makeMesh(arr){
@@ -127,6 +154,30 @@ function makeGlowMesh(arr){
   const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,f,gl.STATIC_DRAW);
   return {b,n:f.length/8};
 }
+/* shadow map: depth packed into an RGBA texture so it works on every WebGL phone */
+const SHM={fbo:null,tex:null,rb:null,size:0};
+function shadowTarget(size){
+  if(SHM.size===size)return true;
+  if(SHM.fbo){gl.deleteFramebuffer(SHM.fbo);gl.deleteTexture(SHM.tex);gl.deleteRenderbuffer(SHM.rb);}
+  SHM.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,SHM.tex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,size,size,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  SHM.rb=gl.createRenderbuffer();gl.bindRenderbuffer(gl.RENDERBUFFER,SHM.rb);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,size,size);
+  SHM.fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,SHM.fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,SHM.tex,0);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,SHM.rb);
+  const ok=gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE;
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.activeTexture(gl.TEXTURE0);
+  SHM.size=ok?size:-1;return ok;
+}
+function shadowBegin(lvp){
+  gl.bindFramebuffer(gl.FRAMEBUFFER,SHM.fbo);gl.viewport(0,0,SHM.size,SHM.size);
+  gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);
+  useProg(PD);gl.uniformMatrix4fv(PD.u.uLVP,false,lvp);
+}
+function drawShadow(mesh,M){if(!mesh||!mesh.b)return;gl.uniformMatrix4fv(PD.u.uM,false,M||IDENT);gl.bindBuffer(gl.ARRAY_BUFFER,mesh.b);gl.vertexAttribPointer(0,3,gl.FLOAT,false,48,0);gl.drawArrays(gl.TRIANGLES,0,mesh.n);}
+function shadowEnd(){gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,SHM.tex);gl.activeTexture(gl.TEXTURE0);}
 function freeMesh(m){if(m&&m.b){gl.deleteBuffer(m.b);m.b=null;}}
 const WHITE3=[1,1,1],ZERO3=[0,0,0];
 function drawLit(mesh,M,o){
@@ -173,6 +224,14 @@ class GlowBatch{
     }
     const put=c=>{a[o++]=c[0];a[o++]=y;a[o++]=c[1];a[o++]=c[2];a[o++]=c[3];a[o++]=col[0];a[o++]=col[1];a[o++]=col[2];};
     put(c0);put(c1);put(c2);put(c0);put(c2);put(c3);
+  }
+  /* vertical camera-facing streak (rain) */
+  streak(x,y,z,h,w,col,right){
+    if(this.n>=this.max)return;const a=this.a;let o=this.n*48;this.n++;
+    const rx=right[0]*w,rz=right[2]*w;
+    const c=[[x-rx,y,z-rz,-1,-1],[x+rx,y,z+rz,1,-1],[x+rx,y+h,z+rz,1,1],[x-rx,y+h,z-rz,-1,1]];
+    const put=q=>{a[o++]=q[0];a[o++]=q[1];a[o++]=q[2];a[o++]=q[3];a[o++]=q[4];a[o++]=col[0];a[o++]=col[1];a[o++]=col[2];};
+    put(c[0]);put(c[1]);put(c[2]);put(c[0]);put(c[2]);put(c[3]);
   }
   /* camera-facing glow sprite (for lamp bulbs, siren lights) */
   bill(x,y,z,r,col,right){

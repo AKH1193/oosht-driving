@@ -106,12 +106,14 @@ function clipLine(p,x0,y0,x1,y1){
   return out.filter(r=>r.p.length>=4);
 }
 function parseTile(tx,ty,layers){
-  const T={tx,ty,roads:[],blds:[],areas:[],pois:[],names:[],places:[]};
+  const T={tx,ty,roads:[],blds:[],areas:[],pois:[],names:[],places:[],rails:[]};
   const X0=tx*EXT,Y0=ty*EXT,X1=X0+EXT,Y1=Y0+EXT;
   const G=(L,ring)=>{const k=EXT/(L.extent||4096),o=new Array(ring.length);for(let i=0;i<ring.length;i+=2){o[i]=X0+ring[i]*k;o[i+1]=Y0+ring[i+1]*k;}return o;};
   const tr=layers.transportation;
   if(tr)for(const f of tr.features){
-    if(f.type!==2)continue;const t=f.tags;const cls=TCLS[t.class]||(t.class==='path'?null:null);if(!cls)continue;
+    if(f.type!==2)continue;const t=f.tags;
+    if((t.class==='transit'||t.class==='rail')&&/subway|light_rail|monorail/.test(t.subclass||'')){for(const line of f.geom){if(line.length<4)continue;for(const piece of clipLine(G(tr,line),X0,Y0,X1,Y1))T.rails.push({p:piece.p,tun:t.brunnel==='tunnel'?1:0});}continue;}
+    const cls=TCLS[t.class]||(t.class==='path'?null:null);if(!cls)continue;
     if(t.brunnel==='tunnel'&&cls==='service')continue;
     const ow=t.oneway===1||t.oneway==='1'||t.oneway===true?1:t.oneway===-1||t.oneway==='-1'?-1:0;
     for(const line of f.geom){if(line.length<4)continue;
@@ -156,7 +158,7 @@ function tilesToWorld(tiles){
     if(aEnd===bStart){A.p=A.p.concat(B.p.slice(2));A.ce=B.ce;alive[j]=false;B.into=i;}
     else{const bEnd=KQ(B.p[B.p.length-2],B.p[B.p.length-1]),aStart=KQ(A.p[0],A.p[1]);if(bEnd===aStart){B.p=B.p.concat(A.p.slice(2));B.ce=A.ce;alive[i]=false;A.into=j;}}
   }
-  const out={roads:[],blds:[],areas:[],pois:[],names:[],places:[]};
+  const out={roads:[],blds:[],areas:[],pois:[],names:[],places:[],rails:[]};
   pieces.forEach((r,i)=>{if(!alive[i])return;const pts=[],keys=[];
     let rev=r.ow===-1;const src=r.p;
     for(let k=0;k<src.length;k+=2){const w=g2w(src[k],src[k+1]);if(pts.length&&Math.abs(pts[pts.length-2]-w[0])<.01&&Math.abs(pts[pts.length-1]-w[1])<.01)continue;pts.push(w[0],w[1]);keys.push(KQ(src[k],src[k+1]));}
@@ -168,6 +170,7 @@ function tilesToWorld(tiles){
     for(const q of T.pois){const key=q.name+'|'+Math.round(q.g[0]/8)+'|'+Math.round(q.g[1]/8);if(seenP.has(key))continue;seenP.add(key);const w=g2w(q.g[0],q.g[1]);out.pois.push({x:w[0],y:w[1],name:q.name,cls:q.cls,sub:q.sub,rank:q.rank});}
     for(const n of T.names){const p=[];for(let k=0;k<n.p.length;k+=2){const w=g2w(n.p[k],n.p[k+1]);p.push(w[0],w[1]);}out.names.push({pts:p,name:n.name});}
     for(const q of T.places){const w=g2w(q.g[0],q.g[1]);out.places.push({x:w[0],y:w[1],name:q.name,cls:q.cls});}
+    for(const r of T.rails||[]){const p=[];for(let k=0;k<r.p.length;k+=2){const w=g2w(r.p[k],r.p[k+1]);p.push(w[0],w[1]);}out.rails.push({pts:p,tun:r.tun});}
   }
   return out;
 }

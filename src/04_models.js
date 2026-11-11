@@ -403,6 +403,8 @@ const VEH={
   regent:{name:'Regent Imperial',sub:'Luxury saloon',cat:'posh',top:250,accel:6.8,brake:12,handling:.92,susp:.5,cost:22,engine:{base:38,range:120,wave:'sawtooth',putt:0,gears:8,vol:.7},horn:'suv',col:'#15171C'},
   monarch:{name:'Monarch LX',sub:'Luxury SUV',cat:'posh',top:240,accel:6.4,brake:11.5,handling:.88,susp:.45,cost:22,engine:{base:40,range:110,wave:'sawtooth',putt:0,gears:8},horn:'suv',col:'#E8E8E4'},
   bus:{name:'City Bus',sub:'City bus',cat:'heavy',top:90,accel:1.7,brake:6,handling:.62,susp:.5,cost:30,engine:{base:30,range:60,wave:'sawtooth',putt:6,gears:5},horn:'suv',col:'red'},
+  lorry:{name:'Goods Lorry',sub:'Horn OK Please',cat:'heavy',top:85,accel:1.7,brake:6,handling:.62,susp:.6,cost:28,engine:{base:28,range:60,wave:'sawtooth',putt:8,gears:5},horn:'suv',col:'#F2A007'},
+  tractor:{name:'Farm Tractor',sub:'With trolley',cat:'heavy',top:35,accel:1.6,brake:5,handling:.7,susp:.7,cost:12,engine:{base:22,range:40,wave:'square',putt:10,gears:4},horn:'suv',col:'#C8102E'},
   truck:{name:'Lorry',sub:'Goods carrier',cat:'heavy',top:95,accel:1.9,brake:6,handling:.64,susp:.6,cost:28,engine:{base:28,range:60,wave:'sawtooth',putt:8,gears:5},horn:'suv',col:'#E07A1F'},
   hatch:{name:'Hatchback',sub:'City car',cat:'car',top:158,accel:4.2,brake:10,handling:.98,susp:.85,cost:7,engine:{base:50,range:120,wave:'sawtooth',putt:0,gears:5},horn:'car',col:'#C9CED6'},
   sedan:{name:'Sedan',sub:'Highway cruiser',cat:'car',top:178,accel:4.6,brake:10.5,handling:.94,susp:.75,cost:8,engine:{base:45,range:115,wave:'sawtooth',putt:0,gears:6},horn:'car',col:'#7A1F2B'},
@@ -411,11 +413,11 @@ const VEH={
 /* engine character: cylinders, idle and redline rpm */
 const ENG={saathi:{cyl:1,idle:1500,max:6500,gears:2},sakhi:{cyl:1,idle:1600,max:7500,gears:1},bijli:{ev:true},pratham:{cyl:1,idle:1300,max:8000,gears:4},
   rocket:{cyl:1,idle:1400,max:9500,gears:5},maharaja:{cyl:1,idle:1000,max:5500,gears:5,thump:true,p:.6},nandi:{cyl:1,idle:1300,max:8500,gears:6},
-  kesari:{cyl:1,idle:1500,max:10500,gears:6},garuda:{cyl:1,idle:1600,max:11000,gears:6},agni:{cyl:4,idle:1300,max:14000,gears:6,p:.85},veloce:{cyl:12,idle:950,max:8800,gears:7,p:.9},zephyr:{cyl:8,idle:850,max:7500,gears:7},regent:{cyl:12,idle:600,max:6000,gears:8,p:.95},monarch:{cyl:8,idle:650,max:6000,gears:8},bus:{cyl:6,idle:600,max:2600,gears:5,diesel:true},truck:{cyl:6,idle:600,max:2800,gears:5,diesel:true},
+  kesari:{cyl:1,idle:1500,max:10500,gears:6},garuda:{cyl:1,idle:1600,max:11000,gears:6},agni:{cyl:4,idle:1300,max:14000,gears:6,p:.85},veloce:{cyl:12,idle:950,max:8800,gears:7,p:.9},zephyr:{cyl:8,idle:850,max:7500,gears:7},regent:{cyl:12,idle:600,max:6000,gears:8,p:.95},monarch:{cyl:8,idle:650,max:6000,gears:8},bus:{cyl:6,idle:600,max:2600,gears:5,diesel:true},lorry:{cyl:6,idle:600,max:2800,gears:5,diesel:true},tractor:{cyl:3,idle:750,max:2200,gears:4,diesel:true,thump:1},truck:{cyl:6,idle:600,max:2800,gears:5,diesel:true},
   auto:{cyl:1,idle:1150,max:5200,gears:4,rattle:true,p:.65},hatch:{cyl:3,idle:800,max:6500,gears:5},sedan:{cyl:4,idle:750,max:6500,gears:6,p:.85},suv:{cyl:4,idle:750,max:4500,gears:6,diesel:true}};
 /* fuel: game range on a full tank (km), tank size, fuel type */
 const FUEL={saathi:[9,4,'petrol'],sakhi:[10,5.3,'petrol'],bijli:[8,3,'ev'],pratham:[12,9.8,'petrol'],rocket:[9,15,'petrol'],maharaja:[10,13,'petrol'],nandi:[12,17,'petrol'],
-  kesari:[9,15,'petrol'],garuda:[9,11,'petrol'],agni:[6,17,'petrol'],veloce:[6,85,'petrol'],zephyr:[7,75,'petrol'],regent:[7,90,'petrol'],monarch:[7,90,'petrol'],bus:[8,180,'diesel'],truck:[8,220,'diesel'],auto:[10,12,'lpg'],hatch:[12,37,'petrol'],sedan:[13,40,'petrol'],suv:[10,57,'diesel']};
+  kesari:[9,15,'petrol'],garuda:[9,11,'petrol'],agni:[6,17,'petrol'],veloce:[6,85,'petrol'],zephyr:[7,75,'petrol'],regent:[7,90,'petrol'],monarch:[7,90,'petrol'],bus:[8,180,'diesel'],lorry:[8,200,'diesel'],tractor:[6,60,'diesel'],truck:[8,220,'diesel'],auto:[10,12,'lpg'],hatch:[12,37,'petrol'],sedan:[13,40,'petrol'],suv:[10,57,'diesel']};
 const FUELPRICE={petrol:[102.9,'Petrol','L'],diesel:[88.99,'Diesel','L'],lpg:[62,'Auto LPG','L'],ev:[15,'EV charging','kWh']};
 const VKEYS=Object.keys(VEH);
 const VCATS=[['two','Two-wheelers'],['three','Auto'],['car','Cars'],['posh','Luxury & sports'],['heavy','Bus & lorry']];
@@ -424,7 +426,9 @@ function playerModel(k){
   const key='p:'+k;let m=MODELS.get(key);if(m)return m;
   if(TWO_SPECS[k])m=buildTwo(TWO_SPECS[k]);
   else if(k==='auto')m=buildAuto();
-  else if(k==='bus'){m=buildBus(VEH.bus.col);m.eye=[.75,2.2,-m.len/2+.85];}
+  else if(k==='bus'){m=buildBMTC('vajra');}
+  else if(k==='lorry'){m=buildLorry(VEH.lorry.col);}
+  else if(k==='tractor'){m=buildTractor(VEH.tractor.col);}
   else if(k==='truck'){m=buildTruck(VEH.truck.col,false);m.eye=[.7,2.25,-m.len/2+.9];}
   else m=buildCar(k,VEH[k].col);
   MODELS.set(key,m);return m;
@@ -443,7 +447,9 @@ const TT=[
   {k:'zephyr',w:.01,len:4.7,wid:1.92,cruise:1.2,cols:['#B3121F','#1B1B1F','#C9CED6','#0F3D7A']},
   {k:'regent',w:.012,len:5.35,wid:1.96,cruise:1.1,cols:['#15171C','#C9CED6','#F2F2F0','#3B0D18']},
   {k:'monarch',w:.016,len:5.0,wid:2.0,cruise:1.1,cols:['#E8E8E4','#15171C','#4A4F55','#1E3A2B']},
-  {k:'bus',w:.06,len:11,wid:2.5,cruise:.85},
+  {k:'bus',w:.07,len:11.6,wid:2.55,cruise:.85,cols:['ordinary','ordinary','vajra','green','ev']},
+  {k:'lorry',w:.035,len:7.6,wid:2.4,cruise:.7,cols:['#F2A007','#E8D21D','#2F7DE1','#D2452B']},
+  {k:'tractor',w:.022,len:7.6,wid:2.1,cruise:.42,cols:['#C8102E','#2E7D32','#1565C0']},
   {k:'truck',w:.04,len:7.2,wid:2.35,cruise:.8},
   {k:'tanker',w:.03,len:7.4,wid:2.35,cruise:.8},
 ];
@@ -452,7 +458,9 @@ function trafficModel(t,col){
   if(t.k==='auto')m=buildAuto();
   else if(t.k==='taxi')m=buildCar('sedan','#F2F2F0',{taxi:true});
   else if(CARDIM[t.k])m=buildCar(t.k,col);
-  else if(t.k==='bus')m=buildBus(col);
+  else if(t.k==='bus')m=buildBMTC(col||'ordinary');
+  else if(t.k==='lorry')m=buildLorry(col);
+  else if(t.k==='tractor')m=buildTractor(col);
   else if(t.k==='truck')m=buildTruck(col,false);
   else if(t.k==='tanker')m=buildTruck('#E8E8E2',true);
   else{const s=Object.assign({},TWO_SPECS[t.k]);if(col)s.col=col;s.shirt=['#5D6D7E','#E1E1D8','#2C3E50','#7B241C','#1E8449'][hashStr(key)%5];m=buildTwo(s);}
