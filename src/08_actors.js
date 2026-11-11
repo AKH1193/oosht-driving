@@ -28,7 +28,8 @@ function spawnAgent(near){
     const s=W.segs[Math.floor(Math.random()*W.segs.length)];if(!s||s.w.cls==='service')continue;
     const mx=(s.ax+s.bx)/2,my=(s.ay+s.by)/2,d=Math.hypot(mx-P.x,my-P.y);
     if(near?(d<35||d>240):(d<150||d>380))continue;
-    const t=pickTT();
+    let t=pickTT();
+    if(!t.two&&t.k!=='bus'&&t.len<6&&Math.random()<.55&&typeof poshAt==='function'&&poshAt(mx,my)>.5){const pz=TT.filter(q=>['veloce','zephyr','regent','monarch','maharaja','suv'].includes(q.k));if(pz.length)t=pz[Math.floor(Math.random()*pz.length)];}
     if(t.len>6&&RANK[s.w.cls]<2)continue;
     let dir=Math.random()<.5?1:-1;if(s.w.oneway)dir=s.w.rev?-1:1;
     const col=t.cols?t.cols[Math.floor(Math.random()*t.cols.length)]:(t.k==='bus'?(Math.random()<.5?'red':'blue'):t.k==='truck'?['#E07A1F','#C9A227','#2E86C1','#B03A2E'][Math.floor(Math.random()*4)]:null);
@@ -278,6 +279,7 @@ const COP={level:0,list:[],trail:[],lastTr:null,off:[],caughtT:0,lostT:0,pedHit:
 const FINES={signal:['Jumped a red signal',500],rash:['Rash driving',500],speed:['Overspeeding',400],wrong:['Driving the wrong way',300],ped:['Hit a pedestrian',2000],crash:['Dangerous driving, collision',800],assault:['Assault',1500],kill:['Grievous hurt',6000],cop:['Assaulting police',5000],arms:['Firing a weapon in public',3000],theft:['Vehicle theft',3000],damage:['Damage to property',800],nolic:['Driving without a licence',1000],drunk:['Drunk driving',1500]};
 function offence(code,level){
   if(state!=='play')return;
+  if(COP.level===0&&!COP.list.length&&!policeWitness(code))return;
   if(!COP.off.includes(code))COP.off.push(code);
   const before=COP.level;COP.level=clamp(Math.max(COP.level,level),0,5);
   const want=COP.level>=5?4:COP.level>=4?3:COP.level>=2?2:1;

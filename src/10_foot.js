@@ -96,10 +96,15 @@ function leaveFoot(){FOOT.on=false;FOOT.ride=null;footHud(false);const pm=curMod
 function updateFoot(dt){
   if(FOOT.ride){updateRide(dt);if(FOOT.ride&&FOOT.ride.phase!=='pickup')return;}
   if(LIFE.dead||METRO.ride)return;
-  let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
-  P.h+=steerIn*2.4*dt;
-  const carrying=FOOT.job&&FOOT.job.carry;const run=input.horn&&FOOT.stam>2&&!carrying;const top=carrying?1.8:run?6.2:2.3;
-  if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);
+  const jm=Math.min(1,Math.hypot(input.jx||0,input.jy||0));
+  const carrying=FOOT.job&&FOOT.job.carry;const run=(input.horn||jm>.96&&FOOT.runHold>.6)&&FOOT.stam>2&&!carrying;const top=carrying?1.8:run?6.2:2.3;
+  FOOT.runHold=jm>.96?(FOOT.runHold||0)+dt:0;
+  if(jm>.15){/* joystick: push the way you want to go, relative to the camera; push all the way to run */
+    const tgt=(CAM.yaw??P.h)+Math.atan2(input.jx,input.jy);P.h+=angDiff(P.h,tgt)*Math.min(1,dt*(input.jy<-.5?4:7));
+    P.s+=clamp(top*Math.min(1,jm*1.15)-P.s,-8*dt,6*dt);}
+  else{let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
+    P.h+=steerIn*2.4*dt;
+    if(input.gas)P.s+=clamp(top-P.s,-8*dt,6*dt);else P.s=Math.max(0,P.s-9*dt);}
   if(input.brake)P.s=Math.max(0,P.s-14*dt);
   if(run&&P.s>2.6)FOOT.stam=Math.max(0,FOOT.stam-10*dt*(100/maxStam()));else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
@@ -323,7 +328,7 @@ function footHudTick(el){
   const fm=d=>d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km';
   const ch=$('#chChip');ch.hidden=!profile.pending.length||profile.seized;ch.textContent=`${profile.pending.length}/${MAXCH} challans`;
   if(!FOOT.on){condLbl.textContent='Condition';return false;}
-  el.sig.hidden=true;
+  el.sig.hidden=true;if(INT.on)$('#footBar').hidden=true;
   condLbl.textContent='Stamina';el.condbar.style.width=(FOOT.stam/maxStam()*100)+'%';el.condbar.style.background=FOOT.stam>40?'#80DEEA':FOOT.stam>15?'var(--auto-yellow)':'var(--danger)';el.condTxt.textContent=Math.round(FOOT.stam)+' / '+maxStam();
   el.trip.innerHTML='';
   const a=document.createElement('div'),b=document.createElement('div');
@@ -334,6 +339,7 @@ function footHudTick(el){
   let key='foot',html='';
   if(FOOT.ride)key='';
   else if(FOOT.stam<8){key='tired';html='<b>Out of breath.</b> Walk for a bit to get your stamina back.';}
+  else if(INT.on){key='int'+INT.kind;html=`Inside · <b>${({house:'a family home',apartment:'apartment lobby',shop:'shop',restaurant:'restaurant',cafe:'cafe',bar:'bar',mall:'shopping mall',office:'office',police:'police station',gym:'gym'})[INT.kind]||'building'}</b> · walk to the door to go out`;}
   else if(FOOT.tip>0){key='tip';html=`On foot · <b>+₹5</b> for every 10 s you keep moving · hold <b>RUN</b> to run`;}
   else key='';
   if(key!==noticeKey){noticeKey=key;el.notice.hidden=!key;el.notice.innerHTML=html;}

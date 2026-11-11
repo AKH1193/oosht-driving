@@ -18,7 +18,7 @@ const settings=Object.assign({sound:true,haptics:'med',steer:'buttons',tod:'auto
 const profile=Object.assign({wallet:500,km:0,trips:0,vehicle:'auto',challans:0,suspendedUntil:0,pending:[],seized:false},store.get('profile',{}));
 if(profile.wallet<0)profile.wallet=0;
 const saveSettings=()=>store.set('settings',settings);
-const saveProfile=()=>store.set('profile',profile);
+const saveProfile=()=>{if(WIPED)return;store.set('profile',profile);};
 
 /* ================= 4x4 matrices (column-major) ================= */
 const M4={

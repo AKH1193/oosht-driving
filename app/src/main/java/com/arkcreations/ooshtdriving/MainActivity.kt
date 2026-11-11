@@ -19,6 +19,8 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -42,6 +44,9 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var waitingForGpsSettings = false
     private var vibrator: Vibrator? = null
+    private var tts: TextToSpeech? = null
+    @Volatile private var ttsReady = false
+    @Volatile private var ttsLangCode = "en"
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -56,6 +61,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         hideSystemBars()
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val t = tts ?: return@TextToSpeech
+                val kn = Locale("kn", "IN")
+                val r = try { t.isLanguageAvailable(kn) } catch (_: Exception) { TextToSpeech.LANG_NOT_SUPPORTED }
+                if (r >= TextToSpeech.LANG_AVAILABLE) { t.language = kn; ttsLangCode = "kn" }
+                else { try { t.language = Locale("en", "IN") } catch (_: Exception) {}; ttsLangCode = "en" }
+                ttsReady = true
+            }
+        }
 
         vibrator = if (Build.VERSION.SDK_INT >= 31) {
             (getSystemService(VibratorManager::class.java))?.defaultVibrator
@@ -112,6 +127,12 @@ class MainActivity : AppCompatActivity() {
             waitingForGpsSettings = false
             startLocationFlow()
         }
+    }
+
+    override fun onDestroy() {
+        try { tts?.stop(); tts?.shutdown() } catch (_: Exception) {}
+        tts = null
+        super.onDestroy()
     }
 
     override fun onPause() {
@@ -296,6 +317,22 @@ class MainActivity : AppCompatActivity() {
             val a = ampsCsv.split(',').mapNotNull { it.trim().toDoubleOrNull()?.toInt() }
             if (t.isEmpty() || t.size != a.size) return
             this@MainActivity.vibrate(t.toLongArray(), a.toIntArray())
+        }
+
+        @JavascriptInterface
+        fun ttsLang(): String = ttsLangCode
+
+        @JavascriptInterface
+        fun speak(text: String, pitch: Double, rate: Double) {
+            val t = tts ?: return
+            if (!ttsReady) return
+            runOnUiThread {
+                try {
+                    t.setPitch(pitch.toFloat().coerceIn(0.5f, 2f))
+                    t.setSpeechRate(rate.toFloat().coerceIn(0.5f, 1.6f))
+                    t.speak(text, TextToSpeech.QUEUE_FLUSH, null, "wc" + System.nanoTime())
+                } catch (_: Exception) {}
+            }
         }
     }
 }

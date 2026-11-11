@@ -284,6 +284,7 @@ function doAttack(){
     else{let d=0;for(;d<w.range;d+=.8)if(inBuilding(P.x+fx*d,P.y+fy*d))break;hx=P.x+fx*d;hy=P.y+fy*d;spark(hx,1.25,hy);}
     LIFE.fx.push({k:'tracer',a:[mx,1.32+LIFE.z,my],b:[hx,hz,hy],t:.06});LIFE.fx.push({k:'flash',p:[mx+fx*.2,1.32+LIFE.z,my+fy*.2],t:.05});
     panic(P.x,P.y,60);
+    provokeGoons(P.x,P.y,45);
     if(nearCop(80)||Math.random()<.15)crime('arms',2);
     LIFE.saveT=1;
   }
@@ -301,12 +302,14 @@ function dealHit(t,dmg,how){
 function setFlee(p,x,y){if(p.cart!=null&&p.state==='static'){LIFE.carts.push({x:p.cx,y:p.cy,h:p.h,c:p.cart});}p.cart=null;p.state='flee';p.fx=x;p.fy=y;p.t=0;p.run=true;p.side=Math.random()<.5?1:-1;if(p.kind)p.v=p.v%PED_LOOKS.length;}
 function panic(x,y,r){for(const p of peds){if(p.dead||p.state==='down'||p.state==='flee')continue;if(Math.hypot(p.x-x,p.y-y)<r){if(p.state==='static'&&p.kind==='lie'&&Math.random()<.5)continue;setFlee(p,x,y);}}}
 function hurtPed(p,dmg,nx,ny,how){
+  const cul=p.culprit&&!p.caught;if(how!=='ram')provokeGoons(p.x,p.y,18);
   if(p.hp==null)p.hp=(p.sc&&p.sc<.8)?55:PED_LOOKS[p.v]&&PED_LOOKS[p.v].kind==='elder'?60:100;
   p.hp-=dmg;spark(p.x,1.1,p.y,[1,.35,.25]);
   if(p.state==='static'){if(p.cart!=null)LIFE.carts.push({x:p.cx,y:p.cy,h:p.h,c:p.cart});p.cart=null;p.v=p.v%PED_LOOKS.length;}
-  if(p.hp<=0){p.state='down';p.dead=true;p.ko=false;p.t=-30;p.fall=hAng(nx,ny);p.x+=nx*.5;p.y+=ny*.5;dropCash(p.x,p.y,20+Math.floor(Math.random()*18)*10);crime('kill',3);Snd.yelp();}
-  else if(dmg>=28||(how==='melee'&&Math.random()<.4)){p.state='down';p.ko=true;p.t=0;p.fall=hAng(nx,ny);p.x+=nx*.6;p.y+=ny*.6;crime('assault',1);}
+  if(p.hp<=0){p.state='down';p.dead=true;p.ko=false;p.t=-30;p.fall=hAng(nx,ny);p.x+=nx*.5;p.y+=ny*.5;dropCash(p.x,p.y,20+Math.floor(Math.random()*18)*10);if(!cul)crime('kill',3);Snd.yelp();}
+  else if(cul||dmg>=28||(how==='melee'&&Math.random()<.4)){p.state='down';p.ko=true;p.t=cul?-25:0;p.fall=hAng(nx,ny);p.x+=nx*.6;p.y+=ny*.6;if(!cul)crime('assault',1);}
   else{setFlee(p,P.x,P.y);crime('assault',1);}
+  if(cul)rewardCulprit(p);
   panic(p.x,p.y,16);
 }
 function dropCash(x,y,amt){W.pick.push({key:'d'+Math.random(),kind:'cash',x:x+(Math.random()-.5),y:y+(Math.random()-.5),amt,temp:true});}
@@ -342,6 +345,7 @@ function knockProp(q,vx,vy,vz){q.vx=vx;q.vy=vy;q.vz=vz;q.spin=(Math.random()-.5)
 const nearCop=r=>COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<r)||LIFE.copPeds.some(c=>!c.dead&&Math.hypot(c.x-P.x,c.y-P.y)<r);
 function crime(code,lvl){
   if(state!=='play')return;if(code==='assault'&&!nearCop(140)&&Math.random()<.5)return;
+  if(COP.level===0&&!COP.list.length&&!LIFE.copPeds.some(c=>!c.dead&&!c.patrol)&&!policeWitness(code))return;
   const st=addHeat(code);const now=GT;if((LIFE.crimeT[code]||-99)>now-4&&st<=COP.level)return;LIFE.crimeT[code]=now;
   offence(code,Math.max(lvl,st));
 }
@@ -387,6 +391,7 @@ function lfOnEscape(){LIFE.copPeds=LIFE.copPeds.filter(c=>c.dead);LIFE.arrest=0;
 
 /* ---------- getting in and out of vehicles ---------- */
 function exitVehicle(){
+  if(FLY.on){exitPlane();return;}
   if(FOOT.on||state!=='play')return;
   if(Math.abs(P.s)>2.5){toast('Slow down to get out','','exit',1200);return;}
   const pk={type:P.type,skin:P.skin,x:P.x,y:P.y,h:P.h,cond:P.cond,fuel:P.fuel};const pm=curModel();
@@ -409,17 +414,22 @@ function enterVehicle(ctx){
 }
 function findContext(){
   if(!FOOT.on||FOOT.ride||FOOT.unload||METRO.ride)return null;
+  if(INT.on)return interiorContext();
   const jc=jobContext();if(jc)return jc;if(FOOT.job&&FOOT.job.carry)return null;
+  {const pc=peopleContext();if(pc&&pc.k==='loot')return pc;}
   const pk=FOOT.parked;if(pk&&carDist(pk,4,1.6,P.x,P.y)<1.6)return {k:'own',label:'Get in'};
   let best=null,bd=1.8;
   for(const a of agents){if(a.t.k==='bus'&&a.v>1)continue;const d=carDist(a,a.t.len,a.t.wid,P.x,P.y);if(d<bd&&a.v<7){bd=d;best={k:'jack',a,label:a.t.two?'Take bike':a.t.k==='auto'?'Take auto':'Take car'};}}
   for(const c of COP.list){const d=carDist(c,4.55,1.86,P.x,P.y);if(d<bd&&c.v<3){bd=d;best={k:'pjack',c,label:'Steal Hoysala'};}}
   if(best)return best;
+  const pc=peopleContext();if(pc)return pc;
+  const ac=planeContext();if(ac)return ac;
   const cc=cityContext();if(cc)return cc;
+  const dc=doorContext();if(dc)return dc;
   for(const v of W.venues){if(Math.hypot(v.x-P.x,v.y-P.y)<4.5)return {k:'venue',v,label:v.kind==='gym'?'Work out':v.kind==='arms'?'Buy weapons':v.kind==='bar'?'Have a drink':'Eat & drink'};}
   return null;
 }
-function useContext(){const c=LIFE.ctx;if(!c||state!=='play')return;if(c.k==='venue')openVenue(c.v);else if(['metro','bus','askwork','park','jpick','jdrop'].includes(c.k))cityUse(c);else enterVehicle(c);}
+function useContext(){const c=LIFE.ctx;if(!c||state!=='play')return;LIFE.ctxT=0;if(c.k==='enterb')enterBuilding(c.b);else if(c.k==='exitb')leaveBuilding();else if(c.k==='item')c.it.fn();else if(c.k==='loot'||c.k==='pick'||c.k==='mug')peopleUse(c);else if(c.k==='plane')startFlight(c.p);else if(c.k==='venue')openVenue(c.v);else if(['metro','bus','askwork','park','jpick','jdrop'].includes(c.k))cityUse(c);else enterVehicle(c);}
 
 /* ---------- venues: menus, gym, arms shop ---------- */
 const MENUS={
@@ -428,8 +438,8 @@ const MENUS={
   juice:[['Fresh lime soda',40,{st:30}],['Tender coconut',50,{st:45,hp:10}],['Sprouts salad',60,{hp:20,maxst:4}],['Fruit bowl',70,{hp:25,maxst:3}],['Ragi malt',30,{st:25,maxst:2}]],
   bar:[['Draught beer',250,{hp:5,drunk:45}],['Whisky peg',350,{drunk:90}],['Masala peanuts',120,{hp:10}],['Fresh lime soda',80,{st:20}]],
   gym:[['Workout session · 10 reps on the beat',100,{gym:true}],['Protein shake',180,{hp:30,st:30}]],
-  arms:[['Cricket bat',600,{wpn:'bat'}],['Knife',900,{wpn:'knife'}],['Pistol + 12 rounds',6000,{wpn:'pistol',ammo:['pistol',12]}],['Pistol ammo · 12 rounds',500,{ammo:['pistol',12]}],['SMG + 60 rounds',16000,{wpn:'smg',ammo:['smg',60]}],['SMG ammo · 60 rounds',1200,{ammo:['smg',60]}],['Body armour',2500,{armor:100}]]};
-function effLabel(e){const o=[];if(e.hp)o.push(e.hp>=100?'full health':`+${e.hp} health`);if(e.st)o.push(`+${e.st} stamina`);if(e.maxst)o.push(`+${e.maxst} max stamina`);if(e.boost)o.push('faster recovery');if(e.drunk)o.push('makes you tipsy');if(e.armor)o.push('blocks bullets');if(e.gym)o.push('tap LIFT in the green zone · +8 max stamina, stronger punches');return o.join(' · ');}
+  arms:[['Cricket bat',600,{wpn:'bat'}],['Knife',900,{wpn:'knife'}],['Pistol + 12 rounds',6000,{wpn:'pistol',ammo:['pistol',12]}],['Pistol ammo · 12 rounds',500,{ammo:['pistol',12]}],['SMG + 60 rounds',16000,{wpn:'smg',ammo:['smg',60]}],['SMG ammo · 60 rounds',1200,{ammo:['smg',60]}],['Light vest',1200,{armor:50}],['Body armour',2500,{armor:100}],['Riot gear (helmet, vest, shin guards)',6500,{armor:150}],['Bulletproof Kevlar suit',12000,{armor:200}]]};
+function effLabel(e){const o=[];if(e.hp)o.push(e.hp>=100?'full health':`+${e.hp} health`);if(e.st)o.push(`+${e.st} stamina`);if(e.maxst)o.push(`+${e.maxst} max stamina`);if(e.boost)o.push('faster recovery');if(e.drunk)o.push('makes you tipsy');if(e.armor)o.push(`${e.armor} armour · soaks bullets and blows`);if(e.gym)o.push('tap LIFT in the green zone · +8 max stamina, stronger punches');return o.join(' · ');}
 function openVenue(v){
   state='venue';releaseAll();$('#vnTitle').textContent=v.name;
   $('#vnSub').textContent=v.kind==='bar'?`${VSUB[v.kind]} · Never drink and drive · Wallet ₹${fmtINR(profile.wallet)}`:`${VSUB[v.kind]} · Wallet ₹${fmtINR(profile.wallet)}`;
@@ -449,7 +459,7 @@ function applyEffect(e,v){
   if(e.armor)profile.armor=Math.max(profile.armor,e.armor);
   if(e.wpn){profile.inv[e.wpn]=1;LIFE.cur=e.wpn;}if(e.ammo){profile.inv.ammo[e.ammo[0]]+=e.ammo[1];}
   if(e.gym){state='play';show('play');footHud(true);startGym();return;}
-  toast(e.wpn?`Bought: ${WPN[e.wpn].name}`:e.ammo?'Ammo bought':e.armor?'Body armour on':e.drunk?'Cheers!':'Tasty!','good');
+  toast(e.wpn?`Bought: ${WPN[e.wpn].name}`:e.ammo?'Ammo bought':e.armor?`Armour on · ${e.armor}`:e.drunk?'Cheers!':'Tasty!','good');
 }
 function gymDone(){profile.fit.stam=Math.min(200,profile.fit.stam+8);profile.fit.str=Math.min(2,+(profile.fit.str+.08).toFixed(2));FOOT.stam=Math.max(10,FOOT.stam-40);saveProfile();toast(`Workout done · max stamina ${profile.fit.stam} · strength ×${profile.fit.str.toFixed(2)}`,'gold');Hap.success();}
 $('#vnClose').addEventListener('click',()=>{state='play';show('play');footHud(true);});
@@ -508,6 +518,8 @@ function lifeUpdate(dt){
   /* context button */
   if((LIFE.ctxT-=dt)<=0){LIFE.ctxT=.2;LIFE.ctx=findContext();}
   if((LIFE.saveT-=dt)<=0&&LIFE.saveT>-1){LIFE.saveT=-5;saveProfile();}
+  updateStreet(dt);updatePatrols(dt);
+  if(INT.on)return;
   cityUpdate(dt);
 }
 
@@ -549,7 +561,7 @@ function drawPlayerRig(M,pose,wk){drawLit(rig(PLOOK,SKINS[2],pose,wk),M);}
 /* ---------- HUD and controls ---------- */
 function lifeHud(){
   const onFoot=FOOT.on&&!FOOT.ride;
-  $('#hpbar').style.width=LIFE.hp+'%';$('#arbar').style.width=profile.armor+'%';$('#hpTxt').textContent=Math.ceil(LIFE.hp)+(profile.armor>0?` · ${Math.ceil(profile.armor)} armour`:'');
+  $('#hpbar').style.width=LIFE.hp+'%';$('#arbar').style.width=Math.min(100,profile.armor/2)+'%';$('#hpTxt').textContent=Math.ceil(LIFE.hp)+(profile.armor>0?` · ${Math.ceil(profile.armor)} armour`:'');
   $('#hitfx').style.opacity=LIFE.hurtT>0?LIFE.hurtT*1.6:LIFE.hp<25?.25+Math.sin(GT*6)*.1:0;
   const w=WPN[LIFE.cur];$('#wpnChip').textContent=w.name+(w.gun?` · ${profile.inv.ammo[w.gun]||0}`:'');$('#wpnChip').hidden=!onFoot;
   const carry=!!(FOOT.job&&FOOT.job.carry);$('#btnAtk').hidden=!onFoot||carry||!!METRO.ride;$('#btnJump').hidden=!onFoot||carry||!!METRO.ride;$('#btnRun').hidden=!onFoot||carry||!!METRO.ride;$('#btnHorn').hidden=FOOT.on;$('#carry').hidden=!carry;if(carry)$('#carry').textContent='Carrying a sack · walk it over';$('#btnAtk').textContent=w.gun?'FIRE':'HIT';

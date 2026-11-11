@@ -91,7 +91,7 @@ function stationAt(mb,dec,g){
 }
 function buildChunk(cx,cy){
   const x0=cx*CH,y0=cy*CH,x1=x0+CH,y1=y0+CH;const inC=(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1;
-  const cas=new MB(),asp=new MB(),mrk=new MB(),dec=new MB(),sol=new MB(),shp=new MB(),ads=new MB();const glow=[],shad=[];
+  const cas=new MB(),asp=new MB(),mrk=new MB(),dec=new MB(),sol=new MB(),shp=new MB(),ads=new MB(),gls=new MB();const glow=[],shad=[];
   const segs=[];gQuery(W.sG,x0+CH/2,y0+CH/2,CH*.75,segs);
   const mine=segs.filter(s=>inC((s.ax+s.bx)/2,(s.ay+s.by)/2)).sort((a,b)=>RANK[a.w.cls]-RANK[b.w.cls]);
   const verts=new Map();
@@ -139,6 +139,7 @@ function buildChunk(cx,cy){
   const bl=[];gQuery(W.bG,x0+CH/2,y0+CH/2,CH*.75,bl);
   for(const b of bl){if(!inC(b.cx,b.cy)||b.hide)continue;
     const p=b.pts,n=p.length/2,h=b.h,col=b.col;const ccw=polyArea(p)>0;
+    const posh=h>7&&!b.kiosk&&poshAt(b.cx,b.cy)>.5&&((hash2(Math.round(b.cx),Math.round(b.cy))>>>0)%10<8);
     let run=0,adE=null;
     for(let i=0;i<n;i++){const j=(i+1)%n;const ax=p[2*i],ay=p[2*i+1],bx=p[2*j],by=p[2*j+1];const L=Math.hypot(bx-ax,by-ay);if(L<.05)continue;
       const ex=bx-ax,ey=by-ay;const out=ccw?[ey,0,-ex]:[-ey,0,ex];
@@ -149,11 +150,13 @@ function buildChunk(cx,cy){
           shp.rtri([ax,0,ay],[bx,0,by],[bx,3.4,by],F,out,[su0,1,su1,1,su1,0]);shp.rtri([ax,0,ay],[bx,3.4,by],[ax,3.4,ay],F,out,[su0,1,su1,0,su0,0]);y0=3.4;}}
       if(!adE&&h>=6&&h<=40&&L>8){const ol2=Math.hypot(out[0],out[2])||1,nx=out[0]/ol2,ny=out[2]/ol2,mx2=(ax+bx)/2,my2=(ay+by)/2;const ns2=nearestSeg(mx2+nx*9,my2+ny*9,16);if(ns2.seg&&RANK[ns2.seg.w.cls]>=2&&!inBuilding(mx2+nx*2,my2+ny*2))adE=[ax,ay,bx,by,L,nx,ny];}
       const vy=(h-y0)/12.4;
-      sol.rtri([ax,y0,ay],[bx,y0,by],[bx,h,by],col,out,[u0,vy,u1,vy,u1,0]);
-      sol.rtri([ax,y0,ay],[bx,h,by],[ax,h,ay],col,out,[u0,vy,u1,0,u0,0]);
+      if(posh){const g0=run/12-L/12,g1=run/12,gv=(h-y0)/12,GC=[.9,.95,1];gls.rtri([ax,y0,ay],[bx,y0,by],[bx,h,by],GC,out,[g0,gv,g1,gv,g1,0]);gls.rtri([ax,y0,ay],[bx,h,by],[ax,h,ay],GC,out,[g0,gv,g1,0,g0,0]);
+        if(y0>0){const sc=[.85,.84,.8];sol.rtri([ax,y0-.25,ay],[bx,y0-.25,by],[bx,y0+.05,by],sc,out,[.01,.01,.01,.01,.01,.01]);sol.rtri([ax,y0-.25,ay],[bx,y0+.05,by],[ax,y0+.05,ay],sc,out,[.01,.01,.01,.01,.01,.01]);}}
+      else{sol.rtri([ax,y0,ay],[bx,y0,by],[bx,h,by],col,out,[u0,vy,u1,vy,u1,0]);
+      sol.rtri([ax,y0,ay],[bx,h,by],[ax,h,ay],col,out,[u0,vy,u1,0,u0,0]);}
     }
     if(adE&&h>=6&&h<=40){const hh=hash2(Math.round(b.cx*3),Math.round(b.cy*3));if((hh>>>0)%100<18)hoardingAt(sol,ads,b,adE[0],adE[1],adE[2],adE[3],adE[5],adE[6],hh>>>3);}
-    const roof=col.map(v=>v*.78);const tri=triangulate(p);
+    const roof=posh?[.62,.64,.66]:col.map(v=>v*.78);const tri=triangulate(p);
     for(let i=0;i<tri.length;i+=3){const a=tri[i],bb=tri[i+1],c=tri[i+2];sol.rtri([p[2*a],h,p[2*a+1]],[p[2*bb],h,p[2*bb+1]],[p[2*c],h,p[2*c+1]],roof,[0,1,0],[.01,.01,.01,.01,.01,.01]);}
     if(h>4){for(let i=0;i<n;i++){const j=(i+1)%n;const ax=p[2*i],ay=p[2*i+1],bx=p[2*j],by=p[2*j+1];if(Math.hypot(bx-ax,by-ay)<.5)continue;const ex=bx-ax,ey=by-ay;const out=ccw?[ey,0,-ex]:[-ey,0,ex];
       sol.rtri([ax,h,ay],[bx,h,by],[bx,h+.5,by],roof,out,[.01,.01,.01,.01,.01,.01]);sol.rtri([ax,h,ay],[bx,h+.5,by],[ax,h+.5,ay],roof,out,[.01,.01,.01,.01,.01,.01]);}}
@@ -179,9 +182,10 @@ function buildChunk(cx,cy){
   for(const g of W.fuels||[])if(inC(g.sx,g.sy))stationAt(sol,dec,g);
   if(W.court&&inC(W.court.sx,W.court.sy))courtAt(sol,W.court);
   cityChunk(sol,dec,mine,inC);
-  return {cx,cy,v:W.version,ads:ads.mesh(),cas:cas.mesh(),asp:asp.mesh(),mrk:mrk.mesh(),dec:dec.mesh(),sol:sol.mesh(),shp:shp.mesh(),glow:makeGlowMesh(glow),shad:makeGlowMesh(shad),heads};
+  doorsChunk(sol,inC,x0+CH/2,y0+CH/2);
+  return {cx,cy,v:W.version,gls:gls.mesh(),ads:ads.mesh(),cas:cas.mesh(),asp:asp.mesh(),mrk:mrk.mesh(),dec:dec.mesh(),sol:sol.mesh(),shp:shp.mesh(),glow:makeGlowMesh(glow),shad:makeGlowMesh(shad),heads};
 }
-function freeChunk(c){for(const k of['cas','asp','mrk','dec','sol','shp','ads','glow','shad'])freeMesh(c[k]);}
+function freeChunk(c){for(const k of['cas','asp','mrk','dec','sol','shp','ads','gls','glow','shad'])freeMesh(c[k]);}
 function clearChunks(){for(const[,c]of CHUNKS)freeChunk(c);CHUNKS.clear();W.tG=new Map();}
 function updateChunks(px,py,budgetMs){
   const R=settings.gfx==='fast'?360:settings.gfx==='ultra'?560:460;

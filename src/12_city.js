@@ -68,12 +68,13 @@ function shadowPass(dt){
   const c=M4.xform(SHV.view,cx,0,cz),tx=2*ext/size,sx=Math.round(c[0]/tx)*tx,sy=Math.round(c[1]/tx)*tx;
   ortho(SHV.proj,sx-ext,sx+ext,sy-ext,sy+ext,1,800);M4.mul(SHV.lvp,SHV.proj,SHV.view);
   shadowBegin(SHV.lvp);
-  for(const[,ch]of CHUNKS){const d=Math.hypot((ch.cx+.5)*CH-cx,(ch.cy+.5)*CH-cz);if(d>ext*1.45+CH)continue;drawShadow(ch.sol);drawShadow(ch.ads);}
+  for(const[,ch]of CHUNKS){const d=Math.hypot((ch.cx+.5)*CH-cx,(ch.cy+.5)*CH-cz);if(d>ext*1.45+CH)continue;drawShadow(ch.sol);drawShadow(ch.ads);if(ch.gls)drawShadow(ch.gls);}
   for(const s of METRO.sections)if(Math.hypot(s.x-cx,s.y-cz)<ext*1.5+160)drawShadow(s.mesh);
   for(const v of W.parkedV||[]){if(Math.hypot(v.x-cx,v.y-cz)>ext*1.4)continue;M4.model(TM,v.x,0,v.y,-v.h,0,0);drawShadow(pvModel(v).body,TM);}
   if(dyn){
     for(const a of agents){if(Math.hypot(a.x-P.x,a.y-P.y)>90)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawShadow(a.model.body,TM);if(a.model.rider)drawShadow(a.model.rider,TM);}
-    if(!FOOT.on){const pm=curModel();drawShadow(pm.body,P.M);if(pm.rider)drawShadow(pm.rider,P.M);}
+    if(FLY.on){}
+    else if(!FOOT.on){const pm=curModel();drawShadow(pm.body,P.M);if(pm.rider)drawShadow(pm.rider,P.M);}
     else if(!METRO.ride&&!(FOOT.ride&&FOOT.ride.phase==='ride'))drawShadow(rig(PLOOK,SKINS[2],playerPose(),playerWeaponShown()),P.M);
     for(const p of peds){if(p.state==='down'||Math.hypot(p.x-P.x,p.y-P.y)>50)continue;M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);const A=ANIM;const m=p.kind==='sit'?A.sit[p.v%A.sit.length]:p.kind==='lie'?null:A.ped[p.v%A.ped.length][p.pose||0];if(m)drawShadow(m,TM);}
   }
@@ -288,7 +289,11 @@ function cityChunk(sol,dec,mine,inC){
       for(const q of[-.7,0,.7])for(const half of[0,1]){const mx=a[0]+(b[0]-a[0])*(.25+half*.5)+dy*side*0,my=a[1]+(b[1]-a[1])*(.25+half*.5);const qx=-Math.cos(h)*q*0+Math.cos(s.h)*q,qy=Math.sin(s.h)*q;
         sol.save();sol.tr(mx+qx,8.0-.35,my+qy);sol.rotY(-h);sol.rotX(half?-.05:.05);sol.box(0,0,0,.025,.025,L/2+.05,wireC);sol.restore();}}
     /* garbage heap or twin bins near the kerb */
-    if(r()<.12){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.3)*sd,y=s.ay+dy*t-dx*(w.hw+1.3)*sd;if(!inBuilding(x,y)){
+    const poshS=poshAt((s.ax+s.bx)/2,(s.ay+s.by)/2)>.5;
+    if(poshS&&!w.br&&s.len>12){/* posh streets: granite planters with clipped shrubs and bollard lights */
+      for(let t=6;t<s.len-4;t+=16)for(const sd of[-1,1]){const x=s.ax+dx*t+dy*(w.hw+1.5)*sd,y=s.ay+dy*t-dx*(w.hw+1.5)*sd;if(inBuilding(x,y)||nearSignal(x,y,4))continue;
+        sol.box(x,.3,y,.9,.6,.9,[.42,.42,.44]);sol.blob(x,.85,y,.5,.42,.5,[.16,.42,.2]);const bx2=x+dx*4,by2=y+dy*4;sol.cyl(bx2,.45,by2,.08,.9,'y',8,[.18,.18,.2]);sol.box(bx2,.93,by2,.14,.06,.14,[1,.95,.8],.9);}}
+    if(r()<.12&&!poshS){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.3)*sd,y=s.ay+dy*t-dx*(w.hw+1.3)*sd;if(!inBuilding(x,y)){
       for(let k=0;k<9;k++){const a=r()*TAU,rr=r()*.9;const c=[[.1,.1,.11],[.15,.25,.55],[.85,.85,.82],[.35,.25,.15],[.2,.45,.2]][Math.floor(r()*5)];sol.blob(x+Math.cos(a)*rr,.18+r()*.2,y+Math.sin(a)*rr,.22+r()*.12,.18+r()*.1,.22+r()*.12,c);}
       dec.quad([x-1.3,.04,y-1.1],[x+1.3,.04,y-1.1],[x+1.3,.04,y+1.1],[x-1.3,.04,y+1.1],[.24,.22,.18],[0,1,0]);}}
     else if(r()<.1){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.2)*sd,y=s.ay+dy*t-dx*(w.hw+1.2)*sd;if(!inBuilding(x,y)){sol.save();sol.tr(x,0,y);sol.rotY(-s.h);
@@ -427,7 +432,7 @@ function cityUpdate(dt){
 }
 function cityContext(){
   const q=[];gQuery(W.pvG||new Map(),P.x,P.y,4,q);let best=null,bd=1.5;
-  for(const v of q){if(CITY.taken.has(v.key))continue;const d=carDist(v,v.len,v.wid,P.x,P.y);if(d<bd){bd=d;best={k:'park',v,label:v.t.two?'Take parked bike':'Steal parked car'};}}
+  for(const v of q){if(CITY.taken.has(v.key))continue;const d=carDist(v,v.len,v.wid,P.x,P.y);if(d<bd){bd=d;best={k:'park',v,label:v.mine?(v.t.two?'Ride with the keys':'Drive with the keys'):v.t.two?'Take parked bike':'Steal parked car'};}}
   if(best)return best;
   for(const st of METRO.stations)for(const e of st.e)if(Math.hypot(e[0]-P.x,e[1]-P.y)<4)return {k:'metro',st,label:'Enter metro station'};
   const b=[];gQuery(W.bsG||new Map(),P.x,P.y,4,b);if(b.length)return {k:'bus',label:'Wait for a BMTC bus'};
@@ -440,7 +445,8 @@ function cityUse(c){
   else if(c.k==='askwork'){const w=c.w;const n=w.kind==='unload'?w.onLorry:w.inGodown;if(n<1){toast('Nothing to carry right now. Come back in a bit.','');return;}FOOT.job={kind:'sacks',w,carry:false,done:0,left:300,pay:20};toast(`Hired! ${w.kind==='unload'?'Unload':'Load'} the lorry. ₹20 a sack.`,'gold');}
   else if(c.k==='park'){const v=c.v;CITY.taken.add(v.key);const i=W.parkedV.indexOf(v);if(i>=0)W.parkedV.splice(i,1);
     const a={t:v.t,model:pvModel(v),x:v.x,y:v.y,h:v.h,hp:150,v:0};agents.push(a);enterVehicle({k:'jack',a,silent:true});
-    if(!v.t.two){CITY.alarmT=5;if(nearCop(100)||peds.some(p=>!p.dead&&Math.hypot(p.x-v.x,p.y-v.y)<15))crime('theft',1);}}
+    if(v.mine){if(LIFE.keyV===v)LIFE.keyV=null;toast('Unlocked with the keys','good');}
+    else if(!v.t.two){CITY.alarmT=5;if(nearCop(100)||peds.some(p=>!p.dead&&Math.hypot(p.x-v.x,p.y-v.y)<15))crime('theft',1);}}
   else if(c.k==='jpick'||c.k==='jdrop')jobUse(c);
 }
 function cityRender(A,night,ex,ez){

@@ -58,6 +58,7 @@ function hitPed(p){
   if(p.state==='static'&&p.kind==='lie'){p.kind='lie';}
   p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);if(p.kind==='lie'||p.kind==='sit'){p.v=0;}
   Snd.crash();Hap.bigCrash();CAM.shake=10;flash();
+  if(COP.level===0&&!COP.list.length&&!policeWitness('ped')){toast('You hit a pedestrian! No police saw it.','bad');panic(p.x,p.y,30);trip=null;return;}
   addChallan('ped');profile.seized=true;saveProfile();
   COP.pedHit=true;toast('You hit a pedestrian! Licence seized','bad');
   offence('ped',3);
@@ -70,7 +71,7 @@ function updatePlayer(dt){
   const V=VEH[P.type];
   let top=V.top/3.6;
   if(P.dry)top=6/3.6;else if(P.cond<=0)top=10/3.6;else if(P.cond<50)top*=.55+.45*P.cond/50;
-  let steerIn=(input.R?1:0)-(input.L?1:0);if(settings.steer==='tilt')steerIn=clamp(input.tilt,-1,1);
+  let steerIn=clamp((input.R?1:0)-(input.L?1:0)+(input.jx||0)*1.1,-1,1);if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
   P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?6:9));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
@@ -169,6 +170,7 @@ function rules(dt,nr,sp){
 /* ---------- police outcome ---------- */
 function caught(){
   if(state!=='play')return;
+  markRelease();if(FLY.on){FLY.on=false;$('#flyHud').hidden=true;}if(INT.on)leaveBuilding();
   state='outcome';Snd.stopEngine();Snd.sirenOff();Snd.hornOff();releaseAll();apshReset();
   const codes=COP.off.filter(c=>FINES[c]&&c!=='ped');for(const c of codes)addChallan(c);
   const box=$('#outChallan');box.innerHTML='';
@@ -270,7 +272,7 @@ function updateHud(){
   el.condbar.style.width=P.cond+'%';el.condbar.style.background=P.cond>55?'var(--ok)':P.cond>25?'var(--auto-yellow)':'var(--danger)';el.condTxt.textContent=Math.round(P.cond)+'%';
   el.wallet.textContent=fmtINR(profile.wallet);el.licChip.hidden=!licenceSuspended();
   el.fuelbar.style.width=P.fuel+'%';el.fuelbar.style.background=P.fuel>25?'#4FC3F7':P.fuel>12?'var(--auto-yellow)':'var(--danger)';el.fuelTxt.textContent=Math.round(P.fuel)+'%';el.fuelLbl.textContent=FUEL[P.type][2]==='ev'?'Charge':'Fuel';
-  const nm=P.offroad?'Off road':(P.road&&(P.road.w.name||'Unnamed road'))||'Off road';if(nm!==lastRoad){lastRoad=nm;el.road.textContent=nm;}
+  const nm=INT.on?(INT.b&&INT.b.vname||({house:'House',apartment:'Apartment',shop:'Shop',restaurant:'Restaurant',cafe:'Cafe',bar:'Bar & pub',mall:'Shopping mall',office:'Office',police:'Police station',gym:'Gym'})[INT.kind]||'Indoors'):FLY.on?'Kempegowda Airspace':P.offroad?'Off road':(P.road&&(P.road.w.name||'Unnamed road'))||'Off road';if(nm!==lastRoad){lastRoad=nm;el.road.textContent=nm;}
   clockT-=.1;if(clockT<=0){clockT=5;const pn=placeName();el.clock.textContent=(pn?pn+' · ':'')+clockText();}
   if(sigHud&&sigHud.d<85){el.sig.hidden=false;const c=sigHud.st[0];el.sig.querySelectorAll('.lamps i').forEach(i=>i.classList.toggle('on',i.classList.contains(c==='R'?'r':c==='A'?'a':'g')));el.sigN.textContent=Math.ceil(sigHud.st[1]);el.sigT.textContent=(c==='R'?'Stop at the line':c==='A'?'Signal changing':'Go')+'\n'+Math.max(0,Math.round(sigHud.d))+' m';el.sigT.style.whiteSpace='pre';}
   else el.sig.hidden=true;
@@ -279,6 +281,8 @@ function updateHud(){
   else el.wanted.hidden=true;
   el.rashbar.style.width=clamp(P.rash,0,100)+'%';
   lifeHud();
+  el.limit.hidden=FOOT.on||FLY.on;
+  if(FLY.on){el.sig.hidden=true;el.trip.innerHTML='<div><b>Flying</b></div><div>Land on a runway and stop to get out</div>';if(noticeKey!=='fly'){noticeKey='fly';el.notice.hidden=true;}return;}
   if(footHudTick(el))return;
   if(trip){const d=Math.hypot(trip.x-P.x,trip.y-P.y);el.trip.innerHTML='';const a=document.createElement('div');a.innerHTML='Drop at <b></b>';a.querySelector('b').textContent=trip.name;const b=document.createElement('div');b.textContent=`${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'} · fare ₹${trip.fare}`;el.trip.append(a,b);}
   else el.trip.textContent=licenceSuspended()?'No passengers: licence suspended':'Finding a passenger';
@@ -313,7 +317,7 @@ function renderMini(){
   for(const g of W.fuels){if(Math.abs(g.x-P.x)>R||Math.abs(g.y-P.y)>R)continue;m.fillStyle='#4FC3F7';m.fillRect(g.x-10,g.y-10,20,20);}
   footMini(m,R);
   if(trip){m.fillStyle='#FFC72C';m.beginPath();m.arc(trip.x,trip.y,12,0,TAU);m.fill();}
-  const fl=(performance.now()/250|0)%2;for(const c of COP.list){m.fillStyle=fl?'#FF5A4E':'#2F6BFF';m.beginPath();m.arc(c.x,c.y,11,0,TAU);m.fill();}
+  policeMini(m,R);
   m.restore();
   const arrow=(tx,ty,col)=>{const ang=hAng(tx-P.x,ty-P.y)-P.h;const d=Math.hypot(tx-P.x,ty-P.y);if(d>R*.9){m.save();m.translate(S/2,S/2);m.rotate(ang);m.fillStyle=col;m.beginPath();m.moveTo(0,-S/2+6);m.lineTo(-11,-S/2+26);m.lineTo(11,-S/2+26);m.closePath();m.fill();m.restore();}};
   if(trip)arrow(trip.x,trip.y,'#FFC72C');footArrows(arrow);
@@ -363,7 +367,7 @@ function lightsFor(model,M,headOn,brake,night){
 function renderScene(dt){
   resizeGL();
   let V=VEH[P.type],pm=curModel();const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
-  setupCamera(dt,P,V,pm);metroCam();setFrameUniforms();shadowPass(dt);
+  setupCamera(dt,P,V,pm);metroCam();flightCam();setFrameUniforms();shadowPass(dt);
   const night=TOD.night;
   gl.viewport(0,0,glc.width,glc.height);
   gl.clearColor(FU.fogCol[0],FU.fogCol[1],FU.fogCol[2],1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
@@ -393,6 +397,7 @@ function renderScene(dt){
   /* solid world */
   gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
   for(const c of vis)drawLit(c.sol,null,{tex:TEX.wall,emTex:TEX.wallE,emiK:night*1.8});
+  {const G=glassTex();for(const c of vis)if(c.gls&&c.gls.n)drawLit(c.gls,null,{tex:G.t,emTex:G.e,emiK:.15+night*1.6});}
   for(const c of vis)drawLit(c.shp,null,{tex:TEX.shop,emTex:TEX.shopE});
   {const at=adsTex().tex;for(const c of vis)drawLit(c.ads,null,{tex:at,emTex:at,emiK:.2+night*.7});}
   /* live signal lamps */
@@ -404,7 +409,7 @@ function renderScene(dt){
     const w=M4.xform(TM2,0,0,-.05);DGr.bill(w[0],w[1],w[2],.6,col,CAM.right);}
   /* traffic, people, animals */
   const A=animalModels();
-  for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);if(a.model.decal2&&d<120){const tx=a.model.decal2.tex().tex;drawLit(a.model.decal2.mesh,TM,{tex:tx,emTex:tx,emiK:.15+night*.4});}
+  for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);if(a.patrol&&a.model.decal){drawLit(a.model.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});const lb=a.model.lightbar;if(lb){drawLit(lb.red,TM,{emiAdd:[.25,.02,.02]});drawLit(lb.blue,TM,{emiAdd:[.02,.05,.3]});}}if(a.model.decal2&&d<120){const tx=a.model.decal2.tex().tex;drawLit(a.model.decal2.mesh,TM,{tex:tx,emTex:tx,emiK:.15+night*.4});}
     if(d<160)lightsFor(a.model,TM,night>.25,a.brake&&a.v>.5,night);}
   for(const p of peds){if(Math.hypot(p.x-ex,p.y-ez)>180)continue;
     if(p.state==='static'){
@@ -412,13 +417,14 @@ function renderScene(dt){
       else if(p.kind==='sit'){M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.sit[p.v],TM);}
       else{M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.lie[p.v],TM);}
       continue;}
+    if(p.rp||p.strip||p.culprit||p.state==='stalk'||p.state==='hostile'||p.state==='argue'||p.state==='brawl'||(p.state==='down'&&Math.hypot(p.x-ex,p.y-ez)<40)){pedRig(p);continue;}
     const moving=p.state==='walk'||p.state==='cross'||p.state==='play'||p.state==='flee';const m=A.ped[p.v][moving?p.pose:0];
     if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM);}
   for(const n of animals){if(Math.hypot(n.x-ex,n.y-ez)>200)continue;let m;
     if(n.kind==='cow')m=n.lie?A.cowLie[n.v]:A.cow[n.v*2+(n.state==='wander'||n.state==='cross'?n.pose:0)];
     else if(n.kind==='dog')m=A.dog[n.v][n.state==='idle'?0:n.pose];else m=A.cat[n.v][n.event||n.state!=='idle'?n.pose:0];
     M4.model(TM,n.x,0,n.y,-n.h,0,0,n.event?1.8:1);drawLit(m,TM,{emiK:.6+night});}
-  lifeRender(A,night,ex,ez);drawPoiSigns(night);drawVenues(ex,ez,night,A);drawFixedSigns(ex,ez,night);
+  lifeRender(A,night,ex,ez);drawPoiSigns(night);drawVenues(ex,ez,night,A);drawFixedSigns(ex,ez,night);drawStations(night);drawAir(night);
   const fl=(GT*4|0)%2;
   for(const c of COP.list){const cm=c.model;M4.model(TM,c.x,0,c.y,-c.h,0,0);drawLit(cm.body,TM,{emiK:.5+night});
     drawLit(cm.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});
@@ -427,17 +433,18 @@ function renderScene(dt){
     lightsFor(cm,TM,night>.25,false,night);}
   if(intruder){M4.model(TM,intruder.x,0,intruder.y,-intruder.h,0,0);drawLit(intruder.model.body,TM,{emiK:.5+night});if(intruder.model.glass)drawLit(intruder.model.glass,TM);if(intruder.model.rider)drawLit(intruder.model.rider,TM);lightsFor(intruder.model,TM,true,false,night);}
   /* player */
-  if(fv)drawFootPlayer(fv,A,night);
+  if(FLY.on){}
+  else if(fv)drawFootPlayer(fv,A,night);
   else if(CAM.mode==='cockpit'){
     drawLit(pm.body,P.M,{emiK:.4+night*.6});drawLit(pm.cockpit,P.M,{emiK:.6+night*.8,noHL:true});
     if(pm.steer){const sp=pm.steerPos;M4.model(TM,sp[0],sp[1],sp[2],0,-.42,-P.steer*1.9);M4.mul(TM2,P.M,TM);drawLit(pm.steer,TM2,{noHL:true});}
   }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);if(pm.decal)drawLit(pm.decal.mesh,P.M,{tex:hoysalaTex().tex,emTex:TEX.black});if(pm.decal2){const tx=pm.decal2.tex().tex;drawLit(pm.decal2.mesh,P.M,{tex:tx,emTex:tx,emiK:.15});}}
-  if(!fv&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
+  if(!fv&&!FLY.on&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
   /* light, glow and signboards */
   gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
   if(night>.05){for(const c of vis)drawGlowMesh(c.glow,0,night*.5);
     DGb.reset();const beam=(M,model)=>{for(const p of model.lights.head){const w=M4.xform(M,p[0],.05,p[2]);DGb.quad(w[0],.06,w[2],Math.sin(model._h),-Math.cos(model._h),16,4.5,[1,.88,.65],true);}};
-    if(!fv){pm._h=P.h;beam(P.M,pm);}
+    if(!fv&&!FLY.on){pm._h=P.h;beam(P.M,pm);}
     for(const a of agents){if(Math.hypot(a.x-ex,a.y-ez)>140)continue;a.model._h=a.h;M4.model(TM,a.x,0,a.y,-a.h,0,0);beam(TM,a.model);}
     DGb.draw(2,night*.55);}
   DGr.draw(0,.75+night*.6);DGr.reset();
@@ -458,11 +465,15 @@ function frame(t){
   if(state==='play'){GT+=dt;update(dt);}
   if(['play','pause','repair','outcome','fuel'].includes(state)){
     if(state!=='play')updateChunks(P.x,P.y,4);
-    try{renderScene(dt);}catch(e){console.error(e);}
+    try{if(INT.on)renderInterior(dt);else renderScene(dt);}catch(e){console.error(e);}
   }
   requestAnimationFrame(frame);
 }
 function update(dt){
+  if(INT.on){updateInterior(dt);lifeUpdate(dt);if((hudT-=dt)<=0){hudT=.1;updateHud();}if((todT-=dt)<=0){todT=30;computeTod();}return;}
+  if(FLY.on){updateAir(dt);updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);lifeUpdate(dt);updateChunks(P.x,P.y,settings.gfx==='fast'?5:8);
+    if((hudT-=dt)<=0){hudT=.1;updateHud();}if((miniT-=dt)<=0){miniT=.12;renderMini();}if((streamT-=dt)<=0){streamT=1.5;streamMap();}if((todT-=dt)<=0){todT=30;computeTod();}return;}
+  updateAir(dt);
   if(FOOT.on){updateFoot(dt);updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);}
   else{updatePlayer(dt);
   updateAgents(dt);updatePeds(dt);updateAnimals(dt);updateCops(dt);updateIntruder(dt);apshakunTick(dt);
@@ -555,7 +566,7 @@ function startPlay(keepPos){
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','lootScr','quitScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
@@ -699,7 +710,6 @@ function hold(e,on,off){
   e.addEventListener('pointerup',up);e.addEventListener('pointercancel',up);e.addEventListener('lostpointercapture',up);e.addEventListener('contextmenu',ev=>ev.preventDefault());
 }
 const scareAnimals=()=>{for(const a of animals){if(a.event||a.lie)continue;const d=Math.hypot(a.x-P.x,a.y-P.y);if(d<24&&d>.1&&a.kind!=='cow'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*7;a.ty=a.y+(a.y-P.y)/d*7;a.speed=5;a.t=1.5;}else if(a.kind==='cow'&&d<20&&!a.lie&&a.state!=='cross'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*4;a.ty=a.y+(a.y-P.y)/d*4;a.speed=1;a.t=3;}}};
-hold($('#btnL'),()=>input.L=1,()=>input.L=0);hold($('#btnR'),()=>input.R=1,()=>input.R=0);
 hold($('#btnGas'),()=>{input.gas=1;P.rev=false;},()=>input.gas=0);hold($('#btnBrake'),brakeDown,()=>{input.brake=0;P.brakeUp=performance.now();});
 function brakeDown(){input.brake=1;if(Math.abs(P.s)<.5&&performance.now()-(P.brakeUp||0)<400){P.rev=true;toast('Reverse','', 'rev',800);}else if(P.s>.5)P.rev=false;}
 hold($('#btnHorn'),()=>{input.horn=1;if(FOOT.on)return;Snd.hornOn(VEH[P.type].horn);scareAnimals();},()=>{input.horn=0;Snd.hornOff();});

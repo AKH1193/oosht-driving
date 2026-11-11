@@ -105,7 +105,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 .ctl-left{transform:scale(var(--bs));transform-origin:left bottom}
 .ctl-right{transform:scale(var(--bs));transform-origin:right bottom}
 .ctl-act{right:calc(14px + 184px*var(--bs) + env(safe-area-inset-right,0px));transform:scale(var(--bs));transform-origin:right bottom}
-.ctl-left2{position:absolute;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(14px + 98px*var(--bs) + env(safe-area-inset-bottom,0px));display:flex;gap:12px;align-items:flex-end;transform:scale(var(--bs));transform-origin:left bottom}
+.ctl-left2{position:absolute;left:calc(14px + 150px*var(--bs) + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;align-items:flex-start;transform:scale(var(--bs));transform-origin:left bottom}
 .pad{border-radius:var(--rp)}.pedal{border-radius:var(--rq)}.abtn,.horn{border-radius:var(--rc)}
 #hud .panel,#mini{opacity:var(--ho)}
 #mini{width:var(--mm);height:var(--mm)}
@@ -117,6 +117,11 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #carry{position:absolute;left:50%;top:calc(88px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;font-size:13px;font-weight:700}
 #ctList,#outChallan{max-height:30vh;overflow:auto}#footBar{flex-wrap:nowrap;gap:6px}#footBar .sbtn{min-height:38px;padding:6px 12px;font-size:13px;white-space:nowrap}
 #rideBar .notice{display:inline-block}
+#joy{position:relative;width:136px;height:136px;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.08) 0 38%,rgba(12,16,22,.45) 39% 100%);border:2px solid rgba(255,255,255,.22);touch-action:none}
+#joyRing{position:absolute;inset:18px;border-radius:50%;border:1px dashed rgba(255,255,255,.18);pointer-events:none}
+#joyKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.55),rgba(255,255,255,.18) 60%,rgba(255,255,255,.1));border:2px solid rgba(255,255,255,.45);box-shadow:0 4px 12px rgba(0,0,0,.35);pointer-events:none;transition:transform .08s}
+#joy.on{border-color:var(--auto-yellow)}#joy.on #joyKnob{transition:none;border-color:var(--auto-yellow)}
+#flyHud{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;font-weight:800;font-size:14px;letter-spacing:.04em;white-space:nowrap}
 #apsh .h{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 #apsh .n{font-family:var(--display);font-size:42px;line-height:1;color:var(--auto-yellow);min-width:1.2ch;text-align:center}
 #apsh .l{font-family:var(--display);font-size:15px;letter-spacing:.03em;white-space:nowrap}
@@ -286,9 +291,9 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <button class="abtn hit" id="btnJump" hidden>JUMP</button>
     </div>
     <div class="ctl-left">
-      <button class="pad hit" id="btnL" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15.5 4 6 12l9.5 8z"/></svg></button>
-      <button class="pad hit" id="btnR" aria-label="Steer right"><svg viewBox="0 0 24 24"><path d="M8.5 4 18 12l-9.5 8z"/></svg></button>
+      <div id="joy" class="hit" aria-label="Joystick: steer, walk and run"><div id="joyRing"></div><div id="joyKnob"></div></div>
     </div>
+    <div id="flyHud" class="panel" hidden></div>
     <div class="ctl-act">
       <button class="abtn atk hit" id="btnAtk" hidden>HIT</button>
       <button class="abtn hit" id="btnExit">EXIT</button>
@@ -352,6 +357,7 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
         <button class="btn" id="setBtn2">Settings</button>
         <button class="btn" id="changeBtn">Change vehicle</button>
         <button class="btn" id="quitBtn">Quit to menu</button>
+        <button class="btn" id="wipeBtn" style="color:#FF8A80">Quit &amp; start over</button>
       </div>
     </div>
   </div>
@@ -414,6 +420,20 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
       <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><h2 id="vnTitle" style="margin:0">Venue</h2><button class="btn" id="vnClose">Leave</button></div>
       <p id="vnSub" style="margin:0"></p>
       <div class="vitems" id="vnItems"></div>
+    </div>
+  </div>
+  <div class="screen scrim" id="lootScr" hidden>
+    <div class="card" style="width:min(560px,100%)">
+      <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap"><h2 id="ltTitle" style="margin:0">Search</h2><button class="btn" id="ltClose">Done</button></div>
+      <p id="ltSub" style="margin:0"></p>
+      <div class="vitems" id="ltItems"></div>
+    </div>
+  </div>
+  <div class="screen scrim" id="quitScr" hidden>
+    <div class="card" style="width:min(480px,100%)">
+      <h2>Quit and start over?</h2>
+      <p>You lose all the money you have earned, your weapons, armour, challans and progress. The game starts fresh on a new map.</p>
+      <div class="row" style="justify-content:flex-start"><button class="btn" id="qtNo">Keep playing</button><button class="btn primary" id="qtYes" style="background:#E53935;border-color:#B71C1C;color:#fff">Quit and wipe</button></div>
     </div>
   </div>
   <div class="screen scrim" id="hospScr" hidden>
