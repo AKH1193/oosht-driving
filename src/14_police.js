@@ -1,4 +1,5 @@
 /* ================= WISE CITY: patrolling police, police stations, witnesses, P markers ================= */
+VCOL.police=['#0D2B5E','#FFFFFF'];VSUB.police='Police station';
 const POLICE_T={k:'police',len:4.55,wid:1.86,cruise:.8};
 const PATROL={t:0,stations:[],note:0};
 function buildStations(){

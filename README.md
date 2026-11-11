@@ -38,6 +38,19 @@ People talk as you pass (in Kannada when the phone has a Kannada voice, otherwis
 - Pickpocket people from behind, rob them at gunpoint, or rob a shop till and search a home's almirah.
 - Armour: light vest (50), body armour (100), riot gear (150) and a Kevlar suit (200) at the arms dealer.
 
+## Missions
+
+Tap the star button (or Missions in the pause menu) for six story missions, each placed on the real streets around you:
+
+- The Silk Board Payroll (heist): stop a payroll van, grab the bag from its armed guards, then give the bribe ledger to Shetty (₹2,50,000) or the court (₹1,00,000 and every challan cleared).
+- Namma Metro Ghost Ride (stealth): photograph three spots in the depot yard without the guards seeing you; steal a metro worker's uniform to walk past them.
+- Outer Ring Road Getaway (chase): steal back a Veloce, shake off two security SUVs that ram you, and deliver it to Arjun's garage. You keep the car and get 30% off repairs.
+- Avenue Road Mela Mayhem (sandbox): stop four racket collectors at a street fair without hurting the vendors; armed men arrive halfway. Fewer goons on the streets afterwards.
+- Devanahalli Night Flight (finale, at Kempegowda Airport): steal the cargo plane, take off before the runway is blocked, and land on the strip before the radar timer runs out (flying under 60 m slows it). Afterwards you can rent planes legally.
+- The Pickpocket King of Majestic (bounty): catch three pickpockets, take down their armed leader and return the conductor's phone. 20% off your pending challans.
+
+Replays pay half. Getting busted or knocked out fails a mission; Retry starts it again.
+
 ## Police and the court
 
 The police only react when a cop is right there and can see you (a patrolling Hoysala within about 45 m, a constable within about 30 m, with nothing in between), or when you hurt a police officer. Chases are smaller and easier to shake: break line of sight for a few seconds and they give up. Patrols show on the map as a blue P (flashing red when they chase you), police stations as a yellow P on navy. Crimes build heat and a five-star wanted level: more Hoysalas join the chase as the stars rise, a police helicopter circles from four stars and fires at five. When you are on foot, constables get out with lathis; at three stars they shoot. Hit back and you knock them down, and they cannot cuff you while you are fighting. If they catch you, you are busted: weapons confiscated, e-challans issued, and you are released from the police station with jurisdiction over that spot. Fines are paid only at the District Magistrate Court; five unpaid challans, or hitting a pedestrian, and your licence is seized until you pay. Lose all your health and you wake up in hospital with a bill.

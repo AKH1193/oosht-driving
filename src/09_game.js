@@ -188,24 +188,25 @@ function caught(){
 
 /* ---------- mechanic shop ---------- */
 let repairG=null,jugaadUsed=false;
+const RCOST=V=>Math.max(1,Math.round(V.cost*(profile.flags&&profile.flags.arjun?.7:1)));
 function openRepair(g){
   repairG=g;state='repair';releaseAll();Snd.stopEngine();
-  const V=VEH[P.type];const need=Math.round(100-P.cond);const cost=need*V.cost;
+  const V=VEH[P.type];const need=Math.round(100-P.cond);const cost=need*RCOST(V);
   $('#repTitle').textContent=g.name;
   $('#repText').textContent=need<=0?'Your vehicle is in perfect shape. The mechanic offers you a cup of tea.':P.cond<=0?'Your vehicle is broken down. The mechanic can fix it fully, or patch it up with what you can pay.':`Your ${V.name} has taken a beating from Bengaluru roads.`;
   $('#repCond').textContent=Math.round(P.cond)+'%';$('#repCost').textContent='₹'+fmtINR(cost);$('#repWallet').textContent='₹'+fmtINR(profile.wallet);
   $('#repFull').disabled=need<=0||profile.wallet<cost;
-  const afford=Math.floor(profile.wallet/V.cost);
+  const afford=Math.floor(profile.wallet/RCOST(V));
   $('#repHalf').disabled=need<=0||(afford<=0&&jugaadUsed);
-  $('#repHalf').textContent=afford<=0?'Jugaad fix (free)':`Patch it up (₹${fmtINR(Math.min(need,afford)*V.cost)})`;
+  $('#repHalf').textContent=afford<=0?'Jugaad fix (free)':`Patch it up (₹${fmtINR(Math.min(need,afford)*RCOST(V))})`;
   show('repair');
 }
 function doRepair(full){
   const V=VEH[P.type];const need=Math.round(100-P.cond);
-  if(full){const cost=need*V.cost;if(profile.wallet<cost)return;profile.wallet-=cost;P.cond=100;toast('Fully repaired','good');}
-  else{const afford=Math.floor(profile.wallet/V.cost);
+  if(full){const cost=need*RCOST(V);if(profile.wallet<cost)return;profile.wallet-=cost;P.cond=100;toast('Fully repaired','good');}
+  else{const afford=Math.floor(profile.wallet/RCOST(V));
     if(afford<=0){if(jugaadUsed)return;jugaadUsed=true;P.cond=Math.max(P.cond,35);toast('The mechanic did a jugaad fix for free','good');}
-    else{const fix=Math.min(need,afford);profile.wallet-=fix*V.cost;P.cond=Math.min(100,P.cond+fix);toast(`Patched up to ${Math.round(P.cond)}%`,'good');}}
+    else{const fix=Math.min(need,afford);profile.wallet-=fix*RCOST(V);P.cond=Math.min(100,P.cond+fix);toast(`Patched up to ${Math.round(P.cond)}%`,'good');}}
   if(P.cond>0)P.broke=false;saveProfile();resumeDrive();
 }
 function towToGarage(){
@@ -365,6 +366,7 @@ function lightsFor(model,M,headOn,brake,night){
   const tk=brake?1:night*.6;if(tk>.05)for(const p of model.lights.tail){const w=M4.xform(M,p[0],p[1],p[2]+.05);DGr.bill(w[0],w[1],w[2],brake?.5:.35,[1*tk,.1*tk,.05*tk],CAM.right);}
 }
 const PEDLIT={tint:[1,1,1]};
+const RLAYERS=[(A,n,ex,ez)=>lifeRender(A,n,ex,ez),(A,n)=>drawPoiSigns(n),(A,n,ex,ez)=>drawVenues(ex,ez,n,A),(A,n,ex,ez)=>drawFixedSigns(ex,ez,n),(A,n)=>drawStations(n),(A,n)=>drawAir(n)];
 function renderScene(dt){
   resizeGL();
   let V=VEH[P.type],pm=curModel();const fv=FOOT.on?footView():null;if(fv){V=fv.V;pm=fv.pm;}
@@ -418,14 +420,15 @@ function renderScene(dt){
       else if(p.kind==='sit'){M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.sit[p.v],TM);}
       else{M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.lie[p.v],TM);}
       continue;}
-    if(p.rp||p.strip||p.culprit||p.state==='stalk'||p.state==='hostile'||p.state==='argue'||p.state==='brawl'||(p.state==='down'&&Math.hypot(p.x-ex,p.y-ez)<40)){pedRig(p);continue;}
+    if(p.mis&&p.state!=='static'||p.rp||p.strip||p.culprit||p.state==='stalk'||p.state==='hostile'||p.state==='argue'||p.state==='brawl'||(p.state==='down'&&Math.hypot(p.x-ex,p.y-ez)<40)){pedRig(p);continue;}
     const moving=p.state==='walk'||p.state==='cross'||p.state==='play'||p.state==='flee';const m=A.ped[p.v][moving?p.pose:0];
     if(p.state==='down')M4.model(TM,p.x,.15,p.y,-p.fall,-Math.PI/2,0,p.sc||1);else M4.model(TM,p.x,0,p.y,-p.h,0,0,p.sc||1);drawLit(m,TM,PEDLIT);}
   for(const n of animals){if(Math.hypot(n.x-ex,n.y-ez)>200)continue;let m;
     if(n.kind==='cow')m=n.lie?A.cowLie[n.v]:A.cow[n.v*2+(n.state==='wander'||n.state==='cross'?n.pose:0)];
     else if(n.kind==='dog')m=A.dog[n.v][n.state==='idle'?0:n.pose];else m=A.cat[n.v][n.event||n.state!=='idle'?n.pose:0];
     M4.model(TM,n.x,0,n.y,-n.h,0,0,n.event?1.8:1);drawLit(m,TM,{emiK:.6+night});}
-  lifeRender(A,night,ex,ez);drawPoiSigns(night);drawVenues(ex,ez,night,A);drawFixedSigns(ex,ez,night);drawStations(night);drawAir(night);
+  /* each layer is isolated so one bad sign or prop can never stop the player from being drawn */
+  for(const f of RLAYERS)try{f(A,night,ex,ez);}catch(e){if(!f.warned){f.warned=1;console.error(e);}}
   const fl=(GT*4|0)%2;
   for(const c of COP.list){const cm=c.model;M4.model(TM,c.x,0,c.y,-c.h,0,0);drawLit(cm.body,TM,{emiK:.5+night});
     drawLit(cm.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});
@@ -567,11 +570,11 @@ function startPlay(keepPos){
 }
 
 /* ---------- screens ---------- */
-const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','lootScr','quitScr','mapScr','settings'];
+const SCREENS=['title','where','showroom','loading','pause','repair','fuelScr','outcome','court','rideScr','jobScr','venueScr','hospScr','metroScr','lootScr','quitScr','mapScr','misScr','settings'];
 function show(id){
   for(const s of SCREENS)$('#'+s).hidden=s!==id;
   $('#hud').hidden=id!=='play';
-  if(!['play','pause','repair','outcome','fuelScr','mapScr'].includes(id)){Snd.stopEngine();Snd.sirenOff();}
+  if(!['play','pause','repair','outcome','fuelScr','mapScr','misScr'].includes(id)){Snd.stopEngine();Snd.sirenOff();}
   if(id==='title')renderTitle();
 }
 function go(id){

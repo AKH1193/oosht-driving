@@ -429,7 +429,7 @@ function findContext(){
   for(const v of W.venues){if(Math.hypot(v.x-P.x,v.y-P.y)<4.5)return {k:'venue',v,label:v.kind==='gym'?'Work out':v.kind==='arms'?'Buy weapons':v.kind==='bar'?'Have a drink':'Eat & drink'};}
   return null;
 }
-function useContext(){const c=LIFE.ctx;if(!c||state!=='play')return;LIFE.ctxT=0;if(c.k==='enterb')enterBuilding(c.b);else if(c.k==='exitb')leaveBuilding();else if(c.k==='item')c.it.fn();else if(c.k==='loot'||c.k==='pick'||c.k==='mug')peopleUse(c);else if(c.k==='plane')startFlight(c.p);else if(c.k==='venue')openVenue(c.v);else if(['metro','bus','askwork','park','jpick','jdrop'].includes(c.k))cityUse(c);else enterVehicle(c);}
+function useContext(){const c=LIFE.ctx;if(!c||state!=='play')return;LIFE.ctxT=0;if(c.k==='mis')c.fn();else if(c.k==='enterb')enterBuilding(c.b);else if(c.k==='exitb')leaveBuilding();else if(c.k==='item')c.it.fn();else if(c.k==='loot'||c.k==='pick'||c.k==='mug')peopleUse(c);else if(c.k==='plane')startFlight(c.p);else if(c.k==='venue')openVenue(c.v);else if(['metro','bus','askwork','park','jpick','jdrop'].includes(c.k))cityUse(c);else enterVehicle(c);}
 
 /* ---------- venues: menus, gym, arms shop ---------- */
 const MENUS={

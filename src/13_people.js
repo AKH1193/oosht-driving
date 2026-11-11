@@ -115,7 +115,7 @@ function updateStreet(dt){
   /* someone nearby says something */
   if((TTS.next-=dt)<=0){TTS.next=4+Math.random()*6;const c=near.filter(p=>Math.hypot(p.x-P.x,p.y-P.y)<14&&!p.rp);if(c.length){const p=c[Math.floor(Math.random()*c.length)];const w=whoOf(p);say(p.kind==='vendor'?'vendor':w,p.kind==='vendor'?'vendor':w);}}
   /* roles: a few pickpockets and armed goons among the crowd */
-  for(const p of near){if(p.role!==undefined)continue;p.role='';if(p.state==='walk'&&adultMan(p)){const r=Math.random();if(r<.05)p.role='pick';else if(r<.1){p.role='goon';p.armed=true;}}}
+  for(const p of near){if(p.role!==undefined)continue;p.role='';if(p.state==='walk'&&adultMan(p)){const r=Math.random();if(r<.05)p.role='pick';else if(r<(profile.flags&&profile.flags.racket?.07:.1)){p.role='goon';p.armed=true;}}}
   /* pickpocket strikes */
   if((STREET.pickT-=dt)<=0){STREET.pickT=25+Math.random()*35;
     const th=near.find(p=>p.role==='pick'&&p.state==='walk');

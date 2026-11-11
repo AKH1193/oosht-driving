@@ -55,12 +55,13 @@ function drawAir(night){
 }
 function planeContext(){
   for(const p of AIR.planes){const fx=Math.sin(p.h),fy=-Math.cos(p.h),lx=-fy*-1,ly=fx*-1;const door=[p.x+fx*-11-fy*2.6,p.y+fy*-11+fx*2.6];
-    if(Math.hypot(door[0]-P.x,door[1]-P.y)<5||Math.hypot(p.x-P.x,p.y-P.y)<9)return {k:'plane',p,label:p.pilot?'Pull out the pilot':'Board the empty plane'};}
+    if(Math.hypot(door[0]-P.x,door[1]-P.y)<5||Math.hypot(p.x-P.x,p.y-P.y)<9)return {k:'plane',p,label:p.pilot?'Pull out the pilot':profile.flags&&profile.flags.pilot?'Rent this plane (₹5,000)':'Board the empty plane'};}
   return null;
 }
 function startFlight(p){
   if(p.pilot){const fx=Math.sin(p.h),fy=-Math.cos(p.h);peds.push({x:p.x-fy*4,y:p.y+fx*4,h:p.h,state:'flee',v:0,pose:0,pt:0,t:0,sc:1,run:true,speed:1.6,fx:p.x,fy:p.y,side:1,role:''});p.pilot=false;say('help','man',true);}
-  crime('plane',4);
+  if(!p.pilot&&profile.flags&&profile.flags.pilot){if(profile.wallet<5000){toast('Renting a plane costs ₹5,000','bad');return;}profile.wallet-=5000;saveProfile();toast('Plane rented · ₹5,000','good');}
+  else crime('plane',4);
   const pk=FOOT.parked;leaveFoot();FOOT.parked=pk;FLY.on=true;FLY.pl=p;FLY.x=p.x;FLY.y=p.y;FLY.z=0;FLY.h=p.h;FLY.pitch=0;FLY.roll=0;FLY.v=0;FLY.thr=0;FLY.ground=true;
   const i=AIR.planes.indexOf(p);if(i>=0)AIR.planes.splice(i,1);
   Snd.startEngine({base:70,range:140,wave:'sawtooth',putt:0,gears:1,vol:.9},'bus');toast('GO = throttle, BRAKE = brakes and less throttle, joystick = steer and climb. Take off above 230 km/h.','gold');
