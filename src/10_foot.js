@@ -126,7 +126,12 @@ function updateFoot(dt){
   else if(Math.abs(sx)>1e-4&&!blocked(ox+sx,oy)){P.x=ox+sx;P.s*=.97;}
   else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}
   else{P.s*=.4;}
-  for(const a of agents){const d=Math.hypot(a.x-P.x,a.y-P.y);const r=a.t.wid*.55+.35;if(d<r){P.x=a.x+(P.x-a.x)/(d||1)*r;P.y=a.y+(P.y-a.y)/(d||1)*r;}}
+  /* vehicles are solid boxes for their full length, so you cannot walk through a lorry or bus */
+  if(!(P.elev>1.5)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
+    for(const c of COP.list)vehPush(c.x,c.y,c.h,4.55,1.86);
+    if(typeof AMB!=='undefined')for(const m of AMB.list)vehPush(m.x,m.y,m.h,5.4,2.1);
+    if(intruder)vehPush(intruder.x,intruder.y,intruder.h,intruder.t.len,intruder.t.wid);
+    if(FOOT.parked&&VEH[FOOT.parked.type||P.type]){const pk=FOOT.parked,pm=playerModel(pk.type||P.type);vehPush(pk.x,pk.y,pk.h,pm.len||4,pm.wid||1.8);}}
   for(const c of animals){const d=Math.hypot(c.x-P.x,c.y-P.y);const r=(c.kind==='cow'?1:.35)+.3;if(d<r){P.x=c.x+(P.x-c.x)/(d||1)*r;P.y=c.y+(P.y-c.y)/(d||1)*r;}}
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;P.offroad=!nr.seg||nr.edge>1.4;
   /* sweat coins: every 10 seconds on the move earns 5 */
@@ -356,3 +361,9 @@ function footHudTick(el){
   return true;
 }
 Object.assign(window.__oosht||{},{inBuilding,FOOT,profile,goFoot,findPath,nodeNear,openCourt,caught:()=>caught(),hitPed,pendingTotal,addChallan,sendRide,endRide});
+
+/* push the walker out of a vehicle's footprint (oriented box, forward = (sin h, -cos h)) */
+function vehPush(x,y,h,len,wid){if(len==null||wid==null)return;const dx=P.x-x,dy=P.y-y;if(dx*dx+dy*dy>(len*len+wid*wid)*.4+4)return;
+  const fx=Math.sin(h),fy=-Math.cos(h),rx=Math.cos(h),ry=Math.sin(h);const u=dx*fx+dy*fy,w=dx*rx+dy*ry;const hl=len/2+.32,hw=wid/2+.32;
+  if(Math.abs(u)>=hl||Math.abs(w)>=hw)return;const pu=hl-Math.abs(u),pw=hw-Math.abs(w);
+  if(pw<pu){const k=(w<0?-1:1)*pw;P.x+=rx*k;P.y+=ry*k;}else{const k=(u<0?-1:1)*pu;P.x+=fx*k;P.y+=fy*k;}}

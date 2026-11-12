@@ -159,4 +159,4 @@ let cpT=0,distT=0;
 DIST.cur=undefined;
 {const _sd=startDrive;startDrive=async function(loc){const r=await _sd(loc);try{cityPlusPlace();DIST.cur=undefined;}catch(e){}return r;};}
 
-Object.assign(window.__oosht||{},{findContext:()=>findContext(),LANDMARKS,SAFES,RAMPS,DISTRICTS,DIST,rampScan,rampAt,safeUse,cityPlusPlace,districtAt,distBanner});
+Object.assign(window.__oosht||{},{getAgents:()=>agents,findContext:()=>findContext(),LANDMARKS,SAFES,RAMPS,DISTRICTS,DIST,rampScan,rampAt,safeUse,cityPlusPlace,districtAt,distBanner});
