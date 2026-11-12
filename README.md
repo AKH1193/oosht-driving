@@ -24,6 +24,14 @@ Every house and building has a door or gate, and you can walk in: family homes, 
 
 People talk as you pass (in Kannada when the phone has a Kannada voice, otherwise in Kanglish): men, women, kids, elders and vendors. Pickpockets work the crowds, people argue and come to blows, drivers get out for road rage, and some carry guns and will shoot back. Catch or knock down a thief (red marker) for a ₹10,000 police reward.
 
+Bengaluru is split into colour-coded districts (MG Road Neon Mile, Heritage Core, Old Bengaluru, the Koramangala and Indiranagar Party Quarter, South Bengaluru, the Tech Belt, Peenya Industrial and the Airport Frontier). A banner names each one as you drive in, and at night the haze takes on its colour.
+
+Fifteen real landmarks (Vidhana Soudha, UB City, Chinnaswamy Stadium, Bangalore Palace, Lalbagh Glass House, ISKCON, the World Trade Center, Kempegowda Airport and more) send a coloured light beam into the sky that you can see from anywhere. Reach one to earn ₹500; found landmarks turn coloured on the map.
+
+Safehouses: your Jayanagar flat is free, and five more (Malleshwaram, Whitefield, Indiranagar, Koramangala and an MG Road penthouse) can be bought. Walk up to the green beam to rest, heal fully, lose the police and save your spot.
+
+Yellow-and-black stunt ramps sit on long main roads. Hit one fast to fly; landing earns cash by airtime.
+
 ## Sound and music
 
 The game opens on a night city: a car tears past, gunshots ring out, and AN ANIRUDH PRODUCTION (ARK CREATIONS) lands over it with a boom and vibration. A short intro film follows (dusk over Bengaluru with a metro crossing, an auto chased by a Hoysala, rain and neon, then the Wise City title) with its own music; Skip intro jumps straight to the menu, and Watch intro on the title screen replays it. Menus have their own music. A speaker button on the title screen and in the game turns all sound on or off. In cars, autos, buses and lorries the RADIO button cycles six stations (Kannada film hits, electronic, Carnatic, dollu folk, lo-fi and a talk station with traffic updates) and off; keyboard R. The city has distant traffic, horns, birds by day and dogs at night.

@@ -86,6 +86,7 @@ function drawBigMap(){
   for(const a of agents)if(a.patrol)dot(a.x,a.y,'#1E5BD6',7,'P');for(const c of COP.list)dot(c.x,c.y,'#E53935',8,'P');
   if(W.court)dot(W.court.x,W.court.y,'#E53935',9,'⚖');if(AIR.runways.length)for(const r of AIR.runways.slice(0,2))dot((r.ax+r.bx)/2,(r.ay+r.by)/2,'#455A64',10,'✈');
   if(FOOT.parked)dot(FOOT.parked.x,FOOT.parked.y,'#FFC72C',7,'🚗');
+  try{mapExtras(m,dot,k,s);}catch(e){}
   if(WP.on)pinGlyph(m,WP.x,WP.y,1.3*k,0);
   /* you */
   m.save();m.translate(P.x,P.y);m.rotate(P.h);m.scale(k,k);m.fillStyle='#FFF';m.strokeStyle='#0D1116';m.lineWidth=2;m.beginPath();m.moveTo(0,-13);m.lineTo(-9,9);m.lineTo(0,4);m.lineTo(9,9);m.closePath();m.fill();m.stroke();m.restore();

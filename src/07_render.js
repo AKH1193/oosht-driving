@@ -269,7 +269,7 @@ function setupCamera(dt,P,V,model){
     /* keep the camera out of buildings: pull it in along the line to the player */
     let cd=dist;if(!far&&!inBuilding(P.x,P.y)&&!(FOOT.on&&P.elev>3)){for(let t=.8;t<dist;t+=.35){const qx=P.x-cyx*t,qy=P.y-cyz*t,b=inBuilding(qx,qy);if((b&&b.h>1.3+(ht-1.3)*t/dist)||pierAt(qx,qy)){cd=Math.max(.9,t-.4);break;}}}
     CAM.cd=CAM.cd==null||far?cd:cd<CAM.cd?cd:lerp(CAM.cd,cd,Math.min(1,dt*2.2));const cdx=Math.min(CAM.cd,dist),hh=1.3+(ht-1.3)*cdx/dist;
-    const EL=FOOT.on?(P.elev||0):0;CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump+EL,P.y-cyz*cdx];
+    const EL=FOOT.on?(P.elev||0):(P.jz||0);CAM.eye=[P.x-cyx*cdx+jx,hh+jy+bump+EL,P.y-cyz*cdx];
     const lf=CAM.free||CAM.look?[cyx,cyz]:[fx,fz];CAM.tgt=[P.x+lf[0]*(far?8:6),(far?0:1.1+(CAM.pitch||0))+EL,P.y+lf[1]*(far?8:6)];
     CAM.fov=lerp(CAM.fov,(far?55:62)+frac*(far?0:18),Math.min(1,dt*3));
   }
