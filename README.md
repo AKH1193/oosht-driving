@@ -112,7 +112,7 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 
 ## Intro and typography
 
-You play as Tony. The intro is drawn live in code (no video file): the production credit with gunshots and a neon sign, then a game-styled trailer with the real HUD (cash, wanted stars, speedometer, minimap), Tony's name card, a radio voice, a stunt jump, MISSION PASSED and the WISE CITY logo over a synthwave Bengaluru. Skip at any time; tap on the logo to go straight to the menu. On the first drive, short hints teach driving, steering, drifting and looking around on the way to Tony's Jayanagar safehouse.
+You play as Tony. The intro is drawn live in code (no video file): the production credit with gunshots and a neon sign, then a game-styled trailer with the real HUD (cash, wanted stars, speedometer, minimap), Tony's name card, a radio voice, a stunt jump, MISSION PASSED and the WISE CITY logo over a synthwave Bengaluru. Skip at any time; tap on the logo to go straight to the menu. The first time you press Play, a live opening runs in the real 3D city: an aerial sweep over MG Road, Tony's deal with Arjun goes wrong, a Hoysala arrives, Tony takes the pink coupe and the camera swoops behind the car straight into the chase (hold the skip button to skip). On the first drive, short hints teach driving, steering, drifting and looking around on the way to Tony's Jayanagar safehouse.
 
 Fonts are bundled inside the app (no download): Erica One for the logo, Big Shoulders Display for banners, Tektur for numbers and Nothing You Could Do for neon district names, all under the SIL Open Font License (see `licenses/`).
 

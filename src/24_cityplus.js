@@ -170,7 +170,7 @@ const TUT={i:-1,t:0,ok:0,el:null,steps:[
   {txt:'Follow the purple route home to Jayanagar',done:()=>false,max:7}]};
 function tutHint(txt){if(!TUT.el){const e=document.createElement('div');e.id='tutHint';e.style.cssText="position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;pointer-events:none;padding:6px 16px;border-radius:10px;background:rgba(8,6,16,.62);border:1px solid rgba(255,199,44,.6);font-family:WCDisplay,Impact,sans-serif;font-size:clamp(16px,3.2vw,22px);letter-spacing:.05em;text-transform:uppercase;color:#FFC72C;text-shadow:0 2px 0 #000;white-space:nowrap;transition:opacity .3s";document.body.appendChild(e);TUT.el=e;}
   TUT.el.textContent=txt||'';TUT.el.style.opacity=txt?'1':'0';}
-function tutTick(dt){if(profile.tut||state!=='play'||FOOT.on||FLY.on){if(TUT.el&&TUT.i>=0&&(state!=='play'))TUT.el.style.opacity='0';return;}
+function tutTick(dt){if(typeof CUT!=='undefined'&&CUT.on){if(TUT.el)TUT.el.style.opacity='0';return;}if(profile.tut||state!=='play'||FOOT.on||FLY.on){if(TUT.el&&TUT.i>=0&&(state!=='play'))TUT.el.style.opacity='0';return;}
   if(TUT.i<0){TUT.i=0;TUT.t=0;TUT.ok=0;const s=SAFES[0];if(s.rx!=null&&typeof setPin==='function'){try{setPin(s.rx,s.ry);WP.name='Your safehouse, Jayanagar';}catch(e){}}}
   const st=TUT.steps[TUT.i];if(!st){profile.tut=1;saveProfile();tutHint('');return;}
   tutHint(st.txt);TUT.t+=dt;if(st.done())TUT.ok+=dt;
