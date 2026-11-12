@@ -32,8 +32,8 @@ const lz=$('#lookZone');
 const lookK=()=>({low:.0045,med:.0075,high:.012}[settings.lookSens]||.0075);
 function lookBy(dx,dy){
   if(CAM.mode==='cockpit'){if(FOOT.on&&!FOOT.ride)P.h+=dx*lookK();return;}
-  if(CAM.free)CAM.yaw+=dx*lookK();else CAM.look=clamp((CAM.look||0)+dx*lookK(),-2.8,2.8);
-  CAM.pitch=clamp((CAM.pitch||0)-dy*.012,-.6,2.6);}
+  if(CAM.free)CAM.yaw+=dx*lookK();else CAM.look=angDiff(0,(CAM.look||0)+dx*lookK());
+  CAM.pitch=clamp((CAM.pitch||0)-dy*.012,-.9,3.4);CAM.lookRel=GT;}
 lz.addEventListener('pointerdown',e=>{if(LOOK.id!=null)return;e.preventDefault();try{lz.setPointerCapture(e.pointerId);}catch(_){}LOOK.id=e.pointerId;LOOK.x=e.clientX;LOOK.y=e.clientY;LOOK.t=performance.now();LOOK.moved=0;CAM.lookHeld=true;});
 lz.addEventListener('pointermove',e=>{if(e.pointerId!==LOOK.id)return;const dx=e.clientX-LOOK.x,dy=e.clientY-LOOK.y;LOOK.x=e.clientX;LOOK.y=e.clientY;LOOK.moved+=Math.abs(dx)+Math.abs(dy);if(state==='play')lookBy(dx,dy);});
 for(const ev of['pointerup','pointercancel','lostpointercapture'])lz.addEventListener(ev,e=>{if(e.pointerId!==LOOK.id)return;LOOK.id=null;CAM.lookHeld=false;
@@ -69,7 +69,7 @@ function padPoll(dt){
     PAD.wrote=true;
     const lx=AX(0),ly=AX(1),rx=AX(2),ry=AX(3);
     input.jx=lx;input.jy=-ly;
-    if(rx||ry){CAM.lookHeld=true;lookBy(rx*dt*340,ry*dt*200);}else CAM.lookHeld=false;
+    if(rx||ry){CAM.lookHeld=true;lookBy(rx*dt*340,ry*dt*200);}else if(CAM.lookHeld){CAM.lookHeld=false;CAM.lookRel=GT;}
     const dpL=B(14),dpR=B(15);input.L=dpL?1:0;input.R=dpR?1:0;
     if(FOOT.on&&!FOOT.ride){
       input.atk=B(7)?1:0;if(P1(7)&&LIFE.atkT<=0)doAttack();

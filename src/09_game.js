@@ -43,7 +43,7 @@ function enterWater(z){
 }
 function crash(rel,what,rashAdd){
   const k=clamp(rel/12,.2,1);Hap.crash();Snd.crash();CAM.shake=Math.max(CAM.shake,12*k);P.bounce=1;
-  const dmg=+(3+10*k).toFixed(1);damage(dmg);if(rel>9)lfDamage((rel-9)*(VEH[P.type].cat==='two'?3:1.4),'crash');
+  const dmg=+(3+10*k).toFixed(1);damage(dmg);if(rel>9)lfDamage(VEH[P.type].cat==='two'?(rel-9)*3:Math.min(5,(rel-9)*.3),'crash');
 }
 function hitPed(p){
   if(p.state==='static'&&p.kind==='vendor'){p.state='down';p.t=0;p.fall=hAng(p.x-P.x,p.y-P.y);p.cart=null;}
@@ -96,7 +96,8 @@ function updatePlayer(dt){
     const ox=P.x,oy=P.y;P.x+=P.vx*dt/n;P.y+=P.vy*dt/n;
     const sg=Math.sign(P.s||1);const px=P.x+fx*P.len*.5*sg,py=P.y+fy*P.len*.5*sg;
     if(inBuilding(px,py)||inBuilding(P.x,P.y)){if(slideWall(ox,oy,fx,fy,sg,n,dt))continue;P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
-    gQuery(W.tG,P.x,P.y,2.5,tq);let tree=null;for(const t of tq)if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*(t.pier?.42:.5))tree=t;
+    gQuery(W.tG,P.x,P.y,2.5,tq);let tree=null;for(const t of tq){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*(t.pier?.42:.5))tree=t;}
+      if(tree&&tree.pole&&Math.abs(P.s)>3.5){knockPole(tree.pole,P.vx,P.vy);P.s*=.62;damage(2);CAM.shake=Math.max(CAM.shake,4);tree=null;}
     if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>1.5){crash(rel,'Hit a tree!');if(!tree.pier&&!tree.col)damage(rel*1.3);}else Hap.rumble();break;}
   }
   /* stuck against a wall with the throttle open: put the vehicle back on the road */
@@ -568,8 +569,7 @@ function go(id){
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 let splashDone=false;
 function endSplash(){if(splashDone)return;splashDone=true;const s=$('#splash');s.style.transition='opacity .5s';s.style.opacity='0';setTimeout(()=>{s.hidden=true;},500);if(!gl){$('#glerr').hidden=false;return;}state='menu';show('title');}
-$('#splash').addEventListener('pointerdown',()=>{Snd.init();Snd.resume();endSplash();});
-setTimeout(endSplash,3900);
+
 function renderTitle(){
   const t=$('#titlebg'),c=t.getContext('2d');const w=t.clientWidth,h=t.clientHeight;if(!w)return;
   t.width=w;t.height=h;const r=mulberry32(77);const base=h*.78;

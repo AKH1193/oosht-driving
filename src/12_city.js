@@ -282,7 +282,8 @@ function cityChunk(sol,dec,mine,inC){
     const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;const hs=hash2(Math.round(s.ax*11),Math.round(s.ay*13))>>>0;const r=mulberry32(hs);
     const side=(hs&1)?1:-1,off=w.hw+3.0;const poles=[];
     for(let t=6+r()*8;t<s.len-4;t+=32){const x=s.ax+dx*t+dy*off*side,y=s.ay+dy*t-dx*off*side;if(inBuilding(x,y)||nearSignal(x,y,6)){poles.push(null);continue;}
-      sol.box(x,4.25,y,.24,8.5,.24,cem);colAdd(x,y,.22);sol.save();sol.tr(x,7.9,y);sol.rotY(-s.h);sol.box(0,0,0,1.6,.12,.12,cem);for(const q of[-.7,0,.7])sol.box(q,.13,0,.06,.14,.06,[.85,.85,.8]);sol.restore();
+      const pkey='pole'+Math.round(x*10)+'_'+Math.round(y*10);if(PDOWN.has(pkey)){poles.push(null);continue;}
+      sol.box(x,4.25,y,.24,8.5,.24,cem);gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),{x,y,r:.22,col:true,pole:{key:pkey,x,y,h:s.h},_q:0});sol.save();sol.tr(x,7.9,y);sol.rotY(-s.h);sol.box(0,0,0,1.6,.12,.12,cem);for(const q of[-.7,0,.7])sol.box(q,.13,0,.06,.14,.06,[.85,.85,.8]);sol.restore();
       if(poles.length%4===2){sol.box(x-dy*side*.55,5.2,y+dx*side*.55,.9,1.2,.7,[.4,.42,.4]);sol.box(x-dy*side*.55,4.4,y+dx*side*.55,1,.12,.8,[.3,.3,.3]);}
       poles.push([x,y]);}
     for(let i=1;i<poles.length;i++){const a=poles[i-1],b=poles[i];if(!a||!b)continue;const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const h=hAng(b[0]-a[0],b[1]-a[1]);

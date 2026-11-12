@@ -150,6 +150,12 @@ button:focus-visible{outline:2px solid var(--auto-yellow);outline-offset:2px}
 #misHud{position:absolute;left:50%;top:calc(138px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:6px 14px;text-align:center;max-width:min(460px,52vw);border-color:rgba(255,199,44,.6)}
 #misHud b{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--auto-yellow)}#mhObj{font-weight:700;font-size:14px}#mhSub{font-size:12px;color:var(--muted)}
 #msList .btn{min-height:44px}
+#radioChip{position:absolute;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:5px 14px;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none;opacity:.85}
+#radioChip i{font-style:normal;color:var(--auto-yellow)}
+#btnRadio{font-size:10px;letter-spacing:.06em}
+#intro{position:absolute;inset:0;width:100%;height:100%;display:block}
+#splash .tap{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:rgba(237,235,228,.55);font-size:12px;letter-spacing:.2em;font-family:var(--ui)}
+#splash .ttl{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;mix-blend-mode:screen}
 button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
 #padChip{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap}
 
@@ -185,12 +191,12 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
 .scrim{background:radial-gradient(ellipse at center,rgba(13,17,22,.6),rgba(13,17,22,.93))}
 
 #splash{background:#000;flex-direction:column;gap:14px;z-index:50;cursor:pointer}
-#splash .l1{font-family:var(--ui);font-weight:600;font-size:clamp(18px,3.6vw,30px);letter-spacing:.42em;color:#EDEBE4;opacity:0;animation:spl1 3.6s ease forwards;text-align:center;padding-left:.42em}
-#splash .l2{font-family:var(--display);font-size:clamp(14px,2.6vw,22px);letter-spacing:.18em;color:var(--auto-yellow);opacity:0;animation:spl2 3.6s ease forwards;text-align:center}
-#splash .rule{width:0;height:2px;background:var(--auto-green);animation:rule 3.6s ease forwards}
-@keyframes spl1{0%{opacity:0;letter-spacing:.7em}22%{opacity:1;letter-spacing:.42em}85%{opacity:1}100%{opacity:0}}
-@keyframes spl2{0%,30%{opacity:0;transform:translateY(6px)}48%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}
-@keyframes rule{0%,18%{width:0}45%{width:min(46vw,380px)}85%{opacity:1}100%{opacity:0;width:min(46vw,380px)}}
+#splash .l1{text-shadow:0 0 18px rgba(255,199,44,.55),0 0 2px rgba(255,255,255,.6);font-family:var(--ui);font-weight:600;font-size:clamp(18px,3.6vw,30px);letter-spacing:.42em;color:#EDEBE4;opacity:0;animation:spl1 6.4s ease forwards;text-align:center;padding-left:.42em}
+#splash .l2{font-family:var(--display);font-size:clamp(14px,2.6vw,22px);letter-spacing:.18em;color:var(--auto-yellow);opacity:0;animation:spl2 6.4s ease forwards;text-align:center}
+#splash .rule{width:0;height:2px;background:var(--auto-green);animation:rule 6.4s ease forwards}
+@keyframes spl1{0%,38%{opacity:0;letter-spacing:.9em;filter:blur(6px)}58%{opacity:.88;letter-spacing:.42em;filter:blur(0)}88%{opacity:.88}100%{opacity:0}}
+@keyframes spl2{0%,52%{opacity:0;transform:translateY(8px)}66%{opacity:.82;transform:none}88%{opacity:.82}100%{opacity:0}}
+@keyframes rule{0%,46%{width:0}62%{width:min(46vw,380px)}88%{opacity:.8}100%{opacity:0;width:min(46vw,380px)}}
 @media (prefers-reduced-motion:reduce){#splash .l1,#splash .l2,#splash .rule{animation-duration:.01s;opacity:1;width:min(46vw,380px)}}
 
 #title{flex-direction:column;gap:16px;background:linear-gradient(180deg,#1B1B3A 0%,#5A2D4F 46%,#E8875A 78%,#F6C48B 100%)}
@@ -331,6 +337,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
       <button class="abtn atk hit" id="btnAtk">HIT</button>
     </div>
     <div class="ctl-act">
+      <button class="abtn hit" id="btnRadio" hidden>RADIO</button>
       <button class="abtn hit" id="btnExit">EXIT</button>
     </div>
     <button class="usebtn hit" id="btnUse" hidden>Get in</button>
@@ -341,6 +348,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
     </div>
     <div class="panel" id="padChip" hidden>Controller · A jump · X run · RT fire / gas · Y use · B exit</div>
     <div class="panel" id="wpChip" hidden></div>
+    <div class="panel" id="radioChip" hidden></div>
     <div class="panel" id="misHud" hidden><b id="mhTitle"></b><div id="mhObj"></div><div id="mhSub"></div></div>
     <div class="attrib" id="attrib">© OpenStreetMap contributors</div>
   </div>
@@ -544,8 +552,12 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
   </div>
 
   <div class="screen" id="splash">
-    <div class="l1">AN ANIRUDH PRODUCTION</div>
-    <div class="rule"></div>
-    <div class="l2">(ARK CREATIONS)</div>
+    <canvas id="intro"></canvas>
+    <div class="ttl">
+      <div class="l1">AN ANIRUDH PRODUCTION</div>
+      <div class="rule"></div>
+      <div class="l2">(ARK CREATIONS)</div>
+    </div>
+    <div class="tap" id="introTap">TAP FOR SOUND</div>
   </div>
 </div>

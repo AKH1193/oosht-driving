@@ -24,7 +24,15 @@ Every house and building has a door or gate, and you can walk in: family homes, 
 
 People talk as you pass (in Kannada when the phone has a Kannada voice, otherwise in Kanglish): men, women, kids, elders and vendors. Pickpockets work the crowds, people argue and come to blows, drivers get out for road rage, and some carry guns and will shoot back. Catch or knock down a thief (red marker) for a ₹10,000 police reward.
 
+## Sound and music
+
+The game opens on a night city: a car tears past, gunshots ring out, and AN ANIRUDH PRODUCTION (ARK CREATIONS) lands over it with a boom and vibration. Menus have their own music. In cars, autos, buses and lorries the RADIO button cycles six stations (Kannada film hits, electronic, Carnatic, dollu folk, lo-fi and a talk station with traffic updates) and off; keyboard R. The city has distant traffic, horns, birds by day and dogs at night.
+
 ## Street life
+
+- Inside a car, bus or auto you only take minor injuries; two-wheelers still hurt.
+- Electric poles fall when you hit them, with sparks. Badly damaged vehicles smoke; scraping walls throws sparks.
+- Swipe (or the controller's right stick) to look all the way round from a vehicle; the view settles back a few seconds after you stop.
 
 - Metro stations: walk up the staircases onto the platform, and tap Take the metro there.
 - Crashes hurt: you fall and get up, a hard bike crash throws you off, and people and you bleed when hit or shot.

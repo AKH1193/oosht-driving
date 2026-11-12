@@ -254,7 +254,7 @@ function setupCamera(dt,P,V,model){
   /* on foot the camera stays where you put it (swipe to turn it); in vehicles it follows the heading, plus a swipe offset that springs back */
   CAM.free=FOOT.on&&!FOOT.ride&&!METRO.ride&&CAM.mode!=='cockpit';
   if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
-  if(CAM.free||CAM.mode==='cockpit')CAM.look=0;else if(!CAM.lookHeld)CAM.look=(CAM.look||0)*Math.pow(.25,dt);
+  if(CAM.free||CAM.mode==='cockpit')CAM.look=0;else if(!CAM.lookHeld&&GT-(CAM.lookRel||0)>2.5){CAM.look=angDiff(0,CAM.look||0)*Math.pow(.2,dt);CAM.pitch=(CAM.pitch||0)*Math.pow(.2,dt);}
   const yawC=CAM.yaw+(CAM.look||0),cyx=Math.sin(yawC),cyz=-Math.cos(yawC);
   const sh=CAM.shake;const jx=(Math.random()-.5)*sh*.08,jy=(Math.random()-.5)*sh*.08;
   const bump=P.bounce*.12+P.air*.6;
