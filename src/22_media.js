@@ -100,30 +100,17 @@ function introSound(k){const c=Snd.ctx;if(!c||c.state!=='running')return;const t
     for(const[m,d]of[[62,0],[69,.05],[74,.1]]){const o2=c.createOscillator(),g2=c.createGain();o2.type='sawtooth';o2.frequency.value=mtof(m);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1400;o2.connect(lp);lp.connect(g2);g2.connect(Snd.master);env(g2,t+d,.6,.06,1,.5,1.6);o2.start(t+d);o2.stop(t+d+3.3);}}}
 function introRun(){
   const cv=$('#intro'),c=cv.getContext('2d');const dpr=Math.min(2,devicePixelRatio||1);const w=cv.clientWidth*dpr,h=cv.clientHeight*dpr;cv.width=w;cv.height=h;
-  const r=mulberry32(9);const blds=[];for(let x=0;x<w;){const bw=(26+r()*70)*dpr,bh=h*(.12+r()*.42);blds.push({x,bw,bh,win:[...Array(14)].map(()=>r()<.45)});x+=bw+r()*6*dpr;}
-  const shots=[2.15,2.35,2.6];INTRO.ev=[[.25,'rev'],...shots.map(t=>[t,'shot']),[3.25,'boom']];INTRO.t0=performance.now();
-  const frame=()=>{if(INTRO.done)return;const t=(performance.now()-INTRO.t0)/1000;
-    while(INTRO.ev.length&&INTRO.ev[0][0]<=t){const k=INTRO.ev.shift()[1];introSound(k);if(k==='shot')Hap.play([0,40],[0,255],true);if(k==='boom')Hap.play([0,90,60,200],[0,255,0,140],true);if(k==='rev')Hap.play([0,500],[0,70],true);}
-    const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#05070C');sky.addColorStop(.7,'#141A2A');sky.addColorStop(1,'#2A1F1A');c.fillStyle=sky;c.fillRect(0,0,w,h);
-    const base=h*.8;for(const b of blds){c.fillStyle='#0A0D14';c.fillRect(b.x,base-b.bh,b.bw,b.bh);c.fillStyle='rgba(255,199,90,.55)';
-      for(let i=0;i<b.win.length;i++)if(b.win[i]){const cx=b.x+(4+(i%3)*(b.bw-10)/3)*1,cy=base-b.bh+8*dpr+Math.floor(i/3)*16*dpr;if(cy<base-6*dpr)c.fillRect(cx,cy,5*dpr,7*dpr);}}
-    c.fillStyle='#07090D';c.fillRect(0,base,w,h-base);c.fillStyle='rgba(255,199,44,.5)';for(let x=(-(t*900*dpr))%(80*dpr);x<w;x+=80*dpr)c.fillRect(x,base+(h-base)*.45,36*dpr,3*dpr);
-    /* a car's lights sweeping across */
-    if(t>.2&&t<1.9){const k=(t-.2)/1.7,x=-w*.2+k*w*1.4,y=base+(h-base)*.3;const g=c.createRadialGradient(x,y,0,x,y,w*.25);g.addColorStop(0,'rgba(255,245,215,.9)');g.addColorStop(.25,'rgba(255,230,170,.25)');g.addColorStop(1,'rgba(0,0,0,0)');
-      c.fillStyle=g;c.fillRect(0,0,w,h);c.fillStyle='rgba(255,40,30,.8)';c.fillRect(x-w*.12,y-2*dpr,10*dpr,5*dpr);}
-    /* muzzle flashes */
-    for(const s of shots)if(t>s&&t<s+.09){const x=w*(.3+((s*7)%1)*.4),y=base-h*.18;const g=c.createRadialGradient(x,y,0,x,y,h*.35);g.addColorStop(0,'rgba(255,240,180,1)');g.addColorStop(.2,'rgba(255,160,40,.5)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,w,h);}
-    /* the credit lands with a flash */
-    if(t>3.2&&t<3.7){c.fillStyle=`rgba(255,240,210,${.55*(1-(t-3.2)/.5)})`;c.fillRect(0,0,w,h);}
-    c.fillStyle=`rgba(0,0,0,${t>3.2?Math.min(.45,(t-3.2)*.6):0})`;c.fillRect(0,0,w,h);
-    if(t>6.4){if(introMovie(c,w,h,dpr,t-6.4)){introEnd();return;}}requestAnimationFrame(frame);};
-  requestAnimationFrame(frame);}
+  MOV.started=false;INTRO.t0=performance.now();
+  const go=()=>{INTRO.t0=performance.now();MOV.started=false;const frame=()=>{if(INTRO.done)return;const t=(performance.now()-INTRO.t0)/1000;let end=false;try{end=introFilm(c,w,h,dpr,t);}catch(e){console.error(e);end=true;}if(end){introEnd();return;}requestAnimationFrame(frame);};requestAnimationFrame(frame);};
+  /* wait (briefly) for the game fonts so the first titles never flash in a fallback face */
+  const fl=document.fonts&&document.fonts.load?Promise.all(['WCDisplay','WCLogo','WCScript','WCHud'].map(f=>document.fonts.load(`40px ${f}`))):Promise.resolve();
+  Promise.race([fl,new Promise(r=>setTimeout(r,700))]).then(go,go);}
 function introEnd(){if(INTRO.done)return;INTRO.done=true;endSplash();setTimeout(()=>menuMusic(),400);}
-$('#splash').addEventListener('pointerdown',()=>{Snd.init();const was=Snd.ctx&&Snd.ctx.state==='running';Snd.resume();$('#introTap').hidden=true;
-  if(!was&&(performance.now()-INTRO.t0)/1000<6.4){INTRO.t0=performance.now();INTRO.ev=[[.25,'rev'],[2.15,'shot'],[2.35,'shot'],[2.6,'shot'],[3.25,'boom']];
-    for(const el of document.querySelectorAll('#splash .l1,#splash .l2,#splash .rule')){el.style.animation='none';void el.offsetWidth;el.style.animation='';}}});
+$('#splash').addEventListener('pointerdown',()=>{Snd.init();const was=Snd.ctx&&Snd.ctx.state==='running';Snd.resume();$('#introTap').hidden=true;const t=(performance.now()-INTRO.t0)/1000;
+  if(t>LOGO_AT+.8){introEnd();return;}
+  if(!was&&t<5.6){INTRO.t0=performance.now();MOV.started=false;}});
 Snd.init();setTimeout(()=>{if(Snd.ctx&&Snd.ctx.state==='running')$('#introTap').hidden=true;},300);
-introRun();
+setTimeout(introRun,0);
 
 /* ---------- menu music: plays on every screen outside the game ---------- */
 function menuMusic(){if(!Snd.ctx)return;MUS.menu=true;musPlay(MENU_THEME,.22);}

@@ -233,7 +233,7 @@ $('#hsBtn').addEventListener('click',()=>{
   COP.list=[];COP.level=0;COP.off=[];COP.caughtT=0;COP.lostT=0;COP.pedHit=false;LIFE.copPeds=[];$('#wanted').hidden=true;
   LIFE.dead=false;LIFE.hp=100;LIFE.drunk=0;
   const q=LIFE.hospAt;if(q){const n=nearestSeg(q.x,q.y,80,s=>!s.w.br);if(n.seg){const s=n.seg;const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;const t=clamp((q.x-s.ax)*dx+(q.y-s.ay)*dy,0,s.len);const[x,y]=segPt(s,t,s.w.hw+1.3);P.x=x;P.y=y;P.h=s.h;}}
-  state='play';goFoot(null,true);FOOT.parked=profile.seized?null:pk;FOOT.stam=maxStam()*.6;toast('Discharged. Take it easy.','good');
+  state='play';goFoot(null,true);FOOT.parked=profile.seized?null:pk;FOOT.stam=maxStam()*.6;toast('Discharged. Take it easy, Tony.','good');
 });
 
 /* ---------- fighting ---------- */

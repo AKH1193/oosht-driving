@@ -25,10 +25,10 @@ function cityPlusPlace(){
 function districtAt(x,y){let best=null,bk=1e9;for(const d of DISTRICTS)for(const c of d.w){if(!c)continue;const k=Math.hypot(c.x-x,c.y-y)/c.r;if(k<1&&k<bk){bk=k;best=d;}}return best;}
 function distBanner(d){
   if(!DIST.ban){const b=document.createElement('div');b.id='distBan';
-    b.style.cssText='position:fixed;left:0;right:0;top:26%;text-align:center;pointer-events:none;z-index:40;opacity:0;transition:opacity .8s;font-family:Roboto,Arial,sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.75)';
-    b.innerHTML='<div class="dn" style="font-weight:900;font-size:clamp(22px,4.6vw,38px);letter-spacing:.04em;font-style:italic"></div><div class="dt" style="font-weight:600;font-size:clamp(12px,2.6vw,16px);letter-spacing:.22em;text-transform:uppercase;color:#fff;opacity:.85;margin-top:2px"></div>';
+    b.style.cssText='position:fixed;left:0;right:0;top:24%;text-align:center;pointer-events:none;z-index:40;opacity:0;transition:opacity .8s;font-family:Roboto,Arial,sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.75)';
+    b.innerHTML='<div class="dn" style="font-family:WCScript,cursive;font-size:clamp(34px,7vw,60px);line-height:1.1;transform:rotate(-4deg);-webkit-text-stroke:1px rgba(10,4,20,.8);paint-order:stroke fill"></div><div class="dt" style="font-family:WCDisplay,Impact,sans-serif;font-size:clamp(14px,3vw,20px);letter-spacing:.24em;text-transform:uppercase;color:#fff;margin-top:4px;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.6)"></div>';
     document.body.appendChild(b);DIST.ban=b;}
-  const b=DIST.ban;b.querySelector('.dn').textContent=d?d.name:'Greater Bengaluru';b.querySelector('.dn').style.color=d?d.col:'#E8EEF5';
+  const b=DIST.ban;b.querySelector('.dn').textContent=d?d.name:'Greater Bengaluru';{const col=d?d.col:'#E8EEF5',dn=b.querySelector('.dn');dn.style.color=col;dn.style.textShadow=`0 0 6px ${col},0 0 18px ${col},0 0 36px ${col}`;}
   b.querySelector('.dt').textContent=d?d.tag:'Open roads';b.style.opacity='1';clearTimeout(DIST.bt);DIST.bt=setTimeout(()=>{b.style.opacity='0';},3200);
 }
 
@@ -74,7 +74,7 @@ const SAFES=[
   {id:'kora',name:'Koramangala 5th Block flat',lat:12.9345,lon:77.6190,price:45000},
   {id:'mg',name:'MG Road penthouse',lat:12.9752,lon:77.6070,price:120000},
 ];
-if(!profile.safe)profile.safe=['jaya'];
+if(!profile.safe)profile.safe=['jaya'];profile.name='Tony';
 for(const s of SAFES){const p=ll2wSafe(s.lat,s.lon);if(p){s.x=s.rx=p[0];s.y=s.ry=p[1];}}
 const owned=s=>profile.safe.includes(s.id);
 function safeSnap(){for(const s of SAFES){if(s.snapped||s.rx==null||Math.hypot(s.rx-P.x,s.ry-P.y)>500)continue;
@@ -88,9 +88,9 @@ function safeUse(s){
   if(!owned(s)){misModal(s.name,`Buy this safehouse for ₹${s.price.toLocaleString('en-IN')}?\nRest here to heal, lie low from the police and save.\nWallet: ₹${Math.floor(profile.wallet).toLocaleString('en-IN')}`,
     [{label:'Buy',fn:()=>{if(profile.wallet<s.price){toast('Not enough money','bad');return;}profile.wallet-=s.price;profile.safe.push(s.id);saveProfile();toast(`${s.name} is yours`,'gold');Snd.chime();}},{label:'Not now',fn:()=>{}}]);return;}
   const copNear=COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<30);
-  misModal(s.name,copNear?'The police are right behind you. Lose them first.':'Home sweet home.\nRest to heal fully and lie low. The game is saved here.',
+  misModal(s.name,copNear?'The police are right behind you. Lose them first.':'Welcome home, Tony.\nRest to heal fully and lie low. The game is saved here.',
     copNear?[{label:'OK',fn:()=>{}}]:[{label:'Rest & save',fn:()=>{LIFE.hp=100;FOOT.stam=maxStam();if(COP.list.length||COP.level)escaped();LIFE.drunk=0;LIFE.high=0;
-      profile.lastLoc={lat:w2ll(s.x,s.y)[0],lon:w2ll(s.x,s.y)[1],label:s.name};saveProfile();toast('Rested · health full · game saved','good');Snd.chime();}},{label:'Leave',fn:()=>{}}]);
+      profile.lastLoc={lat:w2ll(s.x,s.y)[0],lon:w2ll(s.x,s.y)[1],label:s.name};saveProfile();toast('Tony rested · health full · game saved','good');Snd.chime();}},{label:'Leave',fn:()=>{}}]);
 }
 
 /* ---------- stunt ramps on long main roads ---------- */
@@ -160,3 +160,20 @@ DIST.cur=undefined;
 {const _sd=startDrive;startDrive=async function(loc){const r=await _sd(loc);try{cityPlusPlace();DIST.cur=undefined;}catch(e){}return r;};}
 
 Object.assign(window.__oosht||{},{getAgents:()=>agents,findContext:()=>findContext(),LANDMARKS,SAFES,RAMPS,DISTRICTS,DIST,rampScan,rampAt,safeUse,cityPlusPlace,districtAt,distBanner});
+
+/* ---------- first drive: learn the controls on the way to your safehouse ---------- */
+const TUT={i:-1,t:0,ok:0,el:null,steps:[
+  {txt:'Tony, hold GO to drive',done:()=>P.s>3},
+  {txt:'Push the joystick left or right to steer',done:()=>Math.abs(P.steer)>.35},
+  {txt:'Hold BRAKE while steering to drift',done:()=>P.drift},
+  {txt:'Swipe the screen to look around',done:()=>CAM.lookRel&&GT-CAM.lookRel<.8},
+  {txt:'Follow the purple route home to Jayanagar',done:()=>false,max:7}]};
+function tutHint(txt){if(!TUT.el){const e=document.createElement('div');e.id='tutHint';e.style.cssText="position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;pointer-events:none;padding:6px 16px;border-radius:10px;background:rgba(8,6,16,.62);border:1px solid rgba(255,199,44,.6);font-family:WCDisplay,Impact,sans-serif;font-size:clamp(16px,3.2vw,22px);letter-spacing:.05em;text-transform:uppercase;color:#FFC72C;text-shadow:0 2px 0 #000;white-space:nowrap;transition:opacity .3s";document.body.appendChild(e);TUT.el=e;}
+  TUT.el.textContent=txt||'';TUT.el.style.opacity=txt?'1':'0';}
+function tutTick(dt){if(profile.tut||state!=='play'||FOOT.on||FLY.on){if(TUT.el&&TUT.i>=0&&(state!=='play'))TUT.el.style.opacity='0';return;}
+  if(TUT.i<0){TUT.i=0;TUT.t=0;TUT.ok=0;const s=SAFES[0];if(s.rx!=null&&typeof setPin==='function'){try{setPin(s.rx,s.ry);WP.name='Your safehouse, Jayanagar';}catch(e){}}}
+  const st=TUT.steps[TUT.i];if(!st){profile.tut=1;saveProfile();tutHint('');return;}
+  tutHint(st.txt);TUT.t+=dt;if(st.done())TUT.ok+=dt;
+  if(TUT.ok>.4||TUT.t>(st.max||14)){if(TUT.ok>.4){Snd.tone&&Snd.tone([880],.08,'triangle',.08);}TUT.i++;TUT.t=0;TUT.ok=0;}}
+{const _lu2=lifeUpdate;lifeUpdate=function(dt){_lu2(dt);try{tutTick(dt);}catch(e){}};}
+Object.assign(window.__oosht||{},{TUT});
