@@ -110,6 +110,10 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 - `app/src/main/assets/www/sounds/` takes optional real engine and horn recordings; see the README there.
 - `app/src/main/java/.../MainActivity.kt` is the Android shell: full-screen landscape WebView, GPS prompt, and vibration with strength control.
 
+## Roads and controls
+
+Main roads are wide avenues (about 18 to 21 m) with dark, clean asphalt, tyre-wear tracks, lane dashes and a planted centre median you can drive through. Trees, lamp posts, poles, planters and parked vehicles are kept out of every driving lane. Steering can be the joystick, on-screen arrows or tilt. The context button shows an icon for what it does; you can sit on bus-stop benches (heals, and hides you at low wanted levels) and climb onto buses. Pause > Get unstuck puts you back on open road.
+
 ## Intro and typography
 
 You play as Tony. The intro is drawn live in code (no video file): the production credit with gunshots and a neon sign, then a game-styled trailer with the real HUD (cash, wanted stars, speedometer, minimap), Tony's name card, a radio voice, a stunt jump, MISSION PASSED and the WISE CITY logo over a synthwave Bengaluru. Skip at any time; tap on the logo to go straight to the menu. The first time you press Play, a live opening runs in the real 3D city: an aerial sweep over MG Road, Tony's deal with Arjun goes wrong, a Hoysala arrives, Tony takes the pink coupe and the camera swoops behind the car straight into the chase (hold the skip button to skip). On the first drive, short hints teach driving, steering, drifting and looking around on the way to Tony's Jayanagar safehouse.

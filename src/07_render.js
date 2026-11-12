@@ -4,7 +4,7 @@ const CHUNKS=new Map();
 const COL={
   ground:[.48,.45,.38],park:[.33,.5,.26],wood:[.25,.42,.22],field:[.45,.55,.3],water:[.2,.36,.44],
   walk:[.6,.58,.54],curb:[.75,.74,.7],
-  road:{motorway:[.27,.28,.3],trunk:[.28,.29,.31],primary:[.29,.3,.32],secondary:[.31,.31,.33],tertiary:[.33,.33,.34],unclassified:[.37,.36,.35],residential:[.38,.37,.36],living_street:[.42,.41,.39],service:[.44,.43,.41]},
+  road:{motorway:[.21,.22,.245],trunk:[.215,.225,.25],primary:[.22,.23,.255],secondary:[.24,.245,.265],tertiary:[.27,.272,.285],unclassified:[.32,.315,.31],residential:[.33,.325,.32],living_street:[.38,.37,.355],service:[.4,.39,.375]},
   paint:[.9,.88,.82],yellow:[.92,.75,.15],pot:[.12,.11,.1],potRim:[.3,.29,.27],puddle:[.32,.29,.22],
   trunk:[.36,.27,.2],
 };
@@ -105,6 +105,12 @@ function buildChunk(cx,cy){
   for(const s of mine)ribbon(asp,s.ax,s.ay,s.bx,s.by,s.w.hw,COL.road[s.w.cls],0,7);
   const vs=[...verts.values()].sort((a,b)=>RANK[a.cls]-RANK[b.cls]);
   for(const v of vs)gdisc(asp,v.x,v.y,v.hw,COL.road[v.cls],12,7);
+  /* subtle tyre-wear tracks down the middle of each lane on main roads */
+  for(const s of mine){const w=s.w;if(RANK[w.cls]<2||w.br||s.len<10)continue;const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len,nx=-dy,ny=dx;
+    const jA=isJunction(w.nodes[s.i]),jB=isJunction(w.nodes[s.i+1]);const t0=jA?w.hw+1.5:0,t1=s.len-(jB?w.hw+1.5:0);if(t1-t0<4)continue;
+    const c0=COL.road[w.cls],dk=[c0[0]*.84,c0[1]*.84,c0[2]*.85];const med=!w.oneway&&w.hw>=8.5;
+    const lanes=w.oneway?[-w.hw*.45,w.hw*.45]:med?[.6+(w.hw-.6)*.25,.6+(w.hw-.6)*.75,-(.6+(w.hw-.6)*.25),-(.6+(w.hw-.6)*.75)]:[w.hw*.5,-w.hw*.5];
+    for(const o of lanes)for(const q of[-.8,.8])ribbon(asp,s.ax+dx*t0+nx*(o+q),s.ay+dy*t0+ny*(o+q),s.ax+dx*t1+nx*(o+q),s.ay+dy*t1+ny*(o+q),.28,dk,0,7);}
   /* lane paint */
   const sigNear=[];gQuery(W.sigG,x0+CH/2,y0+CH/2,CH,sigNear);
   const nearSig=(x,y)=>sigNear.some(S=>Math.hypot(S.x-x,S.y-y)<S.R+2);
@@ -112,7 +118,8 @@ function buildChunk(cx,cy){
     const w=s.w;const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len,nx=-dy,ny=dx;
     const jA=isJunction(w.nodes[s.i]),jB=isJunction(w.nodes[s.i+1]);
     const t0=jA?w.hw+3:0,t1=s.len-(jB?w.hw+3:0);
-    if(RANK[w.cls]>=2&&!w.oneway){for(let t=t0+((s.ax*7+s.ay*3)%3+3)%3;t+3<t1;t+=7.5){const ax=s.ax+dx*t,ay=s.ay+dy*t;if(nearSig(ax,ay))continue;ribbon(mrk,ax,ay,ax+dx*3,ay+dy*3,.08,COL.paint);}}
+    if(RANK[w.cls]>=2&&!w.oneway){const med=w.hw>=8.5&&!w.br&&s.len>=24;/* with a planted median the dashes split the two lanes on each side */
+      for(const o of med?[.6+(w.hw-.6)*.5,-(.6+(w.hw-.6)*.5)]:[0])for(let t=t0+((s.ax*7+s.ay*3)%3+3)%3;t+3<t1;t+=7.5){const ax=s.ax+dx*t+nx*o,ay=s.ay+dy*t+ny*o;if(nearSig(ax,ay))continue;ribbon(mrk,ax,ay,ax+dx*3,ay+dy*3,.08,COL.paint);}}
     if(RANK[w.cls]>=3&&t1-t0>2){for(const sd of[-1,1]){const o=sd*(w.hw-.35);ribbon(mrk,s.ax+dx*t0+nx*o,s.ay+dy*t0+ny*o,s.ax+dx*t1+nx*o,s.ay+dy*t1+ny*o,.06,COL.paint);}}
     if(w.oneway&&RANK[w.cls]>=1&&s.len>30){const t=s.len/2,cx2=s.ax+dx*t,cy2=s.ay+dy*t;const sg=w.rev?-1:1;
       ribbon(mrk,cx2-dx*sg*1.6,cy2-dy*sg*1.6,cx2+dx*sg*.6,cy2+dy*sg*.6,.12,COL.paint);
@@ -165,6 +172,16 @@ function buildChunk(cx,cy){
       sol.rtri([ax,h,ay],[bx,h,by],[bx,h+.5,by],roof,out,[.01,.01,.01,.01,.01,.01]);sol.rtri([ax,h,ay],[bx,h+.5,by],[ax,h+.5,ay],roof,out,[.01,.01,.01,.01,.01,.01]);}}
     if(b.tank){const tx=b.cx+(b.minx-b.cx)*.45,ty=b.cy+(b.miny-b.cy)*.45;if(inPoly(tx,ty,p)){sol.cyl(tx,h+.75,ty,.6,1.1,'y',10,[.08,.08,.09]);sol.box(tx,h+.1,ty,1.1,.2,1.1,[.5,.5,.5]);}}
   }
+  /* centre median on two-way avenues: low painted kerb, soil bed, saplings and shrubs every 4.5 m (drive-through, no collision) */
+  for(const s of mine){const w=s.w;if(w.br||w.oneway||w.hw<8.5||s.len<24)continue;
+    const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len,nx=-dy,ny=dx,h=hAng(dx,dy);const jA=isJunction(w.nodes[s.i]),jB=isJunction(w.nodes[s.i+1]);
+    const t0=jA?w.hw+9:2,t1=jB?s.len-w.hw-9:s.len-2;if(t1-t0<6)continue;const rnd=mulberry32(hash2(Math.round(s.ax*7),Math.round(s.ay*7)));
+    for(let t=t0;t<t1;t+=3){const L=Math.min(3,t1-t),cx=s.ax+dx*(t+L/2),cy=s.ay+dy*(t+L/2);const k=Math.floor(t/3)%2;
+      sol.save();sol.tr(cx,0,cy);sol.rotY(-h);sol.box(0,.09,0,1.2,.18,L,k?[.95,.78,.1]:[.12,.12,.12]);sol.box(0,.185,0,.9,.02,L,[.26,.2,.14]);sol.restore();}
+    for(let t=t0+2;t<t1-1;t+=4.5){const x=s.ax+dx*t,y=s.ay+dy*t,v=Math.floor(t/4.5)%3;
+      if(v===0){sol.blob(x,.55,y,.42,.42,.42,[.18,.46,.22]);sol.blob(x+.1,.75,y-.05,.25,.22,.25,[.85,.22,.55]);}
+      else if(v===1){sol.cyl(x,.7,y,.06,1.2,'y',6,[.42,.32,.2]);for(let i=0;i<5;i++){const a=i/5*TAU+rnd();sol.blob(x+Math.cos(a)*.38,1.3,y+Math.sin(a)*.38,.36,.08,.18,[.22,.55,.24]);}}
+      else{sol.blob(x,.45,y,.5,.32,.5,[.2,.5,.25]);}}}
   /* trees and street lamps along the roads */
   const trees=[];
   for(const s of mine){const w=s.w;if(w.br)continue;const rk=RANK[w.cls];
@@ -174,10 +191,10 @@ function buildChunk(cx,cy){
     const jA=isJunction(w.nodes[s.i]),jB=isJunction(w.nodes[s.i+1]);
     for(let t=4+rnd()*10;t<s.len-4;t+=14+rnd()*12){if((jA&&t<w.hw+8)||(jB&&t>s.len-w.hw-8))continue;
       for(const sd of[-1,1]){if(rnd()>pTree)continue;const off=w.hw+2.5+rnd()*.8;const x=s.ax+dx*t+nx*off*sd,y=s.ay+dy*t+ny*off*sd;
-        if(inBuilding(x,y)||inBuilding(x+nx*sd*2,y+ny*sd*2))continue;if(nearSignal(x,y,4))continue;
+        if(inBuilding(x,y)||inBuilding(x+nx*sd*2,y+ny*sd*2))continue;if(nearSignal(x,y,4)||!roadClear(x,y,2.2))continue;
         const sh=hash2(Math.round(x*10),Math.round(y*10));treeAt(sol,x,y,(sh%1000)/1000,sh);trees.push({x,y,_q:0});glowQuad(shad,x,y,3.4,[0,0,0],.03);}}
     if(rk>=1&&w.cls!=='service'){const gap=rk>=3?30:38;let side=1;
-      for(let t=gap*.5+rnd()*6;t<s.len-3;t+=gap){side=-side;const off=w.hw+1.0;const x=s.ax+dx*t+nx*off*side,y=s.ay+dy*t+ny*off*side;if(nearSignal(x,y,2))continue;
+      for(let t=gap*.5+rnd()*6;t<s.len-3;t+=gap){side=-side;const off=w.hw+1.0;const x=s.ax+dx*t+nx*off*side,y=s.ay+dy*t+ny*off*side;if(nearSignal(x,y,2)||!roadClear(x,y,.5))continue;
         lampAt(sol,x,y,-nx*side,-ny*side);glowQuad(glow,x-nx*side*1.6,y-ny*side*1.6,8.5,[1,.78,.5]);}}
   }
   for(const t of trees)gAdd(W.tG,Math.floor(t.x/CELL),Math.floor(t.y/CELL),t);

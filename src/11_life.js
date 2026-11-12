@@ -566,7 +566,7 @@ function lifeHud(){
   const w=WPN[LIFE.cur];$('#wpnChip').textContent=w.name+(w.gun?` · ${profile.inv.ammo[w.gun]||0}`:'');$('#wpnChip').hidden=!onFoot;
   const carry=!!(FOOT.job&&FOOT.job.carry);$('#btnAtk').hidden=!onFoot||carry||!!METRO.ride;$('#btnJump').hidden=!onFoot||carry||!!METRO.ride;$('#btnRun').hidden=!onFoot||carry||!!METRO.ride;$('#btnHorn').hidden=FOOT.on;$('#carry').hidden=!carry;if(carry)$('#carry').textContent='Carrying a sack · walk it over';$('#btnAtk').textContent=w.gun?'FIRE':'HIT';
   $('#btnExit').hidden=FOOT.on;
-  const u=$('#btnUse');const c=onFoot?LIFE.ctx:null;u.hidden=!c;if(c&&u.textContent!==c.label)u.textContent=c.label;
+  const u=$('#btnUse');const c=onFoot?LIFE.ctx:null;u.hidden=!c;if(c&&u.dataset.l!==c.label){u.dataset.l=c.label;u.innerHTML=ctxIcon(c)+'<span>'+c.label.replace(/[<>&]/g,'')+'</span>';}
   $('#drunkChip').hidden=LIFE.drunk<=0;
 }
 hold($('#btnAtk'),()=>{input.atk=1;if(LIFE.atkT<=0&&state==='play')doAttack();},()=>{input.atk=0;});

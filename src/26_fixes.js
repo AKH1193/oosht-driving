@@ -186,3 +186,32 @@ Object.assign(window.__oosht||{},{getUnstuck});
   document.head.appendChild(st);$('#hud').appendChild(pad);
   hold(pad.querySelector('.l'),()=>{input.L=1;},()=>{input.L=0;});hold(pad.querySelector('.r'),()=>{input.R=1;},()=>{input.R=0;});
   setInterval(()=>{const h=$('#hud');if(h)h.classList.toggle('arrows',settings.steer==='arrows');},300);}
+
+/* ---------- context button icons: one glance tells you what the button does ---------- */
+const CTXI={car:'M5 11l1.5-4.5h11L19 11v6h-2v-2H7v2H5zM7.5 13.5a1 1 0 100-2 1 1 0 000 2zm9 0a1 1 0 100-2 1 1 0 000 2z',
+  bike:'M5 17a3 3 0 110-6 3 3 0 010 6zm14 0a3 3 0 110-6 3 3 0 010 6zM5 14l4-6h4l2 3h4M9 8l3 6',
+  climb:'M8 3v18M16 3v18M8 7h8M8 11h8M8 15h8M8 19h8',sit:'M7 4v8h10v8M7 12v8M5 12h14',
+  door:'M6 3h12v18H6zM14 12h.01',buy:'M6 7h12l-1 13H7zM9 7a3 3 0 016 0',talk:'M4 5h16v10H9l-5 4z',
+  hand:'M8 13V5a1.5 1.5 0 013 0v6M11 11V4a1.5 1.5 0 013 0v7M14 11V6a1.5 1.5 0 013 0v7c0 4-3 7-6 7s-5-2-6-5l-1-3a1.5 1.5 0 012.6-1.4L8 13',
+  plane:'M3 13l7-2V5a2 2 0 014 0v6l7 2v2l-7-1v4l2 2v1l-4-1-4 1v-1l2-2v-4l-7 1z',go:'M5 12h14M13 6l6 6-6 6'};
+function ctxIcon(c){const l=(c.label||'').toLowerCase();const k=c.k;
+  const key=/climb/.test(l)?'climb':/sit|stand/.test(l)?'sit':/plane|fly/.test(l)?'plane':k==='own'||k==='jack'||/get in|take|steal|drive|hop/.test(l)?(/bike|scooter|ride|two/.test(l)?'bike':'car'):
+    /enter|exit|leave|go in|door/.test(l)||k==='enterb'||k==='exitb'?'door':/buy|chai|eat|order|shop/.test(l)?'buy':/talk|ask|chat/.test(l)?'talk':/search|pick|rob|grab|loot/.test(l)||k==='loot'||k==='pick'||k==='mug'?'hand':'go';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" style="width:1.1em;height:1.1em;margin-right:.35em;vertical-align:-.18em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="${CTXI[key]}"/></svg>`;}
+
+/* ---------- sit at bus-stop benches: heal, wait, and blend into the crowd at low wanted levels ---------- */
+const SIT={on:false,t:0,x:0,y:0,h:0,back:1.05,dy:-.22};
+function sitCtx(){if(!FOOT.on||FOOT.ride||INT.on||ROOF.a)return null;if(SIT.on)return {k:'item',it:{fn:standUp},label:'Stand up'};
+  for(const b of W.busStops||[]){if(Math.hypot(b.x-P.x,b.y-P.y)<2.6)return {k:'item',it:{fn:()=>sitDown(b)},label:'Sit down'};}return null;}
+function sitDown(b){const n=nearestSeg(b.x,b.y,30);let h=P.h;if(n.seg){const s=n.seg,dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len,t=clamp((b.x-s.ax)*dx+(b.y-s.ay)*dy,0,s.len);h=hAng(s.ax+dx*t-b.x,s.ay+dy*t-b.y);}
+  const bx=b.x-Math.sin(h)*SIT.back,by=b.y+Math.cos(h)*SIT.back;SIT.on=true;SIT.t=0;SIT.x=bx;SIT.y=by;SIT.h=h;P.x=bx;P.y=by;P.h=h;P.s=0;Hap.tick&&Hap.tick();}
+function standUp(){SIT.on=false;}
+{const _uf3=updateFoot;updateFoot=function(dt){
+  if(SIT.on){if(!FOOT.on||INT.on||Math.hypot(input.jx||0,input.jy||0)>.18||input.atk){SIT.on=false;_uf3(dt);return;}
+    SIT.t+=dt;P.x=SIT.x;P.y=SIT.y;P.h=SIT.h;P.s=0;LIFE.hp=Math.min(100,LIFE.hp+2*dt);FOOT.stam=Math.min(maxStam(),FOOT.stam+20*dt);
+    if((COP.level||COP.list.length)&&COP.level<=2&&SIT.t>6&&!COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<25)){escaped();toast('You blended in with the crowd','good');}
+    M4.model(P.M,P.x,0,P.y,-P.h,0,0);return;}
+  _uf3(dt);};}
+{const _dr=drawPlayerRig;drawPlayerRig=function(M,pose,wk){if(SIT.on&&FOOT.on){const m=M.slice?M.slice():M;try{m[13]=(m[13]||0)+SIT.dy;}catch(e){}return _dr(m,'seat',0);}return _dr(M,pose,wk);};}
+{const _fc4=findContext;findContext=function(){const c=sitCtx();if(c)return c;return _fc4();};}
+Object.assign(window.__oosht||{},{SIT,sitDown,ctxIcon});

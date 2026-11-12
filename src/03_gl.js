@@ -285,8 +285,9 @@ const SHOPWORDS=['STORES','MEDICALS','BAKERY','TEA STALL','MOBILES','XEROX','TAI
 function makeTextures(){
   const k=document.createElement('canvas');k.width=k.height=4;const kc=k.getContext('2d');kc.fillStyle='#000';kc.fillRect(0,0,4,4);TEX.black=texFromCanvas(k,false);
   /* asphalt: grain, darker patch repairs and hairline cracks */
-  TEX.asph=texFromCanvas(noiseCanvas(256,.9,.28,11,(c,S,r)=>{for(let i=0;i<5;i++){c.fillStyle=`rgba(0,0,0,${.06+r()*.08})`;const w=20+r()*70,h=14+r()*50;c.fillRect(r()*S,r()*S,w,h);}
-    c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=1;for(let i=0;i<7;i++){let x=r()*S,y=r()*S;c.beginPath();c.moveTo(x,y);for(let j=0;j<6;j++){x+=(r()-.5)*24;y+=(r()-.5)*24;c.lineTo(x,y);}c.stroke();}}),true);
+  /* asphalt: fine, even aggregate grain with two very faint repair patches (no cracks, no blotches) */
+  TEX.asph=texFromCanvas(noiseCanvas(256,.93,.17,11,(c,S,r)=>{for(let i=0;i<900;i++){c.fillStyle=r()<.5?'rgba(255,255,255,.07)':'rgba(0,0,0,.09)';c.fillRect(r()*S,r()*S,1.5,1.5);}
+    for(let i=0;i<2;i++){c.fillStyle='rgba(0,0,0,.035)';c.fillRect(r()*S,r()*S,40+r()*60,30+r()*40);}}),true);anisoTex(TEX.asph);
   /* footpath pavers */
   TEX.pave=texFromCanvas(noiseCanvas(128,.92,.2,12,(c,S,r)=>{const n=4,t=S/n;for(let i=0;i<n;i++)for(let j=0;j<n;j++){c.fillStyle=`rgba(${r()<.5?0:255},${r()<.5?0:200},0,${r()*.06})`;c.fillRect(i*t,j*t,t,t);}
     c.fillStyle='rgba(0,0,0,.35)';for(let i=0;i<=n;i++){c.fillRect(i*t-1,0,2,S);c.fillRect(0,i*t-1,S,2);}}),true);

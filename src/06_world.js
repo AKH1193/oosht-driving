@@ -1,5 +1,5 @@
 /* ================= world: road graph, hazards, signals, garages ================= */
-const HW={motorway:9,trunk:8.5,primary:7.5,secondary:6.5,tertiary:5.5,unclassified:4.4,residential:4.2,living_street:3.4,service:3};
+const HW={motorway:10.5,trunk:10,primary:9,secondary:7,tertiary:5.5,unclassified:4.4,residential:4.2,living_street:3.4,service:3};
 const RANK={motorway:6,trunk:5,primary:4,secondary:3,tertiary:2,unclassified:1,residential:1,living_street:0,service:0};
 const LIMIT={motorway:100,trunk:80,primary:60,secondary:50,tertiary:50,unclassified:40,residential:30,living_street:20,service:20};
 const BCOL=['#EDE6D6','#F2D7B6','#D9E4DA','#DDE3EA','#EBCFCF','#E2D9EC','#F3E3A9','#CFC7BB','#E8E4DC','#BFD0D6','#F4F1EA','#E9C9A8','#F0B8A0','#C9DCC0'];
@@ -157,6 +157,8 @@ function genHazards(){
 }
 
 /* ---------- mechanic shops ---------- */
+/* true when (x,y) is at least m metres outside every road surface */
+function roadClear(x,y,m){const n=nearestSeg(x,y,14);return !n.seg||n.edge>=m;}
 function nearestSeg(x,y,r,filter){const tmp=[];gQuery(W.sG,x,y,r,tmp);let best=null,bd=1e9;for(const s of tmp){if(filter&&!filter(s))continue;const d=segDistXY(x,y,s.ax,s.ay,s.bx,s.by)-s.w.hw;if(d<bd){bd=d;best=s;}}return best?{seg:best,edge:bd}:{seg:null,edge:1e9};}
 function inBuilding(x,y){const tmp=[];gQuery(W.bG,x,y,1,tmp);for(const b of tmp){if(b.hide)continue;if(x<b.minx||x>b.maxx||y<b.miny||y>b.maxy)continue;if(inPoly(x,y,b.pts))return b;}return null;}
 function addGarage(s,t,name,real){
