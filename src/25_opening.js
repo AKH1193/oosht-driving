@@ -72,7 +72,7 @@ function openingTick(dt){if(!CUT.on)return;CUT.t+=dt;CUT.beat=performance.now();
   if(FOOT.on)M4.model(P.M,P.x,0,P.y,-P.h,0,0);
   if(T>=CUT_END)openingEnd();}
 function openingSkip(){if(FOOT.on&&FOOT.parked)enterVehicle({k:'own'});if(!COP.list.length)forceChase(1,'open');const a=CUT.arjun;if(a){a.state='flee';a.calm=99;a.fleeSp=4.5;}openingEnd();}
-function openingEnd(){if(!CUT.on)return;CUT.on=false;CUT.cam=null;profile.opened=1;saveProfile();cutSub();
+function openingEnd(){if(!CUT.on)return;CUT.on=false;CUT.grace=GT+25;CUT.cam=null;profile.opened=1;saveProfile();cutSub();
   CUT.ui.querySelector('.nm').classList.remove('on');CUT.ui.classList.add('out');setTimeout(()=>{if(!CUT.on)CUT.ui.hidden=true;},650);
   $('#hud').classList.remove('cut');CAM.yaw=P.h;CAM.look=0;CAM.cd=null;
   if(!FOOT.on){try{Snd.startEngine(VEH[P.type].engine,P.type);}catch(e){}}
@@ -92,7 +92,7 @@ function handoffCheck(){
 setInterval(()=>{if(CUT.on&&state==='play'&&CUT.beat&&performance.now()-CUT.beat>3000){try{openingSkip();}catch(e){openingEnd();}}},1000);
 
 /* hooks: lock input during the scene, drive the camera, run the timeline */
-{const _u=update;update=function(dt){if(CUT.on){for(const k of['gas','brake','jx','jy','L','R','atk','jump','run'])if(k in input)input[k]=typeof input[k]==='number'?0:false;}_u(dt);if(CUT.on){COP.caughtT=0;{const c=COP.list[0],K=CUT.k;if(c&&CUT.t<9.9){const k=sm((CUT.t-6.6)/3.1),dd=85-57*k,fx=Math.sin(K.h),fy=-Math.cos(K.h);c.x=K.x-fx*dd;c.y=K.y-fy*dd;c.h=K.h;c.v=k<1?12:0;}}if(state!=='play'){CUT.on=false;$('#hud').classList.remove('cut');if(CUT.ui)CUT.ui.hidden=true;}}if(CUT.on&&state==='play')try{openingTick(dt);}catch(e){console.error(e);openingSkip();}};}
+{const _u=update;update=function(dt){if(!CUT.on&&CUT.grace&&GT<CUT.grace){COP.caughtT=0;for(const c of COP.list){if(Math.hypot(c.x-P.x,c.y-P.y)<14)c.v=Math.min(c.v,Math.max(0,Math.abs(P.s)-.5));}}if(CUT.on){for(const k of['gas','brake','jx','jy','L','R','atk','jump','run'])if(k in input)input[k]=typeof input[k]==='number'?0:false;}_u(dt);if(CUT.on){COP.caughtT=0;{const c=COP.list[0],K=CUT.k;if(c&&CUT.t<9.9){const k=sm((CUT.t-6.6)/3.1),dd=85-57*k,fx=Math.sin(K.h),fy=-Math.cos(K.h);c.x=K.x-fx*dd;c.y=K.y-fy*dd;c.h=K.h;c.v=k<1?12:0;}}if(state!=='play'){CUT.on=false;$('#hud').classList.remove('cut');if(CUT.ui)CUT.ui.hidden=true;}}if(CUT.on&&state==='play')try{openingTick(dt);}catch(e){console.error(e);openingSkip();}};}
 {const _sc=setupCamera;setupCamera=function(dt,P_,V,model){_sc(dt,P_,V,model);if(!CUT.on){CAM.eyeLive=null;return;}
   if(CUT.t>9.4){/* remember where the live chase camera wants to be, so the swoop lands exactly there */CAM.eyeLive=CAM.eye.slice();CAM.tgtLive=CAM.tgt.slice();}
   const c=cutCamera(CUT.t);if(![...c.eye,...c.tgt].every(Number.isFinite))return;CAM.eye=c.eye;CAM.tgt=c.tgt;CAM.fov=c.fov;const asp=glc.width/glc.height;

@@ -72,7 +72,7 @@ Object.assign(window.__oosht||{},{ROOF,roofUp,roofDown,busAgentNear,LINES2,say:(
 function knockBiker(a,nx,ny){
   a.fallen=true;a.fallenT=25;a.v=0;a.stop=99;a.lean=1.35*(Math.random()<.5?-1:1);
   try{const p=ejectDriver(a);}catch(e){}
-  const rel=Math.abs(P.s);P.s*=.78;CAM.shake=Math.max(CAM.shake,4);Snd.thud&&Snd.thud(.7);Hap.crash&&Hap.crash();damage(2,true);
+  const rel=Math.abs(P.s);P.s*=.78;CAM.shake=Math.max(CAM.shake,4);try{SFX.metal(.6);SFX.ped(.8);scream('man');say('hurt','man',true);}catch(e){}Hap.crash&&Hap.crash();damage(2,true);
   try{bloodBurst(a.x,a.y,.8);}catch(e){}
   toast('Knocked a biker off!','bad','biker',1500);
   try{crime('assault',1);}catch(e){}}
@@ -95,7 +95,7 @@ const HUDI={last:performance.now(),still:0};
 const hudWake=()=>{HUDI.last=performance.now();$('#hud').classList.remove('idle');};
 document.addEventListener("pointerdown",hudWake,true);document.addEventListener("keydown",hudWake,true);
 setInterval(()=>{const hud=$('#hud');if(!hud||state!=='play')return;
-  const busy=COP.level>0||COP.list.length||input.atk||(typeof CUT!=='undefined'&&CUT.on);
+  const busy=COP.level>0||COP.list.length||input.atk||(typeof CUT!=='undefined'&&(CUT.on||(CUT.grace&&GT<CUT.grace)))||(typeof TUT!=='undefined'&&TUT.el&&TUT.el.style.opacity==='1');
   hud.classList.toggle('idle',!busy&&performance.now()-HUDI.last>3000);
   /* condition / stamina and fuel rows only appear when they matter; health lives on the minimap ring */
   const rows=hud.querySelectorAll('.hud-tl .cond');if(rows.length>=3){
@@ -111,3 +111,55 @@ setInterval(()=>{const hud=$('#hud');if(!hud||state!=='play')return;
   const hp=clamp(LIFE.hp/100,0,1);m.strokeStyle=hp>.35?'#43D17A':'#E53935';m.beginPath();m.arc(c,c,r,Math.PI*.75,Math.PI*.75+Math.PI*1.5*hp);m.stroke();
   const ar=clamp(profile.armor/200,0,1);if(ar>0){m.strokeStyle='#4FA3FF';m.beginPath();m.arc(c,c,r,Math.PI*.25-Math.PI*.5*ar,Math.PI*.25);m.stroke();}}catch(e){}};}
 Object.assign(window.__oosht||{},{knockBiker});
+
+/* ---------- distinct impact sounds: walls, vehicles, trees, poles, people, animals ---------- */
+const SFX={kind:null,
+  rnd:(a,b)=>a+Math.random()*(b-a),
+  wall(k){const r=this.rnd;Snd.burst(.32,r(60,85),1,.9*k+.2);Snd.burst(.45,r(1500,2200),.5,.28*k,'bandpass');setTimeout(()=>Snd.burst(.3,r(3500,5000),.8,.1*k,'highpass'),70);},
+  metal(k){const r=this.rnd;Snd.burst(.5,r(380,620),.7,.6*k+.15,'lowpass');Snd.tone([r(170,210),r(260,300),r(410,460)],.55,'square',.035*k+.01,.7);
+    if(k>.5)for(let i=0;i<5;i++)setTimeout(()=>Snd.tone([r(2600,4400)],.05,'sine',.035),90+i*r(30,70));},
+  heavy(k){const r=this.rnd;Snd.burst(.8,r(55,75),1,1);Snd.tone([r(90,110),r(140,160)],.9,'sawtooth',.05,.6);Snd.burst(.6,r(700,900),.6,.35,'lowpass');},
+  tree(k){const r=this.rnd;Snd.burst(.14,r(220,300),3,.6*k+.2,'bandpass');Snd.tone([r(100,130)],.25,'triangle',.15,.5);Snd.burst(.7,r(4500,6000),.3,.12,'highpass');},
+  pole(k){const r=this.rnd;Snd.tone([r(590,650),r(900,960)],1.1,'sine',.07,.97);Snd.burst(.18,r(280,340),1,.45);},
+  ped(k){const r=this.rnd;Snd.burst(.12,r(160,210),1.5,.55,'lowpass');Snd.tone([r(80,100)],.16,'sine',.25,.5);},
+  cow(k){Snd.burst(.25,90,1,.7);Snd.moo&&Snd.moo();},
+  boom(k){Snd.burst(1.2,60,1,1);Snd.burst(.9,500,.5,.5,'lowpass');Snd.burst(1.4,3000,.4,.25,'highpass');}};
+const _sndCrash=Snd.crash.bind(Snd);
+Snd.crash=function(){const w=SFX.kind||'';SFX.kind=null;const k=SFX.k==null?.8:SFX.k;SFX.k=null;
+  try{if(/wall|building/i.test(w))return SFX.wall(k);if(/tree/i.test(w))return SFX.tree(k);if(/pole|lamp|signal/i.test(w))return SFX.pole(k);
+    if(/cow/i.test(w))return SFX.cow(k);if(/ped/.test(w))return SFX.ped(k);if(/bus|truck|lorry|tanker/i.test(w))return SFX.heavy(k);
+    if(/car|auto|taxi|suv|two-wheeler|hoysala|vehicle/i.test(w))return SFX.metal(k);if(/boom/.test(w))return SFX.boom(k);}catch(e){}
+  _sndCrash();};
+{const _cr=crash;crash=function(rel,what,ra){SFX.kind=typeof what==='string'?what:'';SFX.k=clamp(rel/12,.25,1);_cr(rel,what,ra);};}
+{const _hp=hitPed;hitPed=function(p){SFX.kind='ped';SFX.k=clamp(Math.abs(P.s)/12,.3,1);_hp(p);if(!FOOT.on&&Math.abs(P.s)>2)say('hurt',whoOf(p),true);};}
+LINES2.hurt=[['ಅಯ್ಯೋ ಅಮ್ಮಾ!','Aaah! Ayyo amma!','shout'],['ಅಯ್ಯಯ್ಯೋ!','Ayyayyo! My leg!','shout'],['ಕಾಪಾಡಿ!','Aaargh! Help!','shout']];
+LINES2.fear=[['ಅಯ್ಯೋ! ನೋಡ್ಕೊಂಡು ಓಡ್ಸು!','Ayyo! Watch out!','shout'],['ನಿಧಾನ! ನಿಧಾನ!','Slow down! Slow down!','shout'],['ತಲೆ ಕೆಟ್ಟಿದ್ಯಾ? ಸಾಯಿಸ್ತೀಯಾ!','Are you mad? You’ll kill someone!','shout'],
+  ['ಓಡಿ! ಓಡಿ!','Run! Run!','shout'],['ಏಯ್ ಏಯ್ ಏಯ್!','Hey hey hey! Stop!','shout'],['ಅಮ್ಮಾ!','Amma!','shout']];
+/* a short synthesised scream so fear reads instantly, even before the voice speaks */
+function scream(who){const c=Snd.ctx;if(!c||!settings.sound)return;const t=c.currentTime,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();o.type='sawtooth';
+  const b={woman:820,kid:1000,elder:520,man:430}[who]||600;o.frequency.setValueAtTime(b,t);o.frequency.linearRampToValueAtTime(b*1.35,t+.12);o.frequency.exponentialRampToValueAtTime(b*.8,t+.5);
+  f.type='bandpass';f.frequency.value=b*2.2;f.Q.value=2;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.06,t+.04);g.gain.linearRampToValueAtTime(0,t+.5);o.connect(f);f.connect(g);g.connect(Snd.master);o.start(t);o.stop(t+.55);}
+
+/* ---------- people panic when a vehicle bears down on them ---------- */
+const FEAR={t:0,shoutT:0};
+{const _lu3=lifeUpdate;lifeUpdate=function(dt){_lu3(dt);if(state!=='play'||FOOT.on||FLY.on)return;FEAR.t-=dt;FEAR.shoutT-=dt;if(FEAR.t>0)return;FEAR.t=.2;
+  const sp=Math.abs(P.s);if(sp<4)return;const reach=6+sp*.9;let shouted=false;
+  for(const p of peds){if(p.dead||p.mis||p.state==='down'||p.state==='flee'||p.state==='hostile'||p.state==='brawl')continue;
+    const d=Math.hypot(p.x-P.x,p.y-P.y);if(d>reach)continue;if(!inFront(P.x,P.y,P.h,p.x,p.y,reach,3.8))continue;
+    try{setFlee(p,P.x,P.y);}catch(e){continue;}p.fear=1;
+    if(!shouted&&FEAR.shoutT<=0){shouted=true;FEAR.shoutT=1.6+Math.random()*1.2;const w=whoOf(p);scream(w);say('fear',w,true);}}};}
+
+/* ---------- never stuck on foot: if Tony is pushing the stick but cannot move, step to the nearest free spot ---------- */
+function footFree(x,y){if(inBuilding(x,y))return false;const q=[];gQuery(W.tG,x,y,2.5,q);for(const t of q){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.35)return false;}
+  if(typeof pierAt==='function'&&pierAt(x,y))return false;
+  const box=(cx,cy,h,len,wid)=>{const fx=Math.sin(h),fy=-Math.cos(h),dx=x-cx,dy=y-cy;return Math.abs(dx*fx+dy*fy)<len/2+.4&&Math.abs(-dx*fy+dy*fx)<wid/2+.4;};
+  for(const a of agents)if(box(a.x,a.y,a.h,a.t.len,a.t.wid))return false;const pk=FOOT.parked;if(pk){const pm=playerModel(pk.type);if(box(pk.x,pk.y,pk.h,pm.len||2,pm.wid||1))return false;}return true;}
+function unstick(){for(let r=.6;r<=4.2;r+=.4)for(let i=0;i<16;i++){const a=i/16*TAU+r;const x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r;if(footFree(x,y)){P.x=x;P.y=y;M4.model(P.M,P.x,0,P.y,-P.h,0,0);return true;}}return false;}
+const STK={x:0,y:0,t:0};
+{const _uf2=updateFoot;updateFoot=function(dt){_uf2(dt);
+  if(!FOOT.on||FOOT.ride||INT.on||ROOF.a||LIFE.downT>0||METRO.ride||(P.elev||0)>.5){STK.t=0;return;}
+  const push=Math.hypot(input.jx||0,input.jy||0)>.3;const moved=Math.hypot(P.x-STK.x,P.y-STK.y);STK.x=P.x;STK.y=P.y;
+  if(push&&moved<.01){STK.t+=dt;if(STK.t>.5){STK.t=0;unstick();}}else STK.t=0;};}
+/* when a crash throws Tony off, land him on open ground, never inside a tree, pole or vehicle */
+{const _cr2=crash;crash=function(rel,what,ra){const was=FOOT.on;_cr2(rel,what,ra);if(!was&&FOOT.on&&!footFree(P.x,P.y))unstick();};}
+Object.assign(window.__oosht||{},{SFX,unstick,footFree,FEAR,scream});

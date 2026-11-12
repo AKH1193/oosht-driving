@@ -6850,7 +6850,7 @@ function openingTick(dt){if(!CUT.on)return;CUT.t+=dt;CUT.beat=performance.now();
   if(FOOT.on)M4.model(P.M,P.x,0,P.y,-P.h,0,0);
   if(T>=CUT_END)openingEnd();}
 function openingSkip(){if(FOOT.on&&FOOT.parked)enterVehicle({k:'own'});if(!COP.list.length)forceChase(1,'open');const a=CUT.arjun;if(a){a.state='flee';a.calm=99;a.fleeSp=4.5;}openingEnd();}
-function openingEnd(){if(!CUT.on)return;CUT.on=false;CUT.cam=null;profile.opened=1;saveProfile();cutSub();
+function openingEnd(){if(!CUT.on)return;CUT.on=false;CUT.grace=GT+25;CUT.cam=null;profile.opened=1;saveProfile();cutSub();
   CUT.ui.querySelector('.nm').classList.remove('on');CUT.ui.classList.add('out');setTimeout(()=>{if(!CUT.on)CUT.ui.hidden=true;},650);
   $('#hud').classList.remove('cut');CAM.yaw=P.h;CAM.look=0;CAM.cd=null;
   if(!FOOT.on){try{Snd.startEngine(VEH[P.type].engine,P.type);}catch(e){}}
@@ -6870,7 +6870,7 @@ function handoffCheck(){
 setInterval(()=>{if(CUT.on&&state==='play'&&CUT.beat&&performance.now()-CUT.beat>3000){try{openingSkip();}catch(e){openingEnd();}}},1000);
 
 /* hooks: lock input during the scene, drive the camera, run the timeline */
-{const _u=update;update=function(dt){if(CUT.on){for(const k of['gas','brake','jx','jy','L','R','atk','jump','run'])if(k in input)input[k]=typeof input[k]==='number'?0:false;}_u(dt);if(CUT.on){COP.caughtT=0;{const c=COP.list[0],K=CUT.k;if(c&&CUT.t<9.9){const k=sm((CUT.t-6.6)/3.1),dd=85-57*k,fx=Math.sin(K.h),fy=-Math.cos(K.h);c.x=K.x-fx*dd;c.y=K.y-fy*dd;c.h=K.h;c.v=k<1?12:0;}}if(state!=='play'){CUT.on=false;$('#hud').classList.remove('cut');if(CUT.ui)CUT.ui.hidden=true;}}if(CUT.on&&state==='play')try{openingTick(dt);}catch(e){console.error(e);openingSkip();}};}
+{const _u=update;update=function(dt){if(!CUT.on&&CUT.grace&&GT<CUT.grace){COP.caughtT=0;for(const c of COP.list){if(Math.hypot(c.x-P.x,c.y-P.y)<14)c.v=Math.min(c.v,Math.max(0,Math.abs(P.s)-.5));}}if(CUT.on){for(const k of['gas','brake','jx','jy','L','R','atk','jump','run'])if(k in input)input[k]=typeof input[k]==='number'?0:false;}_u(dt);if(CUT.on){COP.caughtT=0;{const c=COP.list[0],K=CUT.k;if(c&&CUT.t<9.9){const k=sm((CUT.t-6.6)/3.1),dd=85-57*k,fx=Math.sin(K.h),fy=-Math.cos(K.h);c.x=K.x-fx*dd;c.y=K.y-fy*dd;c.h=K.h;c.v=k<1?12:0;}}if(state!=='play'){CUT.on=false;$('#hud').classList.remove('cut');if(CUT.ui)CUT.ui.hidden=true;}}if(CUT.on&&state==='play')try{openingTick(dt);}catch(e){console.error(e);openingSkip();}};}
 {const _sc=setupCamera;setupCamera=function(dt,P_,V,model){_sc(dt,P_,V,model);if(!CUT.on){CAM.eyeLive=null;return;}
   if(CUT.t>9.4){/* remember where the live chase camera wants to be, so the swoop lands exactly there */CAM.eyeLive=CAM.eye.slice();CAM.tgtLive=CAM.tgt.slice();}
   const c=cutCamera(CUT.t);if(![...c.eye,...c.tgt].every(Number.isFinite))return;CAM.eye=c.eye;CAM.tgt=c.tgt;CAM.fov=c.fov;const asp=glc.width/glc.height;
@@ -6956,7 +6956,7 @@ Object.assign(window.__oosht||{},{ROOF,roofUp,roofDown,busAgentNear,LINES2,say:(
 function knockBiker(a,nx,ny){
   a.fallen=true;a.fallenT=25;a.v=0;a.stop=99;a.lean=1.35*(Math.random()<.5?-1:1);
   try{const p=ejectDriver(a);}catch(e){}
-  const rel=Math.abs(P.s);P.s*=.78;CAM.shake=Math.max(CAM.shake,4);Snd.thud&&Snd.thud(.7);Hap.crash&&Hap.crash();damage(2,true);
+  const rel=Math.abs(P.s);P.s*=.78;CAM.shake=Math.max(CAM.shake,4);try{SFX.metal(.6);SFX.ped(.8);scream('man');say('hurt','man',true);}catch(e){}Hap.crash&&Hap.crash();damage(2,true);
   try{bloodBurst(a.x,a.y,.8);}catch(e){}
   toast('Knocked a biker off!','bad','biker',1500);
   try{crime('assault',1);}catch(e){}}
@@ -6979,7 +6979,7 @@ const HUDI={last:performance.now(),still:0};
 const hudWake=()=>{HUDI.last=performance.now();$('#hud').classList.remove('idle');};
 document.addEventListener("pointerdown",hudWake,true);document.addEventListener("keydown",hudWake,true);
 setInterval(()=>{const hud=$('#hud');if(!hud||state!=='play')return;
-  const busy=COP.level>0||COP.list.length||input.atk||(typeof CUT!=='undefined'&&CUT.on);
+  const busy=COP.level>0||COP.list.length||input.atk||(typeof CUT!=='undefined'&&(CUT.on||(CUT.grace&&GT<CUT.grace)))||(typeof TUT!=='undefined'&&TUT.el&&TUT.el.style.opacity==='1');
   hud.classList.toggle('idle',!busy&&performance.now()-HUDI.last>3000);
   /* condition / stamina and fuel rows only appear when they matter; health lives on the minimap ring */
   const rows=hud.querySelectorAll('.hud-tl .cond');if(rows.length>=3){
@@ -6995,6 +6995,202 @@ setInterval(()=>{const hud=$('#hud');if(!hud||state!=='play')return;
   const hp=clamp(LIFE.hp/100,0,1);m.strokeStyle=hp>.35?'#43D17A':'#E53935';m.beginPath();m.arc(c,c,r,Math.PI*.75,Math.PI*.75+Math.PI*1.5*hp);m.stroke();
   const ar=clamp(profile.armor/200,0,1);if(ar>0){m.strokeStyle='#4FA3FF';m.beginPath();m.arc(c,c,r,Math.PI*.25-Math.PI*.5*ar,Math.PI*.25);m.stroke();}}catch(e){}};}
 Object.assign(window.__oosht||{},{knockBiker});
+
+/* ---------- distinct impact sounds: walls, vehicles, trees, poles, people, animals ---------- */
+const SFX={kind:null,
+  rnd:(a,b)=>a+Math.random()*(b-a),
+  wall(k){const r=this.rnd;Snd.burst(.32,r(60,85),1,.9*k+.2);Snd.burst(.45,r(1500,2200),.5,.28*k,'bandpass');setTimeout(()=>Snd.burst(.3,r(3500,5000),.8,.1*k,'highpass'),70);},
+  metal(k){const r=this.rnd;Snd.burst(.5,r(380,620),.7,.6*k+.15,'lowpass');Snd.tone([r(170,210),r(260,300),r(410,460)],.55,'square',.035*k+.01,.7);
+    if(k>.5)for(let i=0;i<5;i++)setTimeout(()=>Snd.tone([r(2600,4400)],.05,'sine',.035),90+i*r(30,70));},
+  heavy(k){const r=this.rnd;Snd.burst(.8,r(55,75),1,1);Snd.tone([r(90,110),r(140,160)],.9,'sawtooth',.05,.6);Snd.burst(.6,r(700,900),.6,.35,'lowpass');},
+  tree(k){const r=this.rnd;Snd.burst(.14,r(220,300),3,.6*k+.2,'bandpass');Snd.tone([r(100,130)],.25,'triangle',.15,.5);Snd.burst(.7,r(4500,6000),.3,.12,'highpass');},
+  pole(k){const r=this.rnd;Snd.tone([r(590,650),r(900,960)],1.1,'sine',.07,.97);Snd.burst(.18,r(280,340),1,.45);},
+  ped(k){const r=this.rnd;Snd.burst(.12,r(160,210),1.5,.55,'lowpass');Snd.tone([r(80,100)],.16,'sine',.25,.5);},
+  cow(k){Snd.burst(.25,90,1,.7);Snd.moo&&Snd.moo();},
+  boom(k){Snd.burst(1.2,60,1,1);Snd.burst(.9,500,.5,.5,'lowpass');Snd.burst(1.4,3000,.4,.25,'highpass');}};
+const _sndCrash=Snd.crash.bind(Snd);
+Snd.crash=function(){const w=SFX.kind||'';SFX.kind=null;const k=SFX.k==null?.8:SFX.k;SFX.k=null;
+  try{if(/wall|building/i.test(w))return SFX.wall(k);if(/tree/i.test(w))return SFX.tree(k);if(/pole|lamp|signal/i.test(w))return SFX.pole(k);
+    if(/cow/i.test(w))return SFX.cow(k);if(/ped/.test(w))return SFX.ped(k);if(/bus|truck|lorry|tanker/i.test(w))return SFX.heavy(k);
+    if(/car|auto|taxi|suv|two-wheeler|hoysala|vehicle/i.test(w))return SFX.metal(k);if(/boom/.test(w))return SFX.boom(k);}catch(e){}
+  _sndCrash();};
+{const _cr=crash;crash=function(rel,what,ra){SFX.kind=typeof what==='string'?what:'';SFX.k=clamp(rel/12,.25,1);_cr(rel,what,ra);};}
+{const _hp=hitPed;hitPed=function(p){SFX.kind='ped';SFX.k=clamp(Math.abs(P.s)/12,.3,1);_hp(p);if(!FOOT.on&&Math.abs(P.s)>2)say('hurt',whoOf(p),true);};}
+LINES2.hurt=[['ಅಯ್ಯೋ ಅಮ್ಮಾ!','Aaah! Ayyo amma!','shout'],['ಅಯ್ಯಯ್ಯೋ!','Ayyayyo! My leg!','shout'],['ಕಾಪಾಡಿ!','Aaargh! Help!','shout']];
+LINES2.fear=[['ಅಯ್ಯೋ! ನೋಡ್ಕೊಂಡು ಓಡ್ಸು!','Ayyo! Watch out!','shout'],['ನಿಧಾನ! ನಿಧಾನ!','Slow down! Slow down!','shout'],['ತಲೆ ಕೆಟ್ಟಿದ್ಯಾ? ಸಾಯಿಸ್ತೀಯಾ!','Are you mad? You’ll kill someone!','shout'],
+  ['ಓಡಿ! ಓಡಿ!','Run! Run!','shout'],['ಏಯ್ ಏಯ್ ಏಯ್!','Hey hey hey! Stop!','shout'],['ಅಮ್ಮಾ!','Amma!','shout']];
+/* a short synthesised scream so fear reads instantly, even before the voice speaks */
+function scream(who){const c=Snd.ctx;if(!c||!settings.sound)return;const t=c.currentTime,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();o.type='sawtooth';
+  const b={woman:820,kid:1000,elder:520,man:430}[who]||600;o.frequency.setValueAtTime(b,t);o.frequency.linearRampToValueAtTime(b*1.35,t+.12);o.frequency.exponentialRampToValueAtTime(b*.8,t+.5);
+  f.type='bandpass';f.frequency.value=b*2.2;f.Q.value=2;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.06,t+.04);g.gain.linearRampToValueAtTime(0,t+.5);o.connect(f);f.connect(g);g.connect(Snd.master);o.start(t);o.stop(t+.55);}
+
+/* ---------- people panic when a vehicle bears down on them ---------- */
+const FEAR={t:0,shoutT:0};
+{const _lu3=lifeUpdate;lifeUpdate=function(dt){_lu3(dt);if(state!=='play'||FOOT.on||FLY.on)return;FEAR.t-=dt;FEAR.shoutT-=dt;if(FEAR.t>0)return;FEAR.t=.2;
+  const sp=Math.abs(P.s);if(sp<4)return;const reach=6+sp*.9;let shouted=false;
+  for(const p of peds){if(p.dead||p.mis||p.state==='down'||p.state==='flee'||p.state==='hostile'||p.state==='brawl')continue;
+    const d=Math.hypot(p.x-P.x,p.y-P.y);if(d>reach)continue;if(!inFront(P.x,P.y,P.h,p.x,p.y,reach,3.8))continue;
+    try{setFlee(p,P.x,P.y);}catch(e){continue;}p.fear=1;
+    if(!shouted&&FEAR.shoutT<=0){shouted=true;FEAR.shoutT=1.6+Math.random()*1.2;const w=whoOf(p);scream(w);say('fear',w,true);}}};}
+
+/* ---------- never stuck on foot: if Tony is pushing the stick but cannot move, step to the nearest free spot ---------- */
+function footFree(x,y){if(inBuilding(x,y))return false;const q=[];gQuery(W.tG,x,y,2.5,q);for(const t of q){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.35)return false;}
+  if(typeof pierAt==='function'&&pierAt(x,y))return false;
+  const box=(cx,cy,h,len,wid)=>{const fx=Math.sin(h),fy=-Math.cos(h),dx=x-cx,dy=y-cy;return Math.abs(dx*fx+dy*fy)<len/2+.4&&Math.abs(-dx*fy+dy*fx)<wid/2+.4;};
+  for(const a of agents)if(box(a.x,a.y,a.h,a.t.len,a.t.wid))return false;const pk=FOOT.parked;if(pk){const pm=playerModel(pk.type);if(box(pk.x,pk.y,pk.h,pm.len||2,pm.wid||1))return false;}return true;}
+function unstick(){for(let r=.6;r<=4.2;r+=.4)for(let i=0;i<16;i++){const a=i/16*TAU+r;const x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r;if(footFree(x,y)){P.x=x;P.y=y;M4.model(P.M,P.x,0,P.y,-P.h,0,0);return true;}}return false;}
+const STK={x:0,y:0,t:0};
+{const _uf2=updateFoot;updateFoot=function(dt){_uf2(dt);
+  if(!FOOT.on||FOOT.ride||INT.on||ROOF.a||LIFE.downT>0||METRO.ride||(P.elev||0)>.5){STK.t=0;return;}
+  const push=Math.hypot(input.jx||0,input.jy||0)>.3;const moved=Math.hypot(P.x-STK.x,P.y-STK.y);STK.x=P.x;STK.y=P.y;
+  if(push&&moved<.01){STK.t+=dt;if(STK.t>.5){STK.t=0;unstick();}}else STK.t=0;};}
+/* when a crash throws Tony off, land him on open ground, never inside a tree, pole or vehicle */
+{const _cr2=crash;crash=function(rel,what,ra){const was=FOOT.on;_cr2(rel,what,ra);if(!was&&FOOT.on&&!footFree(P.x,P.y))unstick();};}
+Object.assign(window.__oosht||{},{SFX,unstick,footFree,FEAR,scream});
+
+/* ================= WISE CITY: dynamic vehicle audio. Exhaust and diesel layers, gear-shift blips, turbo blow-off,
+   air-brake hiss, tyre screech, nearby traffic engines, air horns for heavies and a Doppler siren ================= */
+const VA={screech:null,traffic:[],lastGear:-1,lastThr:0,wasMoving:false,crashT:0,tick:0};
+/* archetype profiles: exhaust/sub layer strength, turbo, shift pop, air brakes */
+function vaProfile(key){const cat=VEH[key]?VEH[key].cat:'car';
+  if(cat==='posh')return {sub:.55,growl:'sawtooth',turbo:true,pop:true,air:false};
+  if(cat==='heavy')return {sub:.8,growl:'triangle',turbo:false,pop:false,air:true};
+  if(cat==='three')return {sub:.35,growl:'square',turbo:false,pop:false,air:false};
+  if(cat==='two')return {sub:.12,growl:'square',turbo:false,pop:key==='agni'||key==='kesari',air:false};
+  return {sub:.25,growl:'triangle',turbo:false,pop:false,air:false};}
+
+/* a sub-octave exhaust layer mixed under the main engine */
+{const _se=Snd.startEngine.bind(Snd);Snd.startEngine=function(E,key){_se(E,key);const e=this.eng;if(!e||!e.osc||e.EP.ev)return;
+  try{const c=this.ctx,pr=vaProfile(key||this.lastKey);const o=c.createOscillator();o.type=pr.growl;o.frequency.value=e.osc.frequency.value*.5;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=key&&VEH[key]&&VEH[key].cat==='heavy'?240:420;const g=c.createGain();g.gain.value=0;
+    o.connect(lp);lp.connect(g);g.connect(this.master);o.start();e.sub={o,g,lp,pr};
+    const _stop=e.osc.stop.bind(e.osc);e.osc.stop=function(){try{o.stop();}catch(_){}return _stop();};}catch(_){}};}
+{const _en=Snd.engine.bind(Snd);Snd.engine=function(ratio,thr){_en(ratio,thr);const e=this.eng;if(!e)return;const t=this.ctx.currentTime;
+  if(e.sub){e.sub.o.frequency.setTargetAtTime(e.osc.frequency.value*.5,t,.05);e.sub.g.gain.setTargetAtTime(.06*e.sub.pr.sub*(.35+thr*.8+clamp(ratio,0,1)*.4),t,.08);}
+  /* gear changes: a short rev drop blip (and an exhaust pop on sports machines) */
+  const gears=e.EP.gears||1;if(gears>1&&thr){const gi=Math.min(gears-1,Math.floor(clamp(ratio,0,1.2)*gears));if(VA.lastGear>=0&&gi>VA.lastGear){
+    if(e.sub&&e.sub.pr.pop)Snd.burst(.07,180,2,.25,'bandpass');else Snd.burst(.05,900,1,.06,'bandpass');}VA.lastGear=gi;}
+  /* lifting off at high revs: turbo blow-off */
+  if(e.sub&&e.sub.pr.turbo&&VA.lastThr&&!thr&&ratio>.45){Snd.burst(.35,3800,1.2,.12,'bandpass');Snd.tone([2400],.18,'sine',.025,.5);}
+  VA.lastThr=thr;};}
+
+/* ---------- tyre screech: drifting, hard cornering or locking up at speed ---------- */
+function screechNode(){if(VA.screech||!Snd.ctx||!Snd.noise)return VA.screech;const c=Snd.ctx;const s=c.createBufferSource();s.buffer=Snd.noise;s.loop=true;
+  const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1150;f.Q.value=6;const f2=c.createBiquadFilter();f2.type='peaking';f2.frequency.value=2300;f2.gain.value=9;
+  const g=c.createGain();g.gain.value=0;s.connect(f);f.connect(f2);f2.connect(g);g.connect(Snd.master);s.start();VA.screech={s,f,g};return VA.screech;}
+function vehAudioTick(dt){if(!Snd.ctx)return;const t=Snd.ctx.currentTime;const sp=Math.abs(P.s);
+  const n=screechNode();if(n){let slip=0;if(!FOOT.on&&!FLY.on&&state==='play'){if(P.drift)slip=.9;else{const lat=Math.abs(P.steer)*sp/14;if(lat>.55)slip=(lat-.55)*1.4;if(input.brake&&sp>12)slip=Math.max(slip,.5);}
+      if(VEH[P.type]&&VEH[P.type].cat==='two')slip*=.5;}
+    n.g.gain.setTargetAtTime(clamp(slip,0,1)*.11,t,.06);n.f.frequency.setTargetAtTime(1000+sp*12,t,.1);}
+  /* heavy vehicles: pneumatic air-brake hiss as they come to a stop */
+  if(!FOOT.on&&state==='play'&&VEH[P.type]){const heavy=VEH[P.type].cat==='heavy';if(sp>4)VA.wasMoving=true;
+    if(heavy&&VA.wasMoving&&sp<.6&&!input.gas){VA.wasMoving=false;Snd.burst(.75,4200,.6,.18,'highpass');}}
+  trafficVoices(t);sirenDoppler(t);}
+
+/* ---------- traffic engines: only the 4 closest vehicles within 35 m are heard, quieter and duller with distance ---------- */
+function trafficVoices(t){const c=Snd.ctx;if(!c||!settings.sound)return;
+  if(!VA.traffic.length){for(let i=0;i<4;i++){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=40;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=500;
+    const g=c.createGain();g.gain.value=0;let pan=null;try{pan=c.createStereoPanner();}catch(_){}o.connect(lp);lp.connect(g);if(pan){g.connect(pan);pan.connect(Snd.master);}else g.connect(Snd.master);o.start();VA.traffic.push({o,lp,g,pan});}}
+  const near=state==='play'?agents.map(a=>[a,Math.hypot(a.x-P.x,a.y-P.y)]).filter(x=>x[1]<35&&!x[0].fallen).sort((a,b)=>a[1]-b[1]).slice(0,4):[];
+  const rx=CAM.right?CAM.right[0]:1,rz=CAM.right?CAM.right[2]:0;
+  VA.traffic.forEach((v,i)=>{const it=near[i];if(!it){v.g.gain.setTargetAtTime(0,t,.2);return;}const[a,d]=it;const k=a.t.k;
+    const base=a.t.two?55:k==='auto'?38:k==='bus'||k==='truck'||k==='tanker'?24:32;const f=base*(1+a.v/9);
+    v.o.frequency.setTargetAtTime(f,t,.1);v.lp.frequency.setTargetAtTime(220+2400*(1-d/35)*(a.t.two?1.3:1),t,.15);
+    const vol=(1-d/35)*(k==='bus'||k==='truck'?.03:.018)*(.4+Math.min(1,a.v/10)*.6);v.g.gain.setTargetAtTime(FOOT.on?vol*1.4:vol*.6,t,.15);
+    if(v.pan){const dx=a.x-P.x,dz=a.y-P.y;v.pan.pan.setTargetAtTime(clamp((dx*rx+dz*rz)/Math.max(6,d),-.9,.9),t,.1);}});}
+
+/* ---------- Doppler on the Hoysala siren: higher as it closes in, lower as it pulls away ---------- */
+function sirenDoppler(t){const s=Snd.siren;if(!s||!s.o||!COP.list.length)return;let best=null,bd=1e9;for(const c of COP.list){const d=Math.hypot(c.x-P.x,c.y-P.y);if(d<bd){bd=d;best=c;}}
+  if(!best)return;const dx=P.x-best.x,dy=P.y-best.y,d=Math.hypot(dx,dy)||1;const cv=(Math.sin(best.h)*dx-Math.cos(best.h)*dy)/d*(best.v||0);const pv=-(P.vx*dx+P.vy*dy)/d;
+  const vr=clamp(cv+pv,-60,60);s.o.detune.setTargetAtTime(1731*vr/343,t,.1);}
+
+/* ---------- air horns on buses and lorries: a two-chord blast ---------- */
+{const _ho=Snd.hornOn.bind(Snd);Snd.hornOn=function(type){if(this.hornNodes)return;const cat=VEH[this.lastKey]?VEH[this.lastKey].cat:'';
+  if(cat==='heavy'&&!FOOT.on&&this.ctx&&!this.sample(this.lastKey,cat,'horn')){const c=this.ctx,t=c.currentTime;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=1500;
+    const g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.08,t+.04);const os=[185,233,277].map(fq=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=fq;
+      o.frequency.setValueAtTime(fq,t+.35);o.frequency.setValueAtTime(fq*1.122,t+.36);o.connect(f);o.start();return o;});f.connect(g);g.connect(this.master);this.hornNodes={os,g};return;}
+  _ho(type);};}
+
+/* ---------- impact sounds never stack: 0.15 s cooldown ---------- */
+{const _sc=Snd.crash;Snd.crash=function(){const now=performance.now();if(now-VA.crashT<150){SFX.kind=null;SFX.k=null;return;}VA.crashT=now;return _sc.apply(this,arguments);};}
+
+{const _lu4=lifeUpdate;lifeUpdate=function(dt){_lu4(dt);try{vehAudioTick(dt);}catch(e){}};}
+setInterval(()=>{if(state!=='play'&&VA.traffic.length&&Snd.ctx){const t=Snd.ctx.currentTime;VA.traffic.forEach(v=>v.g.gain.setTargetAtTime(0,t,.1));if(VA.screech)VA.screech.g.gain.setTargetAtTime(0,t,.05);}},300);
+Object.assign(window.__oosht||{},{VA,vaProfile});
+
+/* ================= WISE CITY: free-roam activities. Cash van sightings, street-race challenges, gang fights,
+   near-miss combos, roadside chai, and hidden Namma Tokens (some on metro platforms) ================= */
+const SB={t:40,ev:null,combo:0,comboT:0,nmT:0,pop:null,tok:new Map(),tokT:0,coin:null};
+if(!profile.tok)profile.tok=[];
+
+/* ---------- combo / reward popup (one line, centre-right, fades fast) ---------- */
+function sbPop(big,small,col){if(!SB.pop){const e=document.createElement('div');e.id='sbPop';e.style.cssText="position:fixed;right:calc(24px + env(safe-area-inset-right,0px));top:34%;z-index:31;pointer-events:none;text-align:right;transition:opacity .35s,transform .35s;opacity:0";
+  e.innerHTML='<div class="b" style="font-family:WCDisplay,Impact,sans-serif;font-size:clamp(24px,6vh,40px);letter-spacing:.03em;transform:skewX(-10deg);-webkit-text-stroke:1.5px #14082A;paint-order:stroke fill;text-shadow:0 3px 0 rgba(0,0,0,.45)"></div><div class="s" style="font-family:WCHud,monospace;font-size:clamp(14px,3.4vh,20px);color:#7CFF8A;text-shadow:0 2px 0 #000"></div>';document.body.appendChild(e);SB.pop=e;}
+  const e=SB.pop;e.querySelector('.b').textContent=big;e.querySelector('.b').style.color=col||'#FFC72C';e.querySelector('.s').textContent=small||'';e.style.opacity='1';e.style.transform='scale(1.08)';
+  setTimeout(()=>{e.style.transform='scale(1)';},120);clearTimeout(SB.popT);SB.popT=setTimeout(()=>{e.style.opacity='0';},1800);}
+
+/* ---------- near misses: passing traffic within 1.5 m above 60 km/h, chained into a combo ---------- */
+function nearMissTick(dt){SB.comboT-=dt;if(SB.comboT<=0&&SB.combo){SB.combo=0;}
+  if(FOOT.on||FLY.on||P.s<16.7||P.bumped)return;const fx=Math.sin(P.h),fy=-Math.cos(P.h);
+  for(const a of agents){if(a.fallen||(a.nmT||0)>GT)continue;const dx=a.x-P.x,dy=a.y-P.y;if(dx*dx+dy*dy>64)continue;
+    const u=dx*fx+dy*fy,w=-dx*fy+dy*fx;if(Math.abs(u)>(P.len+a.t.len)/2)continue;const gap=Math.abs(w)-(P.wid+a.t.wid)/2;
+    if(gap>0&&gap<1.5){a.nmT=GT+4;SB.combo=Math.min(10,SB.combo+1);SB.comboT=4;const pay=25*SB.combo;profile.wallet+=pay;saveProfile();
+      sbPop(SB.combo>1?`NEAR MISS x${SB.combo}`:'NEAR MISS',`+₹${pay}`,SB.combo>3?'#FF3FA4':'#FFC72C');Snd.tone&&Snd.tone([660+SB.combo*60],.08,'triangle',.08);Hap.tick&&Hap.tick();}}}
+{const _up2=updatePlayer;updatePlayer=function(dt){P.bumped=false;_up2(dt);try{nearMissTick(dt);}catch(e){}};}
+
+/* ---------- roadside chai: every vendor cart sells tea ---------- */
+function chaiCtx(){if(!FOOT.on||FOOT.ride||INT.on)return null;for(const p of peds){if(p.kind!=='vendor'||p.state!=='static'||p.dead)continue;
+  if(Math.hypot(p.x-P.x,p.y-P.y)<2.3||(p.cx!=null&&Math.hypot(p.cx-P.x,p.cy-P.y)<2.3))return {k:'item',it:{fn:()=>buyChai(p)},label:'Buy chai ₹10'};}return null;}
+function buyChai(p){if(profile.wallet<10){toast('You need ₹10','bad');return;}profile.wallet-=10;saveProfile();LIFE.hp=Math.min(100,LIFE.hp+15);FOOT.stam=maxStam();
+  toast('Cutting chai · +15 health','good');Snd.chime();try{say('vendor','vendor',true);}catch(e){}}
+{const _fc=findContext;findContext=function(){const c=chaiCtx();if(c)return c;return _fc();};}
+
+/* ---------- Namma Tokens: stable spots tied to real coordinates, plus one on every metro platform ---------- */
+function tokCells(){const out=[];const ll=w2ll(P.x,P.y);const G=.0027;/* about 300 m */const ci=Math.floor(ll[0]/G),cj=Math.floor(ll[1]/G);
+  for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){const a=ci+i,b=cj+j,key=a+'_'+b;if((hash2(a*7+3,b*13+5)>>>0)%3!==0)continue;out.push({key,lat:(a+.5)*G,lon:(b+.5)*G});}return out;}
+function tokScan(){
+  for(const c of tokCells()){if(SB.tok.has(c.key))continue;const w=ll2w(c.lat,c.lon);const n=nearestSeg(w[0],w[1],160,s=>!s.w.br);if(!n.seg)continue;const s=n.seg;
+    const dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;const t=clamp((w[0]-s.ax)*dx+(w[1]-s.ay)*dy,2,Math.max(2,s.len-2));let x=s.ax+dx*t+dy*(s.w.hw+1.4),y=s.ay+dy*t-dx*(s.w.hw+1.4);
+    if(inBuilding(x,y)){x=s.ax+dx*t-dy*(s.w.hw+1.4);y=s.ay+dy*t+dx*(s.w.hw+1.4);}if(inBuilding(x,y))continue;SB.tok.set(c.key,{key:c.key,x,y,z:.9});}
+  for(const st of METRO.stations||[]){const key='m_'+(st.name||Math.round(st.x)+'_'+Math.round(st.y));if(SB.tok.has(key))continue;SB.tok.set(key,{key,x:st.x,y:st.y,z:12.05+.9,elev:true});}
+  for(const[k,t]of SB.tok)if(Math.hypot(t.x-P.x,t.y-P.y)>1600)SB.tok.delete(k);}
+function tokTick(){for(const[k,t]of SB.tok){if(profile.tok.includes(k))continue;const d=Math.hypot(t.x-P.x,t.y-P.y);if(d>2)continue;
+  if(t.elev&&!(FOOT.on&&(P.elev||0)>10))continue;if(!t.elev&&(P.elev||0)>2)continue;
+  profile.tok.push(k);const pay=t.elev?750:250;profile.wallet+=pay;saveProfile();sbPop('NAMMA TOKEN',`${profile.tok.length} found · +₹${pay}`,'#FFD84D');Snd.chime();Hap.success&&Hap.success();}}
+function coinMesh(){if(SB.coin)return SB.coin;const mb=new MB();mb.cyl(0,0,0,.42,.1,'z',16,[1,.8,.15],[1,.88,.3],.8,.6);mb.box(0,0,0,.18,.5,.12,[1,.95,.6],1);SB.coin=mb.mesh();return SB.coin;}
+RLAYERS.push((A,n)=>{const m=coinMesh();for(const[k,t]of SB.tok){if(profile.tok.includes(k))continue;if(Math.hypot(t.x-CAM.eye[0],t.y-CAM.eye[2])>180)continue;
+  M4.model(TM,t.x,t.z+Math.sin(GT*2.5+t.x)*.12,t.y,GT*2.2,0,0);drawLit(m,TM,{emiK:1.4,emiAdd:[.5,.38,.05],noHL:true});DGr.bill(t.x,t.z,t.y,.9,[1,.75,.15],CAM.right);}});
+{const _fm2=footMini;footMini=function(m,R,arrow){_fm2(m,R,arrow);for(const[k,t]of SB.tok){if(profile.tok.includes(k)||Math.abs(t.x-P.x)>R||Math.abs(t.y-P.y)>R)continue;m.fillStyle='#FFD84D';m.beginPath();m.arc(t.x,t.y,7,0,TAU);m.fill();}};}
+
+/* ---------- random world events within 150 m, cleaned up when you leave ---------- */
+function evCashVan(){const a=spawnAgent(false);if(!a)return null;const base=TT.find(q=>q.k==='suv')||a.t;a.t=Object.assign({},base,{k:'suv',cash:true,cruise:.85});a.model=trafficModel(a.t,'#E8E8E2');a.cashVan=true;a.vanHits=0;agents.push(a);
+  toast('Armoured cash van spotted nearby · ram it to spill the cash','gold','ev',4000);return {k:'van',a,t:0};}
+function evGang(){const n=nearestSeg(P.x+Math.sin(P.h)*45,P.y-Math.cos(P.h)*45,40,s=>!s.w.br);if(!n.seg)return null;const s=n.seg;const cx=(s.ax+s.bx)/2+(s.by-s.ay)/s.len*(s.w.hw+2),cy=(s.ay+s.by)/2-(s.bx-s.ax)/s.len*(s.w.hw+2);
+  const red={kind:'walk',shirt:'#B71C1C',pants:'#111',cap:'#111'},org={kind:'walk',shirt:'#E65100',pants:'#3E2723',cap:'#E65100'};const g=[];
+  for(let i=0;i<3;i++){g.push(misPed(red,cx-1.2,cy+i*1.2-1.2,{state:'brawl',role:'gang',side:0}));g.push(misPed(org,cx+1.2,cy+i*1.2-1.2,{state:'brawl',role:'gang',side:1}));}
+  toast('Gang fight up ahead · stay clear or get involved','bad','ev',3500);return {k:'gang',g,t:0,x:cx,y:cy};}
+function evRace(){if(FOOT.on||P.s>3)return null;const ang=P.h+(Math.random()-.5)*1.2,dist=900+Math.random()*500;const tx=P.x+Math.sin(ang)*dist,ty=P.y-Math.cos(ang)*dist;
+  const n=nearestSeg(tx,ty,200,s=>!s.w.br);if(!n.seg)return null;const s=n.seg;const x=(s.ax+s.bx)/2,y=(s.ay+s.by)/2;
+  toast('A street racer revs at you · honk within 8 s to race','gold','ev',5000);Snd.burst&&Snd.burst(.6,120,1,.5);return {k:'race',x,y,t:0,state:'offer',d:Math.hypot(x-P.x,y-P.y)};}
+function evTick(dt){const E=SB.ev;if(!E)return;E.t+=dt;
+  if(E.k==='van'){const a=E.a;if(!agents.includes(a)){SB.ev=null;return;}
+    if(!a.burst&&!FOOT.on&&Math.hypot(a.x-P.x,a.y-P.y)<(a.t.len+P.len)/2+.3&&Math.abs(P.s)>4&&(a.hitCD||0)<GT){a.hitCD=GT+.6;a.vanHits++;SFX&&SFX.metal(.8);
+      if(a.vanHits>=3||Math.abs(P.s)>14){a.burst=true;a.stop=99;a.v=0;for(let i=0;i<6;i++)dropCash(a.x+(Math.random()-.5)*3,a.y+(Math.random()-.5)*3,1500+Math.floor(Math.random()*2000));
+        sbPop('CASH VAN DOWN','grab the money','#7CFF8A');forceChase(2,'van');}else toast(`Van hit ${a.vanHits}/3`,'','van',900);}
+    if(E.t>150||Math.hypot(a.x-P.x,a.y-P.y)>320){if(!a.burst){const i=agents.indexOf(a);if(i>=0)agents.splice(i,1);}SB.ev=null;}}
+  else if(E.k==='gang'){for(const p of E.g){if(p.state==='brawl'){const ph=Math.floor(E.t*3+(p.side?1:0))%3;p.rp=ph===0?'punch':ph===1?'kick':'pose';const o=E.g.find(q=>q.side!==p.side&&q.state==='brawl');if(o)p.h=hAng(o.x-p.x,o.y-p.y);}}
+    if(E.g.some(p=>p.hp<100||p.state==='down')){for(const p of E.g)if(p.state==='brawl'){p.state='hostile';p.armed=Math.random()<.3;p.rp=null;}}
+    if(E.t>40||Math.hypot(E.x-P.x,E.y-P.y)>260){for(const p of E.g)if(!p.dead&&p.state!=='down')p.gone=true;SB.ev=null;}}
+  else if(E.k==='race'){
+    if(E.state==='offer'){if(input.horn&&!FOOT.on){E.state='go';E.t=0;E.limit=Math.round(E.d/15+12);try{setPin(E.x,E.y);WP.name='Race finish';}catch(e){}sbPop('RACE!',`beat ${E.limit} s`,'#FF3FA4');Snd.tone&&Snd.tone([880,1320],.3,'square',.08);}
+      else if(E.t>8)SB.ev=null;return;}
+    const left=E.limit-E.t;if(Math.floor(left)!==E.last&&left>=0){E.last=Math.floor(left);if(left<=5)Snd.tone&&Snd.tone([520],.06,'square',.05);}
+    if(Math.hypot(E.x-P.x,E.y-P.y)<14){const pay=3000;profile.wallet+=pay;saveProfile();sbPop('RACE WON',`+₹${pay.toLocaleString('en-IN')} · ${Math.round(E.t)} s`,'#7CFF8A');Snd.chime();try{clearPin();}catch(e){}SB.ev=null;}
+    else if(left<0||FOOT.on){sbPop('RACE LOST','the racer got there first','#E53935');try{clearPin();}catch(e){}SB.ev=null;}}}
+{const _lu5=lifeUpdate;lifeUpdate=function(dt){_lu5(dt);if(state!=='play'||(typeof CUT!=='undefined'&&CUT.on))return;
+  try{evTick(dt);SB.tokT-=dt;if(SB.tokT<=0){SB.tokT=2;tokScan();}tokTick();
+    if(!SB.ev&&!MIS.cur&&!COP.level){SB.t-=dt;if(SB.t<=0){SB.t=70+Math.random()*80;const r=Math.random();SB.ev=r<.35?evCashVan():r<.65?evGang():evRace();}}}catch(e){}};}
+Object.assign(window.__oosht||{},{SB,evCashVan,evGang,evRace,tokScan,sbPop,nearMissTick});
 
 })();
 </script>
