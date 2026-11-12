@@ -667,7 +667,7 @@ window.__onBack=()=>{
 const SETS=[
   ['sound','Sound',[[true,'On'],[false,'Off']]],
   ['haptics','Vibration',[['off','Off'],['low','Low'],['med','Medium'],['high','Strong']]],
-  ['steer','Steering',[['buttons','Buttons'],['tilt','Tilt phone']]],
+  ['steer','Steering',[['buttons','Joystick'],['tilt','Tilt phone']]],
   ['cam','Camera',[['chase','Chase'],['cockpit','Cockpit'],['far','Top']]],
   ['tod','Time of day',[['auto','Live (sun)'],['dawn','Dawn'],['noon','Noon'],['evening','Evening'],['night','Night']]],
   ['gfx','Graphics',[['fast','Fast'],['balanced','Balanced'],['ultra','Ultra']]],

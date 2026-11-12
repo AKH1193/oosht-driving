@@ -5,11 +5,11 @@ const Snd={
     if(this.ctx)return;
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
     try{this.ctx=new AC();}catch(e){return;}
-    this.master=this.ctx.createGain();this.master.gain.value=settings.sound?.7:0;this.master.connect(this.ctx.destination);
+    this.master=this.ctx.createGain();this.master.gain.value=settings.sound?.7*(settings.vol??100)/100:0;this.master.connect(this.ctx.destination);
     const len=this.ctx.sampleRate;const b=this.ctx.createBuffer(1,len,this.ctx.sampleRate);const d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;this.noise=b;
   },
   resume(){if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();},
-  setOn(on){if(this.master)this.master.gain.setTargetAtTime(on?.7:0,this.ctx.currentTime,.05);},
+  setOn(on){if(this.master)this.master.gain.setTargetAtTime(on?.7*(settings.vol??100)/100:0,this.ctx.currentTime,.05);},
   /* optional real recordings: put files in www/sounds/ (engine_<vehicle>.ogg, engine_<two|three|car>.ogg, horn_<vehicle>.ogg ...) */
   bufs:{},tried:{},
   async loadSample(name){
@@ -105,7 +105,7 @@ const Snd={
 
 /* ================= haptics ================= */
 const Hap={
-  scale(){return {off:0,low:.45,med:.75,high:1}[settings.haptics]??.75;},
+  scale(){if(typeof settings.hapN==='number')return settings.hapN/100;return {off:0,low:.45,med:.75,high:1}[settings.haptics]??.75;},
   last:0,
   play(times,amps,force){
     const k=this.scale();if(!k)return;

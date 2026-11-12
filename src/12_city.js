@@ -9,7 +9,7 @@ SETS.push(['weather','Weather',[['auto','Live (random rain)'],['clear','Always c
 function applyHudStyle(){
   const h=$('#hud').style;h.setProperty('--bo',settings.btnOp);h.setProperty('--bs',settings.btnSize);h.setProperty('--ho',settings.hudOp);
   const sh={round:['50%','40px','50%'],rounded:['20px','16px','50%'],square:['6px','6px','8px']}[settings.btnShape]||['20px','16px','50%'];
-  h.setProperty('--rp',sh[0]);h.setProperty('--rq',sh[1]);h.setProperty('--rc',sh[2]);h.setProperty('--mm',{S:'84px',M:'108px',L:'144px'}[settings.mapSize]||'108px');
+  h.setProperty('--rp',sh[0]);h.setProperty('--rq',sh[1]);h.setProperty('--rc',sh[2]);h.setProperty('--mm',typeof settings.mapSize==='number'?settings.mapSize+'px':({S:'84px',M:'108px',L:'144px'}[settings.mapSize]||'108px'));
 }
 applyHudStyle();
 const mixv=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);

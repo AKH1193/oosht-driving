@@ -26,7 +26,7 @@ People talk as you pass (in Kannada when the phone has a Kannada voice, otherwis
 
 ## Sound and music
 
-The game opens on a night city: a car tears past, gunshots ring out, and AN ANIRUDH PRODUCTION (ARK CREATIONS) lands over it with a boom and vibration. Menus have their own music. In cars, autos, buses and lorries the RADIO button cycles six stations (Kannada film hits, electronic, Carnatic, dollu folk, lo-fi and a talk station with traffic updates) and off; keyboard R. The city has distant traffic, horns, birds by day and dogs at night.
+The game opens on a night city: a car tears past, gunshots ring out, and AN ANIRUDH PRODUCTION (ARK CREATIONS) lands over it with a boom and vibration. A short intro film follows (dusk over Bengaluru with a metro crossing, an auto chased by a Hoysala, rain and neon, then the Wise City title) with its own music; Skip intro jumps straight to the menu, and Watch intro on the title screen replays it. Menus have their own music. A speaker button on the title screen and in the game turns all sound on or off. In cars, autos, buses and lorries the RADIO button cycles six stations (Kannada film hits, electronic, Carnatic, dollu folk, lo-fi and a talk station with traffic updates) and off; keyboard R. The city has distant traffic, horns, birds by day and dogs at night.
 
 ## Street life
 
@@ -92,7 +92,7 @@ Every push to `main` builds a new APK through GitHub Actions and publishes it as
 - Keyboard: arrows or WASD, F to attack, X to jump, E to get in or out, Q to switch weapons, C for camera.
 - The camera button cycles chase, cockpit and top views.
 - Tap the minimap to open the full map: drag to move, pinch or use + and − to zoom, and tap anywhere to drop a pin. A purple line shows the road route on the map and minimap, a purple beam marks the spot in the city, and the distance counts down as you go. Keyboard: M.
-- Settings let you change button opacity, size and shape, HUD and map opacity and map size.
+- Settings use sliders for master volume, music and radio volume, vibration, button visibility and size, camera swipe speed, panel visibility and minimap size, plus button shape, joystick mode, camera and graphics.
 - Pause, then Quit & start over wipes your money and progress so you start fresh on a new map.
 
 ## Where things live

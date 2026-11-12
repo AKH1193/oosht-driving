@@ -63,7 +63,7 @@ function musTick(){const c=Snd.ctx;if(!c||!MUS.st)return;const st=MUS.st,beat=60
   while(MUS.nextT<c.currentTime+.25){schedStep(st,MUS.nextT,MUS.step);MUS.step++;MUS.nextT+=beat;}
   if(st.talk&&!MUS.menu){MUS.talkT-=.05;if(MUS.talkT<=0){MUS.talkT=22+Math.random()*12;rjTalk();}}}
 function musPlay(st,vol){if(!Snd.ctx)return;musBus();MUS.st=st;MUS.step=0;MUS.mel=null;MUS.seed=1+Math.floor(Math.random()*1e6);MUS.nextT=Snd.ctx.currentTime+.08;MUS.talkT=4;
-  MUS.bus.gain.cancelScheduledValues(Snd.ctx.currentTime);MUS.bus.gain.setTargetAtTime(vol,Snd.ctx.currentTime,.4);if(!MUS.timer)MUS.timer=setInterval(musTick,50);}
+  MUS.vol=vol;MUS.bus.gain.cancelScheduledValues(Snd.ctx.currentTime);MUS.bus.gain.setTargetAtTime(vol*(settings.musVol??80)/80,Snd.ctx.currentTime,.4);if(!MUS.timer)MUS.timer=setInterval(musTick,50);}
 function musStop(){if(!MUS.bus)return;MUS.bus.gain.setTargetAtTime(0,Snd.ctx.currentTime,.25);const s=MUS.st;setTimeout(()=>{if(MUS.st===s){MUS.st=null;}},900);}
 /* the talk station: an RJ with traffic updates */
 const RJ=[['ನಮಸ್ಕಾರ ಬೆಂಗಳೂರು! ಸಿಲ್ಕ್ ಬೋರ್ಡ್ ಹತ್ರ ಟ್ರಾಫಿಕ್ ಜಾಮ್ ಇದೆ','Namaskara Bengaluru! Silk Board hatra traffic jam ide'],['ಇವತ್ತು ಸಂಜೆ ಮಳೆ ಬರಬಹುದು, ಕೊಡೆ ತಗೊಳ್ಳಿ','Ivattu sanje male barabahudu, kode tagolli'],['ಔಟರ್ ರಿಂಗ್ ರೋಡ್ ನಲ್ಲಿ ಸ್ಲೋ ಮೂವಿಂಗ್ ಟ್ರಾಫಿಕ್','Outer Ring Road nalli slow moving traffic'],['ಮೆಟ್ರೋ ಎಲ್ಲಾ ಲೈನ್ ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಓಡ್ತಿದೆ','Metro ella line samayakke sariyaagi odtide'],['ಎಂ ಜಿ ರೋಡ್ ನಲ್ಲಿ ಹೊಸ ಕೆಫೆ ಓಪನ್ ಆಗಿದೆ','MG Road nalli hosa cafe open aagide']];
@@ -116,11 +116,11 @@ function introRun(){
     /* the credit lands with a flash */
     if(t>3.2&&t<3.7){c.fillStyle=`rgba(255,240,210,${.55*(1-(t-3.2)/.5)})`;c.fillRect(0,0,w,h);}
     c.fillStyle=`rgba(0,0,0,${t>3.2?Math.min(.45,(t-3.2)*.6):0})`;c.fillRect(0,0,w,h);
-    if(t>6.6){introEnd();return;}requestAnimationFrame(frame);};
+    if(t>6.4){if(introMovie(c,w,h,dpr,t-6.4)){introEnd();return;}}requestAnimationFrame(frame);};
   requestAnimationFrame(frame);}
 function introEnd(){if(INTRO.done)return;INTRO.done=true;endSplash();setTimeout(()=>menuMusic(),400);}
 $('#splash').addEventListener('pointerdown',()=>{Snd.init();const was=Snd.ctx&&Snd.ctx.state==='running';Snd.resume();$('#introTap').hidden=true;
-  if(was&&(performance.now()-INTRO.t0)/1000>1.2)introEnd();else if(!was){INTRO.t0=performance.now();INTRO.ev=[[.25,'rev'],[2.15,'shot'],[2.35,'shot'],[2.6,'shot'],[3.25,'boom']];
+  if(!was&&(performance.now()-INTRO.t0)/1000<6.4){INTRO.t0=performance.now();INTRO.ev=[[.25,'rev'],[2.15,'shot'],[2.35,'shot'],[2.6,'shot'],[3.25,'boom']];
     for(const el of document.querySelectorAll('#splash .l1,#splash .l2,#splash .rule')){el.style.animation='none';void el.offsetWidth;el.style.animation='';}}});
 Snd.init();setTimeout(()=>{if(Snd.ctx&&Snd.ctx.state==='running')$('#introTap').hidden=true;},300);
 introRun();

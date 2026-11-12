@@ -29,7 +29,7 @@ setTimeout(joyReset,0);
 /* ---------- swipe anywhere else to look around ---------- */
 const LOOK={id:null,x:0,y:0,t:0,lastTap:0,moved:0};
 const lz=$('#lookZone');
-const lookK=()=>({low:.0045,med:.0075,high:.012}[settings.lookSens]||.0075);
+const lookK=()=>typeof settings.lookSens==='number'?settings.lookSens:({low:.0045,med:.0075,high:.012}[settings.lookSens]||.0075);
 function lookBy(dx,dy){
   if(CAM.mode==='cockpit'){if(FOOT.on&&!FOOT.ride)P.h+=dx*lookK();return;}
   if(CAM.free)CAM.yaw+=dx*lookK();else CAM.look=angDiff(0,(CAM.look||0)+dx*lookK());
