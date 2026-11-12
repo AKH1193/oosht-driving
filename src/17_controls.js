@@ -16,13 +16,15 @@ function joyMove(e){const R=JOY.R;let dx=(e.clientX-JOY.cx)/R,dy=(e.clientY-JOY.
   const mm=Math.min(1,m);const k=mm<JOY.dz?0:(mm-JOY.dz)/(1-JOY.dz)/(mm||1);
   input.jx=dx*k;input.jy=-dy*k;joyKnob(dx*R*.62,dy*R*.62);
   const run=mm>.97;if(run!==JOY.run){JOY.run=run;jz.classList.toggle('run',run&&FOOT.on);}}
-jz.addEventListener('pointerdown',e=>{if(JOY.id!=null)return;e.preventDefault();try{jz.setPointerCapture(e.pointerId);}catch(_){}
+jz.addEventListener('pointerdown',e=>{if(JOY.id!=null){if(JOY.id===e.pointerId)return;joyReset();}e.preventDefault();try{jz.setPointerCapture(e.pointerId);}catch(_){}
   JOY.id=e.pointerId;JOY.R=joyR();const z=jz.getBoundingClientRect();
   if(settings.joyMode==='fixed'){const r=joyRest();JOY.cx=r[0];JOY.cy=r[1];}
   else{JOY.cx=clamp(e.clientX,z.left+JOY.R+6,z.right-JOY.R-6);JOY.cy=clamp(e.clientY,z.top+JOY.R+6,z.bottom-JOY.R-6);}
   joyPlace(JOY.cx,JOY.cy);jz.classList.add('on');joyMove(e);});
 jz.addEventListener('pointermove',e=>{if(e.pointerId===JOY.id)joyMove(e);});
 for(const ev of['pointerup','pointercancel','lostpointercapture'])jz.addEventListener(ev,e=>{if(e.pointerId===JOY.id)joyReset();});
+for(const ev of['pointerup','pointercancel'])window.addEventListener(ev,e=>{if(e.pointerId===JOY.id)joyReset();},true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)joyReset();});
 window.addEventListener('resize',()=>{if(JOY.id==null)setTimeout(joyReset,60);});
 setTimeout(joyReset,0);
 

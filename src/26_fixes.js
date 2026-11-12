@@ -154,12 +154,24 @@ function footFree(x,y){if(inBuilding(x,y))return false;const q=[];gQuery(W.tG,x,
   if(typeof pierAt==='function'&&pierAt(x,y))return false;
   const box=(cx,cy,h,len,wid)=>{const fx=Math.sin(h),fy=-Math.cos(h),dx=x-cx,dy=y-cy;return Math.abs(dx*fx+dy*fy)<len/2+.4&&Math.abs(-dx*fy+dy*fx)<wid/2+.4;};
   for(const a of agents)if(box(a.x,a.y,a.h,a.t.len,a.t.wid))return false;const pk=FOOT.parked;if(pk){const pm=playerModel(pk.type);if(box(pk.x,pk.y,pk.h,pm.len||2,pm.wid||1))return false;}return true;}
-function unstick(){for(let r=.6;r<=4.2;r+=.4)for(let i=0;i<16;i++){const a=i/16*TAU+r;const x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r;if(footFree(x,y)){P.x=x;P.y=y;M4.model(P.M,P.x,0,P.y,-P.h,0,0);return true;}}return false;}
+function unstick(){for(let r=.6;r<=8.2;r+=.4)for(let i=0;i<16;i++){const a=i/16*TAU+r;const x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r;if(footFree(x,y)){P.x=x;P.y=y;M4.model(P.M,P.x,0,P.y,-P.h,0,0);return true;}}return false;}
 const STK={x:0,y:0,t:0};
 {const _uf2=updateFoot;updateFoot=function(dt){_uf2(dt);
   if(!FOOT.on||FOOT.ride||INT.on||ROOF.a||LIFE.downT>0||METRO.ride||(P.elev||0)>.5){STK.t=0;return;}
-  const push=Math.hypot(input.jx||0,input.jy||0)>.3;const moved=Math.hypot(P.x-STK.x,P.y-STK.y);STK.x=P.x;STK.y=P.y;
-  if(push&&moved<.01){STK.t+=dt;if(STK.t>.5){STK.t=0;unstick();}}else STK.t=0;};}
+  const push=Math.hypot(input.jx||0,input.jy||0)>.3;if(!push){STK.t=0;STK.x=P.x;STK.y=P.y;return;}
+  if(STK.t===0){STK.x=P.x;STK.y=P.y;}STK.t+=dt;
+  if(STK.t>.8){const net=Math.hypot(P.x-STK.x,P.y-STK.y);STK.t=0;if(net<.35)unstick();}};}
 /* when a crash throws Tony off, land him on open ground, never inside a tree, pole or vehicle */
 {const _cr2=crash;crash=function(rel,what,ra){const was=FOOT.on;_cr2(rel,what,ra);if(!was&&FOOT.on&&!footFree(P.x,P.y))unstick();};}
 Object.assign(window.__oosht||{},{SFX,unstick,footFree,FEAR,scream});
+
+/* ---------- Pause > Get unstuck: always returns Tony (or the vehicle) to open road ---------- */
+function getUnstuck(){try{joyReset();}catch(e){}input.jx=input.jy=0;input.gas=input.brake=0;LIFE.downT=0;
+  if(ROOF.a)roofDown(false);P.elev=0;
+  const n=nearestSeg(P.x,P.y,200,s=>!s.w.br);if(n.seg){const s=n.seg,dx=(s.bx-s.ax)/s.len,dy=(s.by-s.ay)/s.len;const t=clamp((P.x-s.ax)*dx+(P.y-s.ay)*dy,1,Math.max(1,s.len-1));
+    if(FOOT.on){P.x=s.ax+dx*t+dy*(s.w.hw*.8);P.y=s.ay+dy*t-dx*(s.w.hw*.8);if(!footFree(P.x,P.y))unstick();}
+    else{P.x=s.ax+dx*t;P.y=s.ay+dy*t;P.h=hAng(dx,dy);P.s=0;P.vx=P.vy=0;}}
+  else if(FOOT.on)unstick();
+  M4.model(P.M,P.x,0,P.y,-P.h,0,0);toast('Back on the road','good');}
+$('#unstuckBtn').addEventListener('click',()=>{$('#resumeBtn').click();setTimeout(getUnstuck,60);});
+Object.assign(window.__oosht||{},{getUnstuck});
