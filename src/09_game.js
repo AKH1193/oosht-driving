@@ -578,7 +578,9 @@ function renderTitle(){
   c.fillStyle='#14121F';c.fillRect(0,base,w,h-base);c.fillStyle='#F2C230';for(let x=0;x<w;x+=60)c.fillRect(x,base+(h-base)*.45,30,4);
   $('#titleStats').textContent=`Wallet ₹${fmtINR(profile.wallet)} · ${profile.km.toFixed(1)} km driven · ${profile.trips} trips`+(licenceSuspended()?` · Licence seized: pay ₹${fmtINR(pendingTotal())} at the court`:profile.pending.length?` · ${profile.pending.length} unpaid challan${profile.pending.length>1?'s':''}`:'');
 }
-$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();go('where');});
+/* one continuous Bengaluru map: start where you last were (or in the city centre) and the streets keep loading as you go */
+const CITY_START={lat:12.9757,lon:77.6066,label:'Bengaluru'};
+$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();const L=profile.lastLoc;currentLoc=L&&L.lat?{lat:L.lat,lon:L.lon,label:'Bengaluru'}:CITY_START;go('showroom');});
 
 const AREAS=[
   {label:'MG Road',sub:'Central',lat:12.9755,lon:77.6068},{label:'Koramangala',sub:'80 Feet Road',lat:12.9352,lon:77.6245},
@@ -658,7 +660,7 @@ window.__onBack=()=>{
   if(state==='venue'){$('#vnClose').click();return true;}if(state==='metro'){$('#mtClose').click();return true;}if(state==='hosp')return true;
   if(state==='court'){$('#ctLeave').click();return true;}if(state==='ride'){$('#rdCancel').click();return true;}if(state==='job'){$('#jbClose').click();return true;}
   if(state==='repair'||state==='fuel'){resumeDrive();return true;}if(state==='outcome'){$('#outPrimary').click();return true;}
-  if(!$('#showroom').hidden){go(changingVehicle?'title':'where');changingVehicle=false;return true;}
+  if(!$('#showroom').hidden){go('title');changingVehicle=false;return true;}
   if(!$('#where').hidden||!$('#loading').hidden||false){go('title');return true;}
   return false;
 };

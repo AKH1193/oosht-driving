@@ -99,3 +99,12 @@ buildSettings=function(){
       box.appendChild(row);}}};
 /* the intro no longer ends on a tap: taps only switch the sound on; use Skip */
 Object.assign(window.__oosht||{},{introMovie,toggleSound});
+
+/* ---------- the single map remembers where you were ---------- */
+setInterval(()=>{if(state==='play'&&W.source==='tiles'&&!INT.on&&!FLY.on){const ll=w2ll(P.x,P.y);if(ll&&isFinite(ll[0])){profile.lastLoc={lat:+ll[0].toFixed(5),lon:+ll[1].toFixed(5)};saveProfile();}}},15000);
+/* the airport is far out in Devanahalli: a cab takes you there for the flight mission */
+{const m=MISSIONS.find(q=>q.id==='flight');m.need='Kempegowda Airport is far out of town. Tap again to take a cab there for ₹1,500.';
+ const _ok=m.ok;m.ok=function(){return _ok();};
+ const _start=misStart;misStart=function(q){if(q.id==='flight'&&!q.ok()){if(profile.wallet<1500){toast('The cab to the airport costs ₹1,500','bad');return;}
+   profile.wallet-=1500;saveProfile();MIS.pendingFlight=true;state='play';show('play');startDrive({lat:13.1986,lon:77.7066,label:'Bengaluru'});return;}_start(q);};}
+{const _sp=startPlay;startPlay=function(a){_sp(a);if(MIS.pendingFlight){MIS.pendingFlight=false;setTimeout(()=>{const m=MISSIONS.find(q=>q.id==='flight');if(m.ok())misStart(m);else toast('No planes found at the airport right now','bad');},1500);}};}

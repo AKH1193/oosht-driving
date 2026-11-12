@@ -2,13 +2,13 @@
 
 An Anirudh Production (ARK Creations).
 
-A Bengaluru life game in 3D, played on the real streets around your GPS location. Drive, walk, eat, work out, fight and run from the police. Roads, buildings, shops, parks and lakes come from OpenStreetMap (vector tiles from OpenFreeMap, cached on the phone for offline revisits).
+A Bengaluru life game in 3D on one continuous map of the real city: tap Play and you start where you last left off (the city centre the first time), and the streets keep loading as you drive anywhere. Drive, walk, eat, work out, fight and run from the police. Roads, buildings, shops, parks and lakes come from OpenStreetMap (vector tiles from OpenFreeMap, cached on the phone for offline revisits).
 
 ## Vehicles
 
 Ten two-wheelers, an auto-rickshaw, three everyday cars, four luxury and sports cars (Veloce V12 supercar, Zephyr GT, Regent Imperial saloon, Monarch LX SUV), a city bus and a lorry. Pick one in the showroom, or step out and take any vehicle off the street.
 
-At Kempegowda International Airport (pick it on the area list) airliners land and take off on the real runways. Walk up to a parked plane and pull the pilot out, or board an empty one, then fly it: GO and BRAKE set the throttle, the joystick banks and climbs, take off above about 230 km/h, and land on a runway and stop before getting out.
+At Kempegowda International Airport (drive out to Devanahalli, or take the ₹1,500 cab from the flight mission) airliners land and take off on the real runways. Walk up to a parked plane and pull the pilot out, or board an empty one, then fly it: GO and BRAKE set the throttle, the joystick banks and climbs, take off above about 230 km/h, and land on a runway and stop before getting out.
 
 ## On the road
 

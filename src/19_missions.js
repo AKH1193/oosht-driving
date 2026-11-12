@@ -158,7 +158,7 @@ const MISSIONS=[
 ];
 
 /* ---------- running a mission ---------- */
-function misStart(m){if(MIS.cur)misEnd();if(m.ok&&!m.ok()){toast(m.need,'bad');return;}
+function misStart(m){if(MIS.cur)misEnd();if(m.ok&&!m.ok()){toast('Get to the airport first','bad');return;}
   MIS.cur=m;MIS.st=0;MIS.t=0;MIS.d={};MIS.timer=null;MIS.cars=[];MIS.beams=[];clearPin();
   state='play';show('play');if(FOOT.on&&!FOOT.ride)footHud(true);
   m.start(MIS.d);toast(`Mission: ${m.name}`,'gold');Snd.chime();}
@@ -206,7 +206,7 @@ function misDraw(night){
 function openMissions(){if(state!=='play'&&state!=='pause')return;state='misres';releaseAll();$('#msTitle').textContent='Missions';$('#msText').textContent=MIS.cur?`Now playing: ${MIS.cur.name}`:'Every mission is set on the streets around you. Replays pay half.';
   const box=$('#msList');box.innerHTML='';
   if(MIS.cur){const b=document.createElement('button');b.className='btn';b.textContent='Abandon current mission';b.addEventListener('click',()=>{misEnd();openMissions();});box.appendChild(b);}
-  for(const m of MISSIONS){const n=profile.missions[m.id]||0;const ok=!m.ok||m.ok();const b=document.createElement('button');b.className='vitem';b.disabled=!ok;
+  for(const m of MISSIONS){const n=profile.missions[m.id]||0;const ok=!m.ok||m.ok();const b=document.createElement('button');b.className='vitem';
     b.innerHTML='<span class="n"></span><span class="e"></span><b></b>';b.querySelector('.n').textContent=`${m.name} · ${m.kind}`;
     b.querySelector('.e').textContent=`${m.giver}. ${m.brief}${ok?'':' '+m.need}`;b.querySelector('b').textContent=(n?'✓ ':'')+'₹'+fmtINR(n?Math.round(m.pay/2):m.pay);
     b.addEventListener('click',()=>misStart(m));box.appendChild(b);}

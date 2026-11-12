@@ -442,7 +442,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
 
   <div class="screen scrim" id="showroom" hidden>
     <div class="card">
-      <div class="head"><h2>Pick your ride</h2><button class="back" data-go="where">Back</button></div>
+      <div class="head"><h2>Pick your ride</h2><button class="back" data-go="title">Back</button></div>
       <div class="tabs" id="vtabs"></div>
       <div class="showroom" id="vlist"></div>
       <div class="foot"><div class="note" id="vehNote"></div><button class="btn primary" id="driveBtn">Drive</button></div>
@@ -455,7 +455,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
     <div class="row" id="loadActions" hidden>
       <button class="btn primary" id="retryBtn">Try again</button>
       <button class="btn" id="demoBtn">Drive the demo city</button>
-      <button class="btn" data-go="where">Pick another area</button>
+      <button class="btn" data-go="title">Main menu</button>
     </div>
   </div>
 
@@ -3426,7 +3426,9 @@ function renderTitle(){
   c.fillStyle='#14121F';c.fillRect(0,base,w,h-base);c.fillStyle='#F2C230';for(let x=0;x<w;x+=60)c.fillRect(x,base+(h-base)*.45,30,4);
   $('#titleStats').textContent=`Wallet ₹${fmtINR(profile.wallet)} · ${profile.km.toFixed(1)} km driven · ${profile.trips} trips`+(licenceSuspended()?` · Licence seized: pay ₹${fmtINR(pendingTotal())} at the court`:profile.pending.length?` · ${profile.pending.length} unpaid challan${profile.pending.length>1?'s':''}`:'');
 }
-$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();go('where');});
+/* one continuous Bengaluru map: start where you last were (or in the city centre) and the streets keep loading as you go */
+const CITY_START={lat:12.9757,lon:77.6066,label:'Bengaluru'};
+$('#playBtn').addEventListener('click',()=>{Snd.init();Snd.resume();const L=profile.lastLoc;currentLoc=L&&L.lat?{lat:L.lat,lon:L.lon,label:'Bengaluru'}:CITY_START;go('showroom');});
 
 const AREAS=[
   {label:'MG Road',sub:'Central',lat:12.9755,lon:77.6068},{label:'Koramangala',sub:'80 Feet Road',lat:12.9352,lon:77.6245},
@@ -3506,7 +3508,7 @@ window.__onBack=()=>{
   if(state==='venue'){$('#vnClose').click();return true;}if(state==='metro'){$('#mtClose').click();return true;}if(state==='hosp')return true;
   if(state==='court'){$('#ctLeave').click();return true;}if(state==='ride'){$('#rdCancel').click();return true;}if(state==='job'){$('#jbClose').click();return true;}
   if(state==='repair'||state==='fuel'){resumeDrive();return true;}if(state==='outcome'){$('#outPrimary').click();return true;}
-  if(!$('#showroom').hidden){go(changingVehicle?'title':'where');changingVehicle=false;return true;}
+  if(!$('#showroom').hidden){go('title');changingVehicle=false;return true;}
   if(!$('#where').hidden||!$('#loading').hidden||false){go('title');return true;}
   return false;
 };
@@ -5987,7 +5989,7 @@ const MISSIONS=[
 ];
 
 /* ---------- running a mission ---------- */
-function misStart(m){if(MIS.cur)misEnd();if(m.ok&&!m.ok()){toast(m.need,'bad');return;}
+function misStart(m){if(MIS.cur)misEnd();if(m.ok&&!m.ok()){toast('Get to the airport first','bad');return;}
   MIS.cur=m;MIS.st=0;MIS.t=0;MIS.d={};MIS.timer=null;MIS.cars=[];MIS.beams=[];clearPin();
   state='play';show('play');if(FOOT.on&&!FOOT.ride)footHud(true);
   m.start(MIS.d);toast(`Mission: ${m.name}`,'gold');Snd.chime();}
@@ -6035,7 +6037,7 @@ function misDraw(night){
 function openMissions(){if(state!=='play'&&state!=='pause')return;state='misres';releaseAll();$('#msTitle').textContent='Missions';$('#msText').textContent=MIS.cur?`Now playing: ${MIS.cur.name}`:'Every mission is set on the streets around you. Replays pay half.';
   const box=$('#msList');box.innerHTML='';
   if(MIS.cur){const b=document.createElement('button');b.className='btn';b.textContent='Abandon current mission';b.addEventListener('click',()=>{misEnd();openMissions();});box.appendChild(b);}
-  for(const m of MISSIONS){const n=profile.missions[m.id]||0;const ok=!m.ok||m.ok();const b=document.createElement('button');b.className='vitem';b.disabled=!ok;
+  for(const m of MISSIONS){const n=profile.missions[m.id]||0;const ok=!m.ok||m.ok();const b=document.createElement('button');b.className='vitem';
     b.innerHTML='<span class="n"></span><span class="e"></span><b></b>';b.querySelector('.n').textContent=`${m.name} · ${m.kind}`;
     b.querySelector('.e').textContent=`${m.giver}. ${m.brief}${ok?'':' '+m.need}`;b.querySelector('b').textContent=(n?'✓ ':'')+'₹'+fmtINR(n?Math.round(m.pay/2):m.pay);
     b.addEventListener('click',()=>misStart(m));box.appendChild(b);}
@@ -6506,6 +6508,15 @@ buildSettings=function(){
       box.appendChild(row);}}};
 /* the intro no longer ends on a tap: taps only switch the sound on; use Skip */
 Object.assign(window.__oosht||{},{introMovie,toggleSound});
+
+/* ---------- the single map remembers where you were ---------- */
+setInterval(()=>{if(state==='play'&&W.source==='tiles'&&!INT.on&&!FLY.on){const ll=w2ll(P.x,P.y);if(ll&&isFinite(ll[0])){profile.lastLoc={lat:+ll[0].toFixed(5),lon:+ll[1].toFixed(5)};saveProfile();}}},15000);
+/* the airport is far out in Devanahalli: a cab takes you there for the flight mission */
+{const m=MISSIONS.find(q=>q.id==='flight');m.need='Kempegowda Airport is far out of town. Tap again to take a cab there for ₹1,500.';
+ const _ok=m.ok;m.ok=function(){return _ok();};
+ const _start=misStart;misStart=function(q){if(q.id==='flight'&&!q.ok()){if(profile.wallet<1500){toast('The cab to the airport costs ₹1,500','bad');return;}
+   profile.wallet-=1500;saveProfile();MIS.pendingFlight=true;state='play';show('play');startDrive({lat:13.1986,lon:77.7066,label:'Bengaluru'});return;}_start(q);};}
+{const _sp=startPlay;startPlay=function(a){_sp(a);if(MIS.pendingFlight){MIS.pendingFlight=false;setTimeout(()=>{const m=MISSIONS.find(q=>q.id==='flight');if(m.ok())misStart(m);else toast('No planes found at the airport right now','bad');},1500);}};}
 
 })();
 </script>
