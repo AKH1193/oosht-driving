@@ -25,8 +25,8 @@ function cityPlusPlace(){
 function districtAt(x,y){let best=null,bk=1e9;for(const d of DISTRICTS)for(const c of d.w){if(!c)continue;const k=Math.hypot(c.x-x,c.y-y)/c.r;if(k<1&&k<bk){bk=k;best=d;}}return best;}
 function distBanner(d){
   if(!DIST.ban){const b=document.createElement('div');b.id='distBan';
-    b.style.cssText='position:fixed;left:0;right:0;top:24%;text-align:center;pointer-events:none;z-index:40;opacity:0;transition:opacity .8s;font-family:Roboto,Arial,sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.75)';
-    b.innerHTML='<div class="dn" style="font-family:WCScript,cursive;font-size:clamp(34px,7vw,60px);line-height:1.1;transform:rotate(-4deg);-webkit-text-stroke:1px rgba(10,4,20,.8);paint-order:stroke fill"></div><div class="dt" style="font-family:WCDisplay,Impact,sans-serif;font-size:clamp(14px,3vw,20px);letter-spacing:.24em;text-transform:uppercase;color:#fff;margin-top:4px;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.6)"></div>';
+    b.style.cssText='position:fixed;left:calc(18px + env(safe-area-inset-left,0px));top:40%;max-width:46vw;text-align:left;pointer-events:none;z-index:40;opacity:0;transition:opacity .8s;font-family:Roboto,Arial,sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.75)';
+    b.innerHTML='<div class="dn" style="font-family:WCScript,cursive;font-size:clamp(28px,6vh,46px);line-height:1.1;transform:rotate(-4deg);transform-origin:left center;white-space:nowrap;-webkit-text-stroke:1px rgba(10,4,20,.8);paint-order:stroke fill"></div><div class="dt" style="font-family:WCDisplay,Impact,sans-serif;font-size:clamp(11px,2.8vh,15px);letter-spacing:.2em;text-transform:uppercase;color:#fff;margin-top:4px;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.6)"></div>';
     document.body.appendChild(b);DIST.ban=b;}
   const b=DIST.ban;b.querySelector('.dn').textContent=d?d.name:'Greater Bengaluru';{const col=d?d.col:'#E8EEF5',dn=b.querySelector('.dn');dn.style.color=col;dn.style.textShadow=`0 0 6px ${col},0 0 18px ${col},0 0 36px ${col}`;}
   b.querySelector('.dt').textContent=d?d.tag:'Open roads';b.style.opacity='1';clearTimeout(DIST.bt);DIST.bt=setTimeout(()=>{b.style.opacity='0';},3200);
@@ -170,7 +170,7 @@ const TUT={i:-1,t:0,ok:0,el:null,steps:[
   {txt:'Follow the purple route home to Jayanagar',done:()=>false,max:7}]};
 function tutHint(txt){if(!TUT.el){const e=document.createElement('div');e.id='tutHint';e.style.cssText="position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;pointer-events:none;padding:6px 16px;border-radius:10px;background:rgba(8,6,16,.62);border:1px solid rgba(255,199,44,.6);font-family:WCDisplay,Impact,sans-serif;font-size:clamp(16px,3.2vw,22px);letter-spacing:.05em;text-transform:uppercase;color:#FFC72C;text-shadow:0 2px 0 #000;white-space:nowrap;transition:opacity .3s";document.body.appendChild(e);TUT.el=e;}
   TUT.el.textContent=txt||'';TUT.el.style.opacity=txt?'1':'0';}
-function tutTick(dt){if(typeof CUT!=='undefined'&&CUT.on){if(TUT.el)TUT.el.style.opacity='0';return;}if(profile.tut||state!=='play'||FOOT.on||FLY.on){if(TUT.el&&TUT.i>=0&&(state!=='play'))TUT.el.style.opacity='0';return;}
+function tutTick(dt){if(typeof CUT!=='undefined'&&CUT.on){if(TUT.el)TUT.el.style.opacity='0';return;}if(profile.tut||state!=='play'||FOOT.on||FLY.on){if(TUT.el)TUT.el.style.opacity='0';return;}
   if(TUT.i<0){TUT.i=0;TUT.t=0;TUT.ok=0;const s=SAFES[0];if(s.rx!=null&&typeof setPin==='function'){try{setPin(s.rx,s.ry);WP.name='Your safehouse, Jayanagar';}catch(e){}}}
   const st=TUT.steps[TUT.i];if(!st){profile.tut=1;saveProfile();tutHint('');return;}
   tutHint(st.txt);TUT.t+=dt;if(st.done())TUT.ok+=dt;

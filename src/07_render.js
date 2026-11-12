@@ -148,8 +148,9 @@ function buildChunk(cx,cy){
       const u0=run/13.6,u1=(run+L)/13.6,v1=h/12.4;run+=L;
       let y0=0;
       if(h>5&&L>3.5){const ol=Math.hypot(out[0],out[2])||1;const mx=(ax+bx)/2+out[0]/ol*1.5,my=(ay+by)/2+out[2]/ol*1.5;const ns=nearestSeg(mx,my,12);
-        if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/16.8,r1=run/16.8,su0=ccw?r1:r0,su1=ccw?r0:r1,F=[1,1,1];
-          shp.rtri([ax,0,ay],[bx,0,by],[bx,3.4,by],F,out,[su0,1,su1,1,su1,0]);shp.rtri([ax,0,ay],[bx,3.4,by],[ax,3.4,ay],F,out,[su0,1,su1,0,su0,0]);y0=3.4;}}
+        if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/33.6,r1=run/33.6,su0=ccw?r1:r0,su1=ccw?r0:r1,F=[1,1,1];const row=(hash2(Math.round(ax),Math.round(ay))>>>0)%4,vb=(row+1)/4-.002,vt=row/4+.002;
+          const on=Math.hypot(out[0],out[2])||1,ox=out[0]/on*.05,oz=out[2]/on*.05;
+          shp.rtri([ax+ox,0,ay+oz],[bx+ox,0,by+oz],[bx+ox,3.4,by+oz],F,out,[su0,vb,su1,vb,su1,vt]);shp.rtri([ax+ox,0,ay+oz],[bx+ox,3.4,by+oz],[ax+ox,3.4,ay+oz],F,out,[su0,vb,su1,vt,su0,vt]);y0=3.4;}}
       if(!adE&&h>=6&&h<=40&&L>8){const ol2=Math.hypot(out[0],out[2])||1,nx=out[0]/ol2,ny=out[2]/ol2,mx2=(ax+bx)/2,my2=(ay+by)/2;const ns2=nearestSeg(mx2+nx*9,my2+ny*9,16);if(ns2.seg&&RANK[ns2.seg.w.cls]>=2&&!inBuilding(mx2+nx*2,my2+ny*2))adE=[ax,ay,bx,by,L,nx,ny];}
       const vy=(h-y0)/12.4;
       if(posh){const g0=run/12-L/12,g1=run/12,gv=(h-y0)/12,GC=[.9,.95,1];gls.rtri([ax,y0,ay],[bx,y0,by],[bx,h,by],GC,out,[g0,gv,g1,gv,g1,0]);gls.rtri([ax,y0,ay],[bx,h,by],[ax,h,ay],GC,out,[g0,gv,g1,0,g0,0]);

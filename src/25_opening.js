@@ -54,7 +54,7 @@ function openingStart(){
   if(typeof TUT!=='undefined')tutHint('');
   setTimeout(()=>{if(CUT.on&&Snd.ctx){MUS.menu=false;musPlay(INTRO_THEME,.32);}},350);}
 
-function openingTick(dt){if(!CUT.on)return;CUT.t+=dt;const T=CUT.t;
+function openingTick(dt){if(!CUT.on)return;CUT.t+=dt;CUT.beat=performance.now();const T=CUT.t;
   if(CUT.holding){CUT.hold+=dt;CUT.ui.querySelector('.hs').style.setProperty('--p',Math.min(1,CUT.hold/.6));if(CUT.hold>=.6){openingSkip();return;}}
   if((CUT.subT-=dt)<=0)cutSub();
   const nm=CUT.ui.querySelector('.nm');nm.classList.toggle('on',T>4.4&&T<6.9);
@@ -78,12 +78,24 @@ function openingEnd(){if(!CUT.on)return;CUT.on=false;CUT.cam=null;profile.opened
   if(!FOOT.on){try{Snd.startEngine(VEH[P.type].engine,P.type);}catch(e){}}
   /* the theme hands over to the car radio */
   setTimeout(()=>{try{if(state==='play'&&!FOOT.on&&hasRadio())radioSet(1);}catch(e){}},900);}
+/* self-healing handoff: whatever went wrong in the scene, gameplay is guaranteed to be visible and controllable */
+function handoffCheck(){
+  try{const ok=v=>Array.isArray(v)&&v.every(Number.isFinite);
+    if(!Number.isFinite(P.x)||!Number.isFinite(P.y)){const K=CUT.k;if(K){P.x=K.x;P.y=K.y;P.h=K.h;}}
+    if(!ok(CAM.eye)||!ok(CAM.tgt)){CAM.eye=[P.x,2.6,P.y+6];CAM.tgt=[P.x,1,P.y];}CAM.cd=null;CAM.eyeLive=CAM.tgtLive=null;
+    if(!Number.isFinite(CAM.fov)||CAM.fov<30||CAM.fov>110)CAM.fov=62;
+    const hud=$('#hud');hud.classList.remove('cut');if(CUT.ui){CUT.ui.hidden=true;}
+    if(['loading','splash','title'].includes(state)||(state==='play'&&hud.hidden)){state='play';show('play');if(FOOT.on&&!FOOT.ride)footHud(true);}
+  }catch(e){console.error(e);}}
+{const _oe=openingEnd;openingEnd=function(){try{_oe();}catch(e){console.error(e);}finally{CUT.on=false;handoffCheck();setTimeout(handoffCheck,600);setTimeout(handoffCheck,2000);}};}
+/* watchdog: if the scene stops advancing for 3 seconds (an error, a lost frame loop), skip to gameplay */
+setInterval(()=>{if(CUT.on&&state==='play'&&CUT.beat&&performance.now()-CUT.beat>3000){try{openingSkip();}catch(e){openingEnd();}}},1000);
 
 /* hooks: lock input during the scene, drive the camera, run the timeline */
 {const _u=update;update=function(dt){if(CUT.on){for(const k of['gas','brake','jx','jy','L','R','atk','jump','run'])if(k in input)input[k]=typeof input[k]==='number'?0:false;}_u(dt);if(CUT.on){COP.caughtT=0;{const c=COP.list[0],K=CUT.k;if(c&&CUT.t<9.9){const k=sm((CUT.t-6.6)/3.1),dd=85-57*k,fx=Math.sin(K.h),fy=-Math.cos(K.h);c.x=K.x-fx*dd;c.y=K.y-fy*dd;c.h=K.h;c.v=k<1?12:0;}}if(state!=='play'){CUT.on=false;$('#hud').classList.remove('cut');if(CUT.ui)CUT.ui.hidden=true;}}if(CUT.on&&state==='play')try{openingTick(dt);}catch(e){console.error(e);openingSkip();}};}
 {const _sc=setupCamera;setupCamera=function(dt,P_,V,model){_sc(dt,P_,V,model);if(!CUT.on){CAM.eyeLive=null;return;}
   if(CUT.t>9.4){/* remember where the live chase camera wants to be, so the swoop lands exactly there */CAM.eyeLive=CAM.eye.slice();CAM.tgtLive=CAM.tgt.slice();}
-  const c=cutCamera(CUT.t);CAM.eye=c.eye;CAM.tgt=c.tgt;CAM.fov=c.fov;const asp=glc.width/glc.height;
+  const c=cutCamera(CUT.t);if(![...c.eye,...c.tgt].every(Number.isFinite))return;CAM.eye=c.eye;CAM.tgt=c.tgt;CAM.fov=c.fov;const asp=glc.width/glc.height;
   M4.persp(CAM.proj,CAM.fov*Math.PI/180,asp,.15,1400);M4.lookAt(CAM.view,CAM.eye,CAM.tgt,[0,1,0]);M4.mul(CAM.vp,CAM.proj,CAM.view);M4.invert(CAM.inv,CAM.vp);
   const dx=CAM.tgt[0]-CAM.eye[0],dz=CAM.tgt[2]-CAM.eye[2],dl=Math.hypot(dx,dz)||1;CAM.fwd=[dx/dl,0,dz/dl];CAM.right=[-dz/dl,0,dx/dl];};}
 /* the first time Play is pressed, skip the showroom and start the opening */

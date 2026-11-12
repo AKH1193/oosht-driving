@@ -127,12 +127,12 @@ function updateFoot(dt){
   else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}
   else{P.s*=.4;}
   /* vehicles are solid boxes for their full length, so you cannot walk through a lorry or bus */
-  if(!(P.elev>1.5)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
+  if(!(P.elev>1.5)&&!(typeof ROOF!=='undefined'&&ROOF.a)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
     for(const c of COP.list)vehPush(c.x,c.y,c.h,4.55,1.86);
     if(typeof AMB!=='undefined')for(const m of AMB.list)vehPush(m.x,m.y,m.h,5.4,2.1);
     if(intruder)vehPush(intruder.x,intruder.y,intruder.h,intruder.t.len,intruder.t.wid);
     if(FOOT.parked&&VEH[FOOT.parked.type||P.type]){const pk=FOOT.parked,pm=playerModel(pk.type||P.type);vehPush(pk.x,pk.y,pk.h,pm.len||4,pm.wid||1.8);}}
-  for(const c of animals){const d=Math.hypot(c.x-P.x,c.y-P.y);const r=(c.kind==='cow'?1:.35)+.3;if(d<r){P.x=c.x+(P.x-c.x)/(d||1)*r;P.y=c.y+(P.y-c.y)/(d||1)*r;}}
+  for(const c of animals){const d=Math.hypot(c.x-P.x,c.y-P.y);const r=(c.kind==='cow'?1:.35)+.3;if(d<r){const nx=(P.x-c.x)/(d||1),ny=(P.y-c.y)/(d||1);if(c.kind==='cow'){P.x=c.x+nx*r;P.y=c.y+ny*r;}else{c.x=P.x-nx*r;c.y=P.y-ny*r;}}}
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;P.offroad=!nr.seg||nr.edge>1.4;
   /* sweat coins: every 10 seconds on the move earns 5 */
   if(P.s>.9){FOOT.walk+=dt;if(FOOT.walk>=10){FOOT.walk-=10;profile.wallet+=5;session.fare+=5;saveProfile();toast('+5 sweat coins (₹5)','good','sweat',500);Snd.coin();}}
@@ -355,7 +355,7 @@ function footHudTick(el){
   if(FOOT.ride)key='';
   else if(FOOT.stam<8){key='tired';html='<b>Out of breath.</b> Walk for a bit to get your stamina back.';}
   else if(INT.on){key='int'+INT.kind;html=`Inside · <b>${({house:'a family home',apartment:'apartment lobby',shop:'shop',restaurant:'restaurant',cafe:'cafe',bar:'bar',mall:'shopping mall',office:'office',police:'police station',gym:'gym'})[INT.kind]||'building'}</b> · walk to the door to go out`;}
-  else if(FOOT.tip>0){key='tip';html=`On foot · push the joystick all the way to <b>run</b> · swipe the screen to look around · <b>+₹5</b> every 10 s on the move`;}
+  else if(FOOT.tip>0){key='tip';html=`Push the joystick fully to <b>run</b> · swipe to look around`;}
   else key='';
   if(key!==noticeKey){noticeKey=key;el.notice.hidden=!key;el.notice.innerHTML=html;}
   return true;

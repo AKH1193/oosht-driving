@@ -63,7 +63,7 @@ function padPoll(dt){
   const g=padGet();if(!g){if(PAD.active)padOff();return;}
   const B=i=>{const x=g.buttons[i];return !!x&&(x.pressed||x.value>.45);},BV=i=>{const x=g.buttons[i];return x?x.value:0;};
   const AX=i=>{const v=g.axes[i]||0;return Math.abs(v)<.16?0:(v-Math.sign(v)*.16)/.84;};
-  if(!PAD.active){if(g.buttons.some(x=>x.pressed)||g.axes.some(v=>Math.abs(v)>.4)){PAD.active=true;toast('Controller active · touch the screen to go back to touch controls','good','pad',2500);}else{PAD.prev=g.buttons.map((_,i)=>B(i));return;}}
+  if(!PAD.active){if(g.mapping==='standard'&&g.buttons.length>=12&&g.buttons.some(x=>x.pressed)){PAD.active=true;toast('Controller active · touch the screen to go back to touch controls','good','pad',2500);}else{PAD.prev=g.buttons.map((_,i)=>B(i));return;}}
   const P1=i=>B(i)&&!PAD.prev[i];
   if(state==='play'){
     PAD.wrote=true;

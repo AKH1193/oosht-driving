@@ -262,6 +262,7 @@ function drawSky(top,hor,bot,sunC,stars){
 }
 
 /* ================= textures ================= */
+function anisoTex(t){try{const ext=gl.getExtension('EXT_texture_filter_anisotropic')||gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');if(!ext)return;gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameterf(gl.TEXTURE_2D,ext.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));}catch(e){}}
 function texFromCanvas(cv,repeat){
   const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cv);
@@ -279,6 +280,7 @@ function noiseCanvas(S,base,amp,seed,extra){
     v=base+(v-.5)*amp+(r()-.5)*amp*.35;const i=(y*S+x)*4;const q=clamp(v,0,1)*255;im.data[i]=q;im.data[i+1]=q;im.data[i+2]=q;im.data[i+3]=255;}
   c.putImageData(im,0,0);if(extra)extra(c,S,r);return cv;
 }
+const SHOPNAMES=['SRI LAKSHMI STORES|Provisions · Rice · Oil','GANESH BAKERY|Puffs · Cakes · Rusk','RAGHAVENDRA MEDICALS|Open 24 hours','HOTEL NANDINI|Veg · Meals Ready','BHARAT MOBILES|Recharge · Repairs','VINAYAKA XEROX|Print · Lamination','MAHALAKSHMI TAILORS|Ladies & Gents','NEW FANCY CENTRE|Bangles · Gifts','STYLE ZONE SALOON|A/C · Unisex','KAVERI PROVISIONS|Wholesale & Retail','UDUPI GRAND|Pure Veg','ANAND SWEETS|Mysore Pak Special','BALAJI HARDWARE|Paints · Plumbing','VISION OPTICALS|Eye Testing Free','FRESH JUICE CORNER|Lime · Mosambi','DELHI CHATS|Pani Puri · Bhel','SHREE CONDIMENTS|Bakery & Snacks','SRINIVASA TEXTILES|Silk Sarees','JYOTHI ELECTRICALS|Fans · Lights','MAYURA DARSHINI|Idli · Vada · Coffee','NAMMA TEA STALL|Tea · Bun · Biscuits','KRISHNA FLOWER STALL|Mallige · Garlands','SAI DRY CLEANERS|Same Day Service','DURGA METALS|Steel · Aluminium','NANDI MILK PARLOUR|Nandini Products','CITY PHONE POINT|Accessories','PRAKASH STATIONERY|Books · Pens','GOWDA CHICKEN CENTRE|Fresh Daily','MODERN HAIR DRESSERS|Since 1984','KAMATH CAFE|Filter Coffee','GURU AUTO SPARES|Two Wheeler Parts','ROYAL FOOTWEAR|Bata · Paragon','LAKSHMI JEWELLERS|Gold · Silver','HAPPY PET SHOP|Fish · Birds','SPEED COURIER|Domestic & Intl','MANJUNATHA LODGE|Rooms Available'];
 const SHOPWORDS=['STORES','MEDICALS','BAKERY','TEA STALL','MOBILES','XEROX','TAILORS','FANCY','SALOON','PROVISIONS','HOTEL','SWEETS','HARDWARE','OPTICALS','JUICE','CHATS','CONDIMENTS','TEXTILES','ELECTRICALS','DARSHINI'];
 function makeTextures(){
   const k=document.createElement('canvas');k.width=k.height=4;const kc=k.getContext('2d');kc.fillStyle='#000';kc.fillRect(0,0,4,4);TEX.black=texFromCanvas(k,false);
@@ -290,22 +292,27 @@ function makeTextures(){
     c.fillStyle='rgba(0,0,0,.35)';for(let i=0;i<=n;i++){c.fillRect(i*t-1,0,2,S);c.fillRect(0,i*t-1,S,2);}}),true);
   /* bare earth and grass verges */
   TEX.dirt=texFromCanvas(noiseCanvas(256,.88,.45,13,(c,S,r)=>{for(let i=0;i<260;i++){c.fillStyle=`rgba(${60+r()*40},${90+r()*50},${30+r()*20},${.12+r()*.2})`;c.fillRect(r()*S,r()*S,2+r()*5,2+r()*5);}}),true);
-  /* ground-floor shop row: 4 bays of signboards, rolling shutters and lit counters */
-  {const W2=512,H2=128,cv=document.createElement('canvas');cv.width=W2;cv.height=H2;const c=cv.getContext('2d');
+  /* ground-floor shops: 4 rows x 8 bays (32 different shops), crisp boards with real-sounding local names */
+  {const W2=2048,H2=1024,BW=256,BH=256,cv=document.createElement('canvas');cv.width=W2;cv.height=H2;const c=cv.getContext('2d');
    const ev=document.createElement('canvas');ev.width=W2;ev.height=H2;const e2=ev.getContext('2d');e2.fillStyle='#000';e2.fillRect(0,0,W2,H2);
-   const r=mulberry32(21);const SIGN=['#C62828','#1565C0','#2E7D32','#F9A825','#6A1B9A','#EF6C00','#00838F','#AD1457'];
-   for(let b=0;b<4;b++){const x0=b*128;
-     c.fillStyle='#BDB6A8';c.fillRect(x0,0,128,H2);
-     const sc=SIGN[Math.floor(r()*SIGN.length)];c.fillStyle=sc;c.fillRect(x0+4,6,120,30);
-     c.fillStyle=sc==='#F9A825'?'#1A1A1A':'#FFFFFF';c.font='700 18px Arial, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(SHOPWORDS[Math.floor(r()*SHOPWORDS.length)],x0+64,21);
-     e2.fillStyle='rgba(255,240,200,.55)';e2.fillRect(x0+4,6,120,30);
+   const r=mulberry32(21);const SIGN=['#C62828','#1565C0','#2E7D32','#F9A825','#6A1B9A','#EF6C00','#00838F','#AD1457','#283593','#5D4037','#00695C','#B71C1C'];
+   const names=SHOPNAMES.slice();for(let i=names.length-1;i>0;i--){const k=Math.floor(r()*(i+1));[names[i],names[k]]=[names[k],names[i]];}
+   for(let row=0;row<4;row++)for(let b=0;b<8;b++){const x0=b*BW,y0=row*BH,nm=names[(row*8+b)%names.length];
+     c.fillStyle=['#BDB6A8','#C9C1B0','#B2AC9F','#D2CABA'][Math.floor(r()*4)];c.fillRect(x0,y0,BW,BH);
+     const sc=SIGN[Math.floor(r()*SIGN.length)];c.fillStyle=sc;c.fillRect(x0+6,y0+8,BW-12,62);c.fillStyle='rgba(255,255,255,.12)';c.fillRect(x0+6,y0+8,BW-12,6);
+     const dark=sc==='#F9A825';c.fillStyle=dark?'#1A1A1A':'#FFFFFF';c.textAlign='center';c.textBaseline='middle';
+     const [l1,l2]=nm.split('|');let fs=l2?30:36;c.font=`800 ${fs}px Arial, sans-serif`;while(c.measureText(l1).width>BW-24&&fs>16){fs-=2;c.font=`800 ${fs}px Arial, sans-serif`;}
+     c.fillText(l1,x0+BW/2,y0+(l2?30:39));if(l2){c.font='600 17px Arial, sans-serif';c.fillStyle=dark?'#333':'rgba(255,255,255,.85)';c.fillText(l2,x0+BW/2,y0+58);}
+     /* weathering: a few streaks and a faded corner so neighbours never look identical */
+     c.fillStyle='rgba(0,0,0,.08)';for(let k=0;k<3;k++)c.fillRect(x0+6+r()*(BW-20),y0+8,2+r()*3,62);
+     e2.fillStyle='rgba(255,240,200,.55)';e2.fillRect(x0+6,y0+8,BW-12,62);
      const open=r()<.6;
-     if(open){const g=c.createLinearGradient(0,42,0,H2);g.addColorStop(0,'#5A4A38');g.addColorStop(1,'#2A2219');c.fillStyle=g;c.fillRect(x0+10,42,108,H2-42);
-       for(let i=0;i<10;i++){c.fillStyle=`hsl(${r()*360},55%,${45+r()*20}%)`;c.fillRect(x0+14+r()*96,48+Math.floor(r()*3)*24,8+r()*10,12);}
-       e2.fillStyle='#FFD9A0';e2.fillRect(x0+10,42,108,H2-42);}
-     else{c.fillStyle=['#5C7A8A','#7A8A5C','#8A6A5C','#6E6E78'][Math.floor(r()*4)];c.fillRect(x0+10,42,108,H2-42);c.fillStyle='rgba(0,0,0,.22)';for(let y=44;y<H2;y+=5)c.fillRect(x0+10,y,108,1.5);}
-     c.fillStyle='#8E877A';c.fillRect(x0,0,6,H2);c.fillRect(x0+122,0,6,H2);}
-   TEX.shop=texFromCanvas(cv,true);TEX.shopE=texFromCanvas(ev,true);}
+     if(open){const g=c.createLinearGradient(0,y0+82,0,y0+BH);g.addColorStop(0,'#5A4A38');g.addColorStop(1,'#2A2219');c.fillStyle=g;c.fillRect(x0+18,y0+82,BW-36,BH-82);
+       for(let i=0;i<16;i++){c.fillStyle=`hsl(${r()*360},55%,${45+r()*20}%)`;c.fillRect(x0+24+r()*(BW-60),y0+92+Math.floor(r()*4)*36,12+r()*18,20);}
+       e2.fillStyle='#FFD9A0';e2.fillRect(x0+18,y0+82,BW-36,BH-82);}
+     else{c.fillStyle=['#5C7A8A','#7A8A5C','#8A6A5C','#6E6E78'][Math.floor(r()*4)];c.fillRect(x0+18,y0+82,BW-36,BH-82);c.fillStyle='rgba(0,0,0,.22)';for(let y=y0+86;y<y0+BH;y+=8)c.fillRect(x0+18,y,BW-36,2.5);}
+     c.fillStyle='#8E877A';c.fillRect(x0,y0,10,BH);c.fillRect(x0+BW-10,y0,10,BH);}
+   TEX.shop=texFromCanvas(cv,true);TEX.shopE=texFromCanvas(ev,true);anisoTex(TEX.shop);}
   /* building facade: 4 bays x 4 floors; white wall (tinted per building), windows with a concrete sunshade (chajja) above */
   const S=256,B=64;
   const w=document.createElement('canvas');w.width=w.height=S;const c=w.getContext('2d');

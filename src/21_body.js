@@ -45,9 +45,9 @@ function drawBlood(){if(!BLOOD.length)return;DBL.reset();const ex=CAM.eye[0],ez=
 /* ---------- you get knocked down, and thrown off a bike in a hard crash ---------- */
 {const _lf=lfDamage;lfDamage=function(d,why){const before=LIFE.hp;_lf(d,why);if(LIFE.dead)return;const lost=before-LIFE.hp;
   if(lost>4&&FOOT.on){bloodBurst(P.x,P.y,1.2);if(lost>10)bleed(P.x,P.y,.5);}
-  if(FOOT.on&&!FOOT.ride&&(lost>=14||why==='crash'||why==='hit'||why==='boom')&&!(LIFE.downT>0)){LIFE.downT=1.9;LIFE.fallH=P.h;P.s=0;Snd.thud(.6);Hap.crash();}};}
+  if(FOOT.on&&!FOOT.ride&&(lost>=14||(why==='crash'&&lost>=5)||why==='hit'||why==='boom')&&!(LIFE.downT>0)){LIFE.downT=1.9;LIFE.fallH=P.h;P.s=0;Snd.thud(.6);Hap.crash();}};}
 {const _cr=crash;crash=function(rel,what,ra){_cr(rel,what,ra);const V=VEH[P.type];
-  if(rel>9&&(V.cat==='two'||P.type==='auto'&&rel>13)&&!FOOT.on&&!FLY.on){/* thrown off */
+  if(rel>12.5&&(V.cat==='two'||P.type==='auto'&&rel>15)&&!FOOT.on&&!FLY.on&&!P.glance){/* thrown off */
     const pk={type:P.type,skin:P.skin,x:P.x,y:P.y,h:P.h,cond:P.cond,fuel:P.fuel};const h=P.h;goFoot(null,true);FOOT.parked=pk;
     const fx=Math.sin(h),fy=-Math.cos(h);let tx=P.x-fx*1.2,ty=P.y-fy*1.2;for(let k=2;k<5;k++){const x=pk.x+fx*k*.6,y=pk.y+fy*k*.6;if(!inBuilding(x,y)){tx=x;ty=y;}}
     P.x=tx;P.y=ty;P.h=h;M4.model(P.M,P.x,0,P.y,-P.h,0,0);CAM.shake=Math.max(CAM.shake,10);lfDamage(6,'crash');LIFE.downT=2.6;bleed(P.x,P.y,.7);toast('Thrown off the bike!','bad','thrown',3000);}

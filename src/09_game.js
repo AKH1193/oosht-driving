@@ -61,8 +61,8 @@ function updatePlayer(dt){
   const V=VEH[P.type];
   let top=V.top/3.6;
   if(P.dry)top=6/3.6;else if(P.cond<=0)top=10/3.6;else if(P.cond<50)top*=.55+.45*P.cond/50;
-  let steerIn=clamp((input.R?1:0)-(input.L?1:0)+(input.jx||0)*1.1,-1,1);if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
-  P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?3.4:6));
+  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.1)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.1)/.85),1.8);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
+  P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?2.6:6));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
   let back=(input.jy||0)<-.45;const cap=top;P.wheelie=V.cat==='two'&&input.gas&&back&&P.s>2.5;if(P.wheelie)back=false;P.wh=(P.wh||0)+((P.wheelie?.55:0)-(P.wh||0))*Math.min(1,dt*(P.wheelie?3:6));
@@ -71,11 +71,11 @@ function updatePlayer(dt){
   else if(input.gas&&back){if(P.s>.3)P.s-=V.brake*dt;else if(P.s>-Math.min(top*.4,8))P.s-=V.accel*.7*dt;}
   /* BRAKE slows and holds; BRAKE while steering at speed drifts */
   P.drift=input.brake&&Math.abs(P.steer)>.3&&P.s>7;
-  if(input.brake){if(P.drift)P.s-=V.brake*.2*dt;else if(P.s>.3)P.s-=V.brake*dt;else if(P.s<-.3)P.s+=V.brake*dt;else P.s=0;}
+  if(input.brake){if(P.drift)P.s-=V.brake*.2*dt;else if(P.s>.3)P.s=Math.max(0,P.s-(V.brake*1.35+P.s*.15)*dt);else if(P.s<-.3)P.s=Math.min(0,P.s+V.brake*1.35*dt);else P.s=0;}
   if(!input.gas&&!input.brake){const c=(1.0+Math.abs(P.s)*.02)*dt;P.s=Math.abs(P.s)<c?0:P.s-Math.sign(P.s)*c;}
   if(P.s>top+.5)P.s-=4*dt;
   const sp=Math.abs(P.s);
-  let turn=P.steer*V.handling*1.8*clamp(sp/3,0,1)/(1+sp/18)*Math.sign(P.s||1);if(P.drift)turn*=1.75;
+  let turn=P.steer*V.handling*1.8*clamp(sp/3,0,1)/(1+sp/11)*Math.sign(P.s||1);if(P.drift)turn*=1.75;
   steerAssist(dt,sp);
   P.h+=turn*dt;
   if(V.cat==='two'){const tl=clamp(Math.atan(sp*turn/9.8),-.5,.5);P.lean+=(tl-P.lean)*Math.min(1,dt*6);}else P.lean=0;
@@ -115,6 +115,8 @@ function updatePlayer(dt){
     let hit=false,nx=0,ny=0,md=1e9;
     for(const s1 of[-1,1])for(const s2 of[-1,1]){const x1=P.x+fx*pf*s1,y1=P.y+fy*pf*s1,x2=a.x+afx*af*s2,y2=a.y+afy*af*s2;const d=Math.hypot(x1-x2,y1-y2);if(d<pr+ar&&d<md){md=d;hit=true;nx=(x1-x2)/(d||1);ny=(y1-y2)/(d||1);}}
     if(a.t.len>6){for(let s2=-1;s2<=1;s2+=.5){const x2=a.x+afx*a.t.len*.42*s2,y2=a.y+afy*a.t.len*.42*s2;const d=Math.hypot(P.x-x2,P.y-y2);if(d<pr+ar&&d<md){md=d;hit=true;nx=(P.x-x2)/(d||1);ny=(P.y-y2)/(d||1);}}}
+    if(hit&&a.t.two&&!a.fallen&&VEH[P.type].cat!=='two'&&Math.abs(P.s)>6.5){knockBiker(a,nx,ny);continue;}
+    if(hit&&a.fallen)continue;
     if(hit){const push=(pr+ar-md)+.05;P.x+=nx*push;P.y+=ny*push;const rel=Math.hypot(P.vx-afx*a.v,P.vy-afy*a.v);P.s*=-.2;P.vx=P.vy=0;a.stop=2.5;a.v=0;
       if(rel>1.8)crash(rel,{auto:'Hit an auto!',bus:'Hit a bus!',truck:'Hit a truck!',tanker:'Hit a water tanker!',hatch:'Hit a car!',sedan:'Hit a car!',suv:'Hit an SUV!',taxi:'Hit a taxi!'}[a.t.k]||'Hit a two-wheeler!',rel>7?35:10);}
   }
@@ -123,7 +125,7 @@ function updatePlayer(dt){
     if(p.cart!=null){const d=Math.hypot(p.cx-P.x,p.cy-P.y);if(d<1.1+P.wid*.5){const rel=Math.abs(P.s);const nx=(P.x-p.cx)/(d||1),ny=(P.y-p.cy)/(d||1);P.x=p.cx+nx*(1.12+P.wid*.5);P.y=p.cy+ny*(1.12+P.wid*.5);P.s*=.1;P.vx=P.vy=0;if(rel>1.5)crash(rel,'Hit a vendor cart!',25);}}
     const dx=p.x-P.x,dy=p.y-P.y;const al=dx*fx+dy*fy,ac=Math.abs(dx*-fy+dy*fx);const pr=p.state==='static'&&p.kind==='lie'?.9:.3;
     if(Math.abs(al)<P.len*.5+pr&&ac<P.wid*.5+pr){if(Math.abs(P.s)>1.2)hitPed(p);else if(p.state!=='static'){p.x+=(-fy)*Math.sign(dx*-fy+dy*fx||1)*.5;p.y+=fx*Math.sign(dx*-fy+dy*fx||1)*.5;}else{P.s=0;P.vx=P.vy=0;}}}
-  if(P.offroad&&sp>1.5){offT-=dt;if(offT<=0){offT=.16;Hap.rumble();}}
+  
   P.bounce*=Math.pow(.02,dt);P.air=Math.max(0,P.air-dt);
   session.m+=Math.hypot(P.vx,P.vy)*dt;
   {const F=FUEL[P.type];P.fuel=Math.max(0,P.fuel-Math.hypot(P.vx,P.vy)*dt/1000/F[0]*100*(input.gas?1.15:.8));
@@ -385,8 +387,8 @@ function renderScene(dt){
   gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
   for(const c of vis)drawLit(c.sol,null,{tex:TEX.wall,emTex:TEX.wallE,emiK:night*1.8});
   {const G=glassTex();for(const c of vis)if(c.gls&&c.gls.n)drawLit(c.gls,null,{tex:G.t,emTex:G.e,emiK:.15+night*1.6});}
-  for(const c of vis)drawLit(c.shp,null,{tex:TEX.shop,emTex:TEX.shopE});
-  {const at=adsTex().tex;for(const c of vis)drawLit(c.ads,null,{tex:at,emTex:at,emiK:.2+night*.7});}
+  gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(-1.5,-4);for(const c of vis)drawLit(c.shp,null,{tex:TEX.shop,emTex:TEX.shopE});
+  {const at=adsTex().tex;for(const c of vis)drawLit(c.ads,null,{tex:at,emTex:at,emiK:.2+night*.7});}gl.polygonOffset(0,0);gl.disable(gl.POLYGON_OFFSET_FILL);
   /* live signal lamps */
   for(const c of vis)for(const hd of c.heads){if(Math.hypot(hd.x-ex,hd.y-ez)>200)continue;
     const st=sigState(hd.arm.S,hd.arm.ph,GT);const i=st[0]==='R'?0:st[0]==='A'?1:2;

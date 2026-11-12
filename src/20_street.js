@@ -12,6 +12,10 @@ function slideWall(ox,oy,fx,fy,sg,n,dt){const mx=P.vx*dt/n,my=P.vy*dt/n,m=Math.h
   for(const[ax,ay]of[[mx,0],[0,my]]){const part=Math.hypot(ax,ay)/m;if(part<.42)continue;if(ok(ox+ax,oy+ay)){P.x=ox+ax;P.y=oy+ay;
     if(ax===0)P.vx*=.4;else P.vy*=.4;P.s*=1-.6*dt*n;if(P.s>0){const want=hAng(ax,ay);P.h+=angDiff(P.h,want)*Math.min(1,dt*n*4);}
     if((P.scrapeT||0)<GT){P.scrapeT=GT+.35;Snd.burst(.08,2400,.7,.08,'bandpass');Hap.tick();}return true;}}
+  /* walls at any angle: try sliding along directions turned away from the heading */
+  const hd=Math.atan2(my,mx);for(const da of[.35,-.35,.7,-.7,1.05,-1.05]){const a=hd+da,k=Math.cos(da);const ax=Math.cos(a)*m*k,ay=Math.sin(a)*m*k;
+    if(ok(ox+ax,oy+ay)){P.x=ox+ax;P.y=oy+ay;P.vx=ax/dt*n;P.vy=ay/dt*n;P.s*=1-(1-k)*.9-.3*dt*n;if(P.s>0){const want=hAng(ax,ay);P.h+=angDiff(P.h,want)*Math.min(1,dt*n*4);}
+      if((P.scrapeT||0)<GT){P.scrapeT=GT+.35;Snd.burst(.08,2400,.7,.08,'bandpass');Hap.tick();}return true;}}
   return false;}
 /* skid marks behind the rear wheels */
 const SKID=[];const DSK=new GlowBatch(720);let skidD=0;

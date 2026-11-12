@@ -44,11 +44,15 @@ function updateAgents(dt){
   const want=settings.gfx==='fast'?24:34;
   for(let k=agents.length-1;k>=0;k--){
     const a=agents[k];
+    if(a.fallen){a.fallenT-=dt;a.v=0;if(a.fallenT<=0)agents.splice(k,1);continue;}
     let tgt=CRUISE[a.w.cls]*a.t.cruise*a.k;
     if(a.turnSlow>0){a.turnSlow-=dt;tgt*=.5;}
-    const gap=a.t.len/2+3;
+    const gap=a.t.len/2+3+a.v*.9;
     if(inFront(a.x,a.y,a.h,P.x,P.y,gap+P.len/2+4,a.t.wid/2+P.wid/2+.6)){tgt=0;a.horn+=dt;if(a.horn>2.5&&Math.hypot(a.x-P.x,a.y-P.y)<30){a.horn=-4;Snd.tone([380+Math.random()*120],.25,'square',.04);}}
-    for(const b of agents){if(b!==a&&inFront(a.x,a.y,a.h,b.x,b.y,gap+b.t.len/2+1.5,(a.t.wid+b.t.wid)/2+.2))tgt=Math.min(tgt,Math.max(0,b.v-1));}
+    /* keep a safe gap to the vehicle ahead: look further at speed, slow smoothly, never drive into it */
+    {const fx=Math.sin(a.h),fy=-Math.cos(a.h);for(const b of agents){if(b===a)continue;const dx=b.x-a.x,dy=b.y-a.y;const u=dx*fx+dy*fy;if(u<=0||u>gap+b.t.len/2+a.v*1.6+8)continue;
+      const w=Math.abs(-dx*fy+dy*fx);if(w>(a.t.wid+b.t.wid)/2+.3)continue;const free=u-(a.t.len+b.t.len)/2;
+      const safe=Math.max(0,(free-2)/1.3);tgt=Math.min(tgt,Math.max(b.v*(free>6?1:.8),0)+safe*.5,safe+b.v*.5);if(free<1.2){tgt=0;a.v=Math.min(a.v,b.v*.5);}}}
     for(const c of COP.list)if(inFront(a.x,a.y,a.h,c.x,c.y,gap+4,2.2))tgt=0;
     for(const o of OBST)if(inFront(a.x,a.y,a.h,o.x,o.y,gap+o.len/2+1.5,(a.t.wid+o.wid)/2+.2)){a.obT=(a.obT||0)+dt;if(a.obT<5)tgt=0;}
     for(const w of LIFE.wrecks)if(inFront(a.x,a.y,a.h,w.x,w.y,gap+4,(a.t.wid+1.8)/2)){a.obT=(a.obT||0)+dt;if(a.obT<5)tgt=0;}
@@ -188,7 +192,7 @@ function updateAnimals(dt){
     /* dodge a fast vehicle, chase two-wheelers (dogs) */
     if(a.kind!=='cow'&&a.state!=='flee'&&dp<8&&pFast>5&&inFront(P.x,P.y,P.h,a.x,a.y,9,2.5)&&Math.random()<.6){const ang=Math.atan2(a.y-P.y,a.x-P.x);a.state='flee';a.tx=a.x+Math.cos(ang)*6;a.ty=a.y+Math.sin(ang)*6;a.speed=a.kind==='dog'?6:5;a.t=1.4;}
     if(a.kind==='dog'&&two&&a.state==='idle'&&dp<16&&pFast>3&&pFast<15&&Math.random()<dt*.6){a.state='chase';a.t=3.5;a.speed=7;Snd.bark();}
-    if(a.state==='chase'){a.tx=P.x;a.ty=P.y;if(a.t<=0||dp>30){a.state='idle';a.t=2;a.hx=a.x;a.hy=a.y;}else if(Math.random()<dt*1.5)Snd.bark();}
+    if(a.state==='chase'){const ddx=a.x-P.x,ddy=a.y-P.y,dd=Math.hypot(ddx,ddy)||1;a.tx=P.x+ddx/dd*1.2;a.ty=P.y+ddy/dd*1.2;if(a.t<=0||dp>30){a.state='idle';a.t=2;a.hx=a.x;a.hy=a.y;}else if(Math.random()<dt*1.5)Snd.bark();}
     if(a.state==='idle'&&a.t<=0){
       a.t=3+Math.random()*6;
       if(a.kind!=='cow'&&Math.random()<(a.kind==='dog'?.22:.12)&&dp>18)beginCross(a,a.kind==='dog'?3.6:2.8);
