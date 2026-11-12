@@ -61,7 +61,7 @@ function updatePlayer(dt){
   const V=VEH[P.type];
   let top=V.top/3.6;
   if(P.dry)top=6/3.6;else if(P.cond<=0)top=10/3.6;else if(P.cond<50)top*=.55+.45*P.cond/50;
-  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.1)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.1)/.85),1.8);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
+  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.1)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.1)/.85),1.8);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);{const ms=(1-.48*clamp(Math.abs(P.s)/33,0,1))*(V.cat==='two'?.82:1);steerIn=clamp(steerIn,-ms,ms);}if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
   P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?2.6:6));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
@@ -696,7 +696,7 @@ window.__onBack=()=>{
 const SETS=[
   ['sound','Sound',[[true,'On'],[false,'Off']]],
   ['haptics','Vibration',[['off','Off'],['low','Low'],['med','Medium'],['high','Strong']]],
-  ['steer','Steering',[['buttons','Joystick'],['tilt','Tilt phone']]],
+  ['steer','Steering',[['buttons','Joystick'],['arrows','Arrows'],['tilt','Tilt phone']]],
   ['cam','Camera',[['chase','Chase'],['cockpit','Cockpit'],['far','Top']]],
   ['tod','Time of day',[['auto','Live (sun)'],['dawn','Dawn'],['noon','Noon'],['evening','Evening'],['night','Night']]],
   ['gfx','Graphics',[['fast','Fast'],['balanced','Balanced'],['ultra','Ultra']]],
@@ -723,7 +723,7 @@ function hold(e,on,off){
   const pts=new Set();
   e.addEventListener('pointerdown',ev=>{ev.preventDefault();try{e.setPointerCapture(ev.pointerId);}catch(_){}pts.add(ev.pointerId);e.classList.add('on');on();});
   const up=ev=>{if(!pts.has(ev.pointerId))return;pts.delete(ev.pointerId);if(!pts.size){e.classList.remove('on');off();}};
-  e.addEventListener('pointerup',up);e.addEventListener('pointercancel',up);e.addEventListener('lostpointercapture',up);e.addEventListener('contextmenu',ev=>ev.preventDefault());
+  e.addEventListener('pointerup',up);e.addEventListener('pointercancel',up);window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);e.addEventListener('lostpointercapture',up);e.addEventListener('contextmenu',ev=>ev.preventDefault());
 }
 const scareAnimals=()=>{for(const a of animals){if(a.event||a.lie)continue;const d=Math.hypot(a.x-P.x,a.y-P.y);if(d<24&&d>.1&&a.kind!=='cow'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*7;a.ty=a.y+(a.y-P.y)/d*7;a.speed=5;a.t=1.5;}else if(a.kind==='cow'&&d<20&&!a.lie&&a.state!=='cross'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*4;a.ty=a.y+(a.y-P.y)/d*4;a.speed=1;a.t=3;}}};
 hold($('#btnGas'),()=>{input.gas=1;P.rev=false;},()=>input.gas=0);hold($('#btnBrake'),brakeDown,()=>{input.brake=0;P.brakeUp=performance.now();});

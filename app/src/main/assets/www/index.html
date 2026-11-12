@@ -2937,7 +2937,7 @@ function updatePlayer(dt){
   const V=VEH[P.type];
   let top=V.top/3.6;
   if(P.dry)top=6/3.6;else if(P.cond<=0)top=10/3.6;else if(P.cond<50)top*=.55+.45*P.cond/50;
-  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.1)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.1)/.85),1.8);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
+  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.1)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.1)/.85),1.8);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);{const ms=(1-.48*clamp(Math.abs(P.s)/33,0,1))*(V.cat==='two'?.82:1);steerIn=clamp(steerIn,-ms,ms);}if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
   P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?2.6:6));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
@@ -3572,7 +3572,7 @@ window.__onBack=()=>{
 const SETS=[
   ['sound','Sound',[[true,'On'],[false,'Off']]],
   ['haptics','Vibration',[['off','Off'],['low','Low'],['med','Medium'],['high','Strong']]],
-  ['steer','Steering',[['buttons','Joystick'],['tilt','Tilt phone']]],
+  ['steer','Steering',[['buttons','Joystick'],['arrows','Arrows'],['tilt','Tilt phone']]],
   ['cam','Camera',[['chase','Chase'],['cockpit','Cockpit'],['far','Top']]],
   ['tod','Time of day',[['auto','Live (sun)'],['dawn','Dawn'],['noon','Noon'],['evening','Evening'],['night','Night']]],
   ['gfx','Graphics',[['fast','Fast'],['balanced','Balanced'],['ultra','Ultra']]],
@@ -3599,7 +3599,7 @@ function hold(e,on,off){
   const pts=new Set();
   e.addEventListener('pointerdown',ev=>{ev.preventDefault();try{e.setPointerCapture(ev.pointerId);}catch(_){}pts.add(ev.pointerId);e.classList.add('on');on();});
   const up=ev=>{if(!pts.has(ev.pointerId))return;pts.delete(ev.pointerId);if(!pts.size){e.classList.remove('on');off();}};
-  e.addEventListener('pointerup',up);e.addEventListener('pointercancel',up);e.addEventListener('lostpointercapture',up);e.addEventListener('contextmenu',ev=>ev.preventDefault());
+  e.addEventListener('pointerup',up);e.addEventListener('pointercancel',up);window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);e.addEventListener('lostpointercapture',up);e.addEventListener('contextmenu',ev=>ev.preventDefault());
 }
 const scareAnimals=()=>{for(const a of animals){if(a.event||a.lie)continue;const d=Math.hypot(a.x-P.x,a.y-P.y);if(d<24&&d>.1&&a.kind!=='cow'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*7;a.ty=a.y+(a.y-P.y)/d*7;a.speed=5;a.t=1.5;}else if(a.kind==='cow'&&d<20&&!a.lie&&a.state!=='cross'){a.state='flee';a.tx=a.x+(a.x-P.x)/d*4;a.ty=a.y+(a.y-P.y)/d*4;a.speed=1;a.t=3;}}};
 hold($('#btnGas'),()=>{input.gas=1;P.rev=false;},()=>input.gas=0);hold($('#btnBrake'),brakeDown,()=>{input.brake=0;P.brakeUp=performance.now();});
@@ -6796,7 +6796,7 @@ Object.assign(window.__oosht||{},{getAgents:()=>agents,findContext:()=>findConte
 /* ---------- first drive: learn the controls on the way to your safehouse ---------- */
 const TUT={i:-1,t:0,ok:0,el:null,steps:[
   {txt:'Tony, hold GO to drive',done:()=>P.s>3},
-  {txt:'Push the joystick left or right to steer',done:()=>Math.abs(P.steer)>.35},
+  {get txt(){return settings.steer==='arrows'?'Hold the arrows to steer':settings.steer==='tilt'?'Tilt the phone to steer':'Push the joystick left or right to steer';},done:()=>Math.abs(P.steer)>.35},
   {txt:'Hold BRAKE while steering to drift',done:()=>P.drift},
   {txt:'Swipe the screen to look around',done:()=>CAM.lookRel&&GT-CAM.lookRel<.8},
   {txt:'Follow the purple route home to Jayanagar',done:()=>false,max:7}]};
@@ -7003,7 +7003,7 @@ function knockBiker(a,nx,ny){
 #wanted .t,#wanted .rash{display:none!important}#wanted{padding:6px 10px}
 #hud .trip.gone{display:none}
 #hud .ctl-left,#hud .ctl-right,#hud .ctl-act,#hud .ctl-foot,#hud #joyZone,#hud .hud-tc,#hud #footBar,#hud .trip,#hud .hud-tl,#hud .btncol{transition:opacity .45s ease}
-#hud.idle .ctl-left,#hud.idle .ctl-right,#hud.idle .ctl-act,#hud.idle .ctl-foot{opacity:calc(var(--bo,1)*.42)!important}
+#hud.idle .ctl-left,#hud.idle .ctl-right,#hud.idle .ctl-act,#hud.idle .ctl-foot,#hud.idle #arrowPad{opacity:calc(var(--bo,1)*.45)!important}
 #hud.idle #joyZone,#hud.idle .hud-tc,#hud.idle .trip,#hud.idle .btncol{opacity:.4}
 #hud.idle .hud-tl{opacity:.75}
 #hud.moving #footBar{opacity:0;pointer-events:none}
@@ -7014,7 +7014,7 @@ const hudWake=()=>{HUDI.last=performance.now();$('#hud').classList.remove('idle'
 document.addEventListener("pointerdown",hudWake,true);document.addEventListener("keydown",hudWake,true);
 setInterval(()=>{const hud=$('#hud');if(!hud||state!=='play')return;
   const busy=COP.level>0||COP.list.length||input.atk||(typeof CUT!=='undefined'&&(CUT.on||(CUT.grace&&GT<CUT.grace)))||(typeof TUT!=='undefined'&&TUT.el&&TUT.el.style.opacity==='1');
-  hud.classList.toggle('idle',!busy&&performance.now()-HUDI.last>3000);
+  hud.classList.toggle('idle',!busy&&performance.now()-HUDI.last>3500);
   /* condition / stamina and fuel rows only appear when they matter; health lives on the minimap ring */
   const rows=hud.querySelectorAll('.hud-tl .cond');if(rows.length>=3){
     rows[0].classList.toggle('show',FOOT.on?FOOT.stam<maxStam()*.6:P.cond<60);
@@ -7093,6 +7093,17 @@ function getUnstuck(){try{joyReset();}catch(e){}input.jx=input.jy=0;input.gas=in
   M4.model(P.M,P.x,0,P.y,-P.h,0,0);toast('Back on the road','good');}
 $('#unstuckBtn').addEventListener('click',()=>{$('#resumeBtn').click();setTimeout(getUnstuck,60);});
 Object.assign(window.__oosht||{},{getUnstuck});
+
+/* ---------- optional arrow steering: big ◀ ▶ buttons on the left while driving (Settings > Steering > Arrows) ---------- */
+{const pad=document.createElement('div');pad.id='arrowPad';pad.innerHTML='<button class="ar l" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ar r" aria-label="Steer right"><svg viewBox="0 0 24 24"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  const st=document.createElement('style');st.textContent=`
+#arrowPad{position:absolute;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));display:none;gap:14px;z-index:6;opacity:var(--bo,1);transition:opacity .45s}
+#hud.m-drive.arrows #arrowPad{display:flex}#hud.m-drive.arrows #joyZone{display:none!important}
+#arrowPad .ar{width:calc(84px*var(--bs,1));height:calc(84px*var(--bs,1));border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(12,14,22,.55);color:#fff;display:grid;place-items:center;touch-action:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+#arrowPad .ar svg{width:46%;height:46%}#arrowPad .ar.on{background:rgba(255,199,44,.85);color:#14121F;border-color:#FFC72C}`;
+  document.head.appendChild(st);$('#hud').appendChild(pad);
+  hold(pad.querySelector('.l'),()=>{input.L=1;},()=>{input.L=0;});hold(pad.querySelector('.r'),()=>{input.R=1;},()=>{input.R=0;});
+  setInterval(()=>{const h=$('#hud');if(h)h.classList.toggle('arrows',settings.steer==='arrows');},300);}
 
 /* ================= WISE CITY: dynamic vehicle audio. Exhaust and diesel layers, gear-shift blips, turbo blow-off,
    air-brake hiss, tyre screech, nearby traffic engines, air horns for heavies and a Doppler siren ================= */

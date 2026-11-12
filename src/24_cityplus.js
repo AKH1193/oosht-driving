@@ -164,7 +164,7 @@ Object.assign(window.__oosht||{},{getAgents:()=>agents,findContext:()=>findConte
 /* ---------- first drive: learn the controls on the way to your safehouse ---------- */
 const TUT={i:-1,t:0,ok:0,el:null,steps:[
   {txt:'Tony, hold GO to drive',done:()=>P.s>3},
-  {txt:'Push the joystick left or right to steer',done:()=>Math.abs(P.steer)>.35},
+  {get txt(){return settings.steer==='arrows'?'Hold the arrows to steer':settings.steer==='tilt'?'Tilt the phone to steer':'Push the joystick left or right to steer';},done:()=>Math.abs(P.steer)>.35},
   {txt:'Hold BRAKE while steering to drift',done:()=>P.drift},
   {txt:'Swipe the screen to look around',done:()=>CAM.lookRel&&GT-CAM.lookRel<.8},
   {txt:'Follow the purple route home to Jayanagar',done:()=>false,max:7}]};

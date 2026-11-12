@@ -85,7 +85,7 @@ function knockBiker(a,nx,ny){
 #wanted .t,#wanted .rash{display:none!important}#wanted{padding:6px 10px}
 #hud .trip.gone{display:none}
 #hud .ctl-left,#hud .ctl-right,#hud .ctl-act,#hud .ctl-foot,#hud #joyZone,#hud .hud-tc,#hud #footBar,#hud .trip,#hud .hud-tl,#hud .btncol{transition:opacity .45s ease}
-#hud.idle .ctl-left,#hud.idle .ctl-right,#hud.idle .ctl-act,#hud.idle .ctl-foot{opacity:calc(var(--bo,1)*.42)!important}
+#hud.idle .ctl-left,#hud.idle .ctl-right,#hud.idle .ctl-act,#hud.idle .ctl-foot,#hud.idle #arrowPad{opacity:calc(var(--bo,1)*.45)!important}
 #hud.idle #joyZone,#hud.idle .hud-tc,#hud.idle .trip,#hud.idle .btncol{opacity:.4}
 #hud.idle .hud-tl{opacity:.75}
 #hud.moving #footBar{opacity:0;pointer-events:none}
@@ -96,7 +96,7 @@ const hudWake=()=>{HUDI.last=performance.now();$('#hud').classList.remove('idle'
 document.addEventListener("pointerdown",hudWake,true);document.addEventListener("keydown",hudWake,true);
 setInterval(()=>{const hud=$('#hud');if(!hud||state!=='play')return;
   const busy=COP.level>0||COP.list.length||input.atk||(typeof CUT!=='undefined'&&(CUT.on||(CUT.grace&&GT<CUT.grace)))||(typeof TUT!=='undefined'&&TUT.el&&TUT.el.style.opacity==='1');
-  hud.classList.toggle('idle',!busy&&performance.now()-HUDI.last>3000);
+  hud.classList.toggle('idle',!busy&&performance.now()-HUDI.last>3500);
   /* condition / stamina and fuel rows only appear when they matter; health lives on the minimap ring */
   const rows=hud.querySelectorAll('.hud-tl .cond');if(rows.length>=3){
     rows[0].classList.toggle('show',FOOT.on?FOOT.stam<maxStam()*.6:P.cond<60);
@@ -175,3 +175,14 @@ function getUnstuck(){try{joyReset();}catch(e){}input.jx=input.jy=0;input.gas=in
   M4.model(P.M,P.x,0,P.y,-P.h,0,0);toast('Back on the road','good');}
 $('#unstuckBtn').addEventListener('click',()=>{$('#resumeBtn').click();setTimeout(getUnstuck,60);});
 Object.assign(window.__oosht||{},{getUnstuck});
+
+/* ---------- optional arrow steering: big ◀ ▶ buttons on the left while driving (Settings > Steering > Arrows) ---------- */
+{const pad=document.createElement('div');pad.id='arrowPad';pad.innerHTML='<button class="ar l" aria-label="Steer left"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ar r" aria-label="Steer right"><svg viewBox="0 0 24 24"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  const st=document.createElement('style');st.textContent=`
+#arrowPad{position:absolute;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));display:none;gap:14px;z-index:6;opacity:var(--bo,1);transition:opacity .45s}
+#hud.m-drive.arrows #arrowPad{display:flex}#hud.m-drive.arrows #joyZone{display:none!important}
+#arrowPad .ar{width:calc(84px*var(--bs,1));height:calc(84px*var(--bs,1));border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(12,14,22,.55);color:#fff;display:grid;place-items:center;touch-action:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+#arrowPad .ar svg{width:46%;height:46%}#arrowPad .ar.on{background:rgba(255,199,44,.85);color:#14121F;border-color:#FFC72C}`;
+  document.head.appendChild(st);$('#hud').appendChild(pad);
+  hold(pad.querySelector('.l'),()=>{input.L=1;},()=>{input.L=0;});hold(pad.querySelector('.r'),()=>{input.R=1;},()=>{input.R=0;});
+  setInterval(()=>{const h=$('#hud');if(h)h.classList.toggle('arrows',settings.steer==='arrows');},300);}
