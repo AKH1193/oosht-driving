@@ -679,7 +679,7 @@ $('#repFull').addEventListener('click',()=>doRepair(true));$('#repHalf').addEven
 $('#repLeave').addEventListener('click',()=>resumeDrive());
 $('#outPrimary').addEventListener('click',()=>{if($('#outPrimary').dataset.end){goFoot();toast('Head to the court: follow the red beam','bad');}else{resumeDrive();}});
 $('#outMenu').addEventListener('click',()=>{resetActors();go('title');});
-$('#camBtn').addEventListener('click',()=>{const order=['chase','cockpit','far'];CAM.mode=order[(order.indexOf(CAM.mode)+1)%3];settings.cam=CAM.mode;saveSettings();toast({chase:'Chase view',cockpit:'Cockpit view',far:'Top view'}[CAM.mode],'','cam',300);});
+$('#camBtn').addEventListener('click',()=>{const order=['chase','hood','cockpit','far'];CAM.mode=order[(order.indexOf(CAM.mode)+1)%4];settings.cam=CAM.mode;saveSettings();toast({chase:'Chase view',hood:'Bonnet view',cockpit:'Cockpit view',far:'Top view'}[CAM.mode],'','cam',300);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Snd.hornOff();if(Snd.ctx&&Snd.ctx.suspend)Snd.ctx.suspend();}else Snd.resume();});
 window.__onBack=()=>{
   if(!$('#settings').hidden){closeSettings();return true;}
@@ -697,7 +697,7 @@ const SETS=[
   ['sound','Sound',[[true,'On'],[false,'Off']]],
   ['haptics','Vibration',[['off','Off'],['low','Low'],['med','Medium'],['high','Strong']]],
   ['steer','Steering',[['buttons','Joystick'],['arrows','Arrows'],['tilt','Tilt phone']]],
-  ['cam','Camera',[['chase','Chase'],['cockpit','Cockpit'],['far','Top']]],
+  ['cam','Camera',[['chase','Chase'],['hood','Bonnet'],['cockpit','Cockpit'],['far','Top']]],
   ['tod','Time of day',[['auto','Live (sun)'],['dawn','Dawn'],['noon','Noon'],['evening','Evening'],['night','Night']]],
   ['gfx','Graphics',[['fast','Fast'],['balanced','Balanced'],['ultra','Ultra']]],
 ];

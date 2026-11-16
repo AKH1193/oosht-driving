@@ -155,7 +155,7 @@ function buildChunk(cx,cy){
       const u0=run/13.6,u1=(run+L)/13.6,v1=h/12.4;run+=L;
       let y0=0;
       if(h>5&&L>3.5){const ol=Math.hypot(out[0],out[2])||1;const mx=(ax+bx)/2+out[0]/ol*1.5,my=(ay+by)/2+out[2]/ol*1.5;const ns=nearestSeg(mx,my,12);
-        if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/33.6,r1=run/33.6,su0=ccw?r1:r0,su1=ccw?r0:r1,F=[1,1,1];const row=(hash2(Math.round(ax),Math.round(ay))>>>0)%4,vb=(row+1)/4-.002,vt=row/4+.002;
+        if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/33.6,r1=run/33.6,su0=ccw?r1:r0,su1=ccw?r0:r1;const sh0=hash2(Math.round(ax),Math.round(ay))>>>0,F=[[1,1,1],[1,.95,.85],[.88,.96,1],[1,.9,.95]][(sh0>>>3)%4];const row=sh0%4,vb=(row+1)/4-.002,vt=row/4+.002;
           const on=Math.hypot(out[0],out[2])||1,ox=out[0]/on*.05,oz=out[2]/on*.05;
           shp.rtri([ax+ox,0,ay+oz],[bx+ox,0,by+oz],[bx+ox,3.4,by+oz],F,out,[su0,vb,su1,vb,su1,vt]);shp.rtri([ax+ox,0,ay+oz],[bx+ox,3.4,by+oz],[ax+ox,3.4,ay+oz],F,out,[su0,vb,su1,vt,su0,vt]);y0=3.4;}}
       if(!adE&&h>=6&&h<=40&&L>8){const ol2=Math.hypot(out[0],out[2])||1,nx=out[0]/ol2,ny=out[2]/ol2,mx2=(ax+bx)/2,my2=(ay+by)/2;const ns2=nearestSeg(mx2+nx*9,my2+ny*9,16);if(ns2.seg&&RANK[ns2.seg.w.cls]>=2&&!inBuilding(mx2+nx*2,my2+ny*2))adE=[ax,ay,bx,by,L,nx,ny];}
@@ -264,20 +264,26 @@ function computeTod(){
 
 /* ---------- camera ---------- */
 const CAM={mode:settings.cam||'chase',eye:[0,5,10],tgt:[0,0,0],fov:62,yaw:0,shake:0,vp:new Float32Array(16),proj:new Float32Array(16),view:new Float32Array(16),inv:new Float32Array(16),right:[1,0,0],fwd:[0,0,-1]};
-function colAdd(x,y,r){gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),{x,y,r,col:true,_q:0});}
+function colAdd(x,y,r,climb){const o={x,y,r,col:true,_q:0};if(climb)o.climb=climb;gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),o);}
 function pierAt(x,y){const q=[];gQuery(W.tG,x,y,2,q);for(const t of q)if(t.pier&&Math.hypot(t.x-x,t.y-y)<t.r+.35)return true;return false;}
 function setupCamera(dt,P,V,model){
   const sp=Math.abs(P.s),top=V.top/3.6,frac=clamp(sp/top,0,1);
   const fx=Math.sin(P.h),fz=-Math.cos(P.h);
   /* on foot the camera stays where you put it (swipe to turn it); in vehicles it follows the heading, plus a swipe offset that springs back */
   CAM.free=FOOT.on&&!FOOT.ride&&!METRO.ride&&CAM.mode!=='cockpit';
-  if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
-  if(CAM.free||CAM.mode==='cockpit')CAM.look=0;else if(!CAM.lookHeld&&GT-(CAM.lookRel||0)>2.5){CAM.look=angDiff(0,CAM.look||0)*Math.pow(.2,dt);CAM.pitch=(CAM.pitch||0)*Math.pow(.2,dt);}
+  if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'||(CAM.mode==='hood'&&!FOOT.on)?20:4.5));
+  if(CAM.free||CAM.mode==='cockpit'||(CAM.mode==='hood'&&!FOOT.on))CAM.look=0;else if(!CAM.lookHeld&&GT-(CAM.lookRel||0)>2.5){CAM.look=angDiff(0,CAM.look||0)*Math.pow(.2,dt);CAM.pitch=(CAM.pitch||0)*Math.pow(.2,dt);}
   const yawC=CAM.yaw+(CAM.look||0),cyx=Math.sin(yawC),cyz=-Math.cos(yawC);
   const sh=CAM.shake;const jx=(Math.random()-.5)*sh*.08,jy=(Math.random()-.5)*sh*.08;
   const bump=P.bounce*.12+P.air*.6;
   let near=.2;
-  if(CAM.mode==='cockpit'){
+  const hood=CAM.mode==='hood'&&!FOOT.on&&model.eye;
+  if(hood){ /* bonnet camera: low over the nose of the vehicle, the body stays visible below */
+    const M=P.M,L=model.len||4,car=V.cat==='car'||V.cat==='posh';
+    const hz=V.cat==='two'?model.eye[2]-.5:car?-L*.3:-(L/2+.08),hy=V.cat==='two'?model.eye[1]+.04:car?model.eye[1]+.16:Math.min(model.eye[1],1.5);
+    const e=M4.xform(M,0,hy,hz),f=M4.xform(M,0,hy-.9-bump*2,hz-12);
+    CAM.eye=[e[0]+jx,e[1]+jy,e[2]];CAM.tgt=f;CAM.fov=lerp(CAM.fov,72+frac*16,Math.min(1,dt*3));near=.06;
+  }else if(CAM.mode==='cockpit'){
     const M=P.M;const e=M4.xform(M,model.eye[0],model.eye[1],model.eye[2]);
     const f=M4.xform(M,model.eye[0],model.eye[1]-.6-bump*2,model.eye[2]-10);
     CAM.eye=[e[0]+jx,e[1]+jy,e[2]];CAM.tgt=f;CAM.fov=lerp(CAM.fov,70+frac*16,Math.min(1,dt*3));near=.04;

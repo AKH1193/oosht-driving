@@ -201,7 +201,8 @@ function buildCar(type,colHex,o){
   const plate=o.taxi?C.plateY:C.plateW;
   mb.box(0,.44,-L/2-.012,.42,.11,.02,plate);mb.box(0,.56,L/2+.012,.42,.11,.02,plate);
   /* wheels and dark arches */
-  for(const sx of[-1,1])for(const sz of[-1,1]){const ax=sz*(L/2-.72);wheel(mb,sx*(W/2-.08),R,ax,R,.2);mb.box(sx*(W/2-.02),R+.1,ax,.06,.2,R*2+.1,C.black);}
+  for(const sx of[-1,1])for(const sz of[-1,1]){const ax=sz*(L/2-.72);wheel(mb,sx*(W/2-.08),R,ax,R,.2,o.rim);if(o.rim)mb.cyl(sx*(W/2+.025),R,ax,R*.5,.02,'x',10,o.rim,o.rim,.25);mb.box(sx*(W/2-.02),R+.1,ax,.06,.2,R*2+.1,C.black);}
+  if(o.wing){for(const s of[-1,1])mb.box(s*(W/2-.36),b+.2,L/2-.3,.05,.36,.12,C.black);mb.box(0,b+.4,L/2-.27,W-.08,.045,.36,[.07,.07,.08]);for(const s of[-1,1])mb.box(s*(W/2-.05),b+.43,L/2-.27,.03,.14,.38,col);}
   if(d.rails)for(const s of[-1,1])mb.box(s*(W/2-.22),H+.02,rz,.04,.05,rl*.85,C.black);
   if(d.spare&&!o.police)mb.cyl(0,.95,L/2+.12,.34,.22,'z',14,C.black,C.black);
   const chrome=[.86,.87,.9];

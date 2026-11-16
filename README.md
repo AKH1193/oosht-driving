@@ -8,6 +8,8 @@ A Bengaluru life game in 3D on one continuous map of the real city: tap Play and
 
 Ten two-wheelers, an auto-rickshaw, three everyday cars, four luxury and sports cars (Veloce V12 supercar, Zephyr GT, Regent Imperial saloon, Monarch LX SUV), a city bus and a lorry. Pick one in the showroom, or step out and take any vehicle off the street.
 
+Every mechanic also runs a Pay 'n' Spray and mod garage: respray in ten colours (a respray loses the police if none is watching), neon underglow in five colours that pulses to the radio, gold wire rims, a carbon GT wing, hydraulics (hold HORN while stopped to bounce in time with the radio, steer to tilt), NOS (hold the NOS button for a 3 second boost that refills as you drive) and armour plating that makes the vehicle indestructible. Mods are saved per vehicle and come back whenever you take that vehicle out. Camera views: chase, bonnet, cockpit and top.
+
 At Kempegowda International Airport (drive out to Devanahalli, or take the ₹1,500 cab from the flight mission) airliners land and take off on the real runways. Walk up to a parked plane and pull the pilot out, or board an empty one, then fly it: GO and BRAKE set the throttle, the joystick banks and climbs, take off above about 230 km/h, and land on a runway and stop before getting out.
 
 ## On the road
@@ -57,6 +59,7 @@ The game opens on a night city: a car tears past, gunshots ring out, and AN ANIR
 
 ## On foot
 
+- Gates, compound walls and barricades stop you; tap Climb over (or jump at them) to vault them. Jump at any car to land on its bonnet, walk over the roof and boot, and climb buses from the rear ladder.
 - Tap EXIT to get out of any vehicle; walk back to it and tap Get in. Walk up to a car, auto or bike in traffic and tap Take car to steal it.
 - Walking or running earns ₹5 (sweat coins) every 10 seconds.
 - Hail an auto or cab, wait at a bus stop for a BMTC bus, or wave for a free lift: the driver keeps to the road and the left lane, stops at signals, for traffic and for people, and you climb on, ride and get off at the end.

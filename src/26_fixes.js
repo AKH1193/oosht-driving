@@ -36,25 +36,45 @@ say=function(set,who,force){
 {const _cs=cutSub;cutSub=function(who,txt){_cs(who,txt);if(txt&&settings.sound)speakLine(txt,false,.92,1.08);};}
 
 /* ---------- climb onto a BMTC bus from its rear ladder, ride on the roof, climb down ---------- */
-const ROOF={a:null,u:0,w:0,t:0};const ROOF_H=3.15;
+const ROOF={a:null,u:0,w:0,t:0,h:0};const ROOF_H=3.15;
+/* every vehicle Tony can stand on: traffic, Hoysalas, ambulances, his own parked vehicle and roadside parked cars */
+function vehRefs(){const out=[];for(const a of agents)if(!a.fallen)out.push(a);for(const c of COP.list)out.push(c);if(typeof AMB!=='undefined')for(const m of AMB.list)out.push(m);if(intruder)out.push(intruder);if(FOOT.parked)out.push(FOOT.parked);
+  const pq=[];gQuery(W.pvG||new Map(),P.x,P.y,8,pq);for(const v of pq)if(!CITY.taken.has(v.key))out.push(v);return out;}
+function vehDims(a){if(a===FOOT.parked){const ty=a.type||P.type,pm=playerModel(ty),cat=(VEH[ty]||{}).cat;return {len:pm.len||4,wid:pm.wid||1.8,k:cat==='two'?'two':cat==='heavy'?'bus':cat==='three'?'auto':cat==='posh'?'veloce':'hatch',v:0};}
+  if(a.t)return {len:a.t.len,wid:a.t.wid,k:a.t.two?'two':a.t.k,v:a.v||0};
+  if(COP.list.includes(a))return {len:4.55,wid:1.86,k:'suv',v:a.v||0};return {len:5.4,wid:2.1,k:'suv',v:a.v||0};}
+/* height of the surface under Tony: bonnet at the front, roof in the middle, boot at the back */
+function vehTop(d,u){const k=d.k;if(k==='two')return 0;if(k==='bus')return ROOF_H;if(k==='lorry'||k==='truck'||k==='tanker'||k==='tractor')return 2.7;if(k==='auto')return 1.75;
+  const f=u/d.len;if(k==='suv'||k==='monarch')return f>.22?1.08:1.78;if(k==='veloce'||k==='zephyr')return f>.18?.78:f<-.3?.95:1.22;return f>.2?.92:f<-.3?1.0:1.42;}
 function busAgentNear(){for(const a of agents){if(a.t.k!=='bus')continue;const fx=Math.sin(a.h),fy=-Math.cos(a.h);const dx=P.x-a.x,dy=P.y-a.y;const u=dx*fx+dy*fy,w=-dx*fy+dy*fx;
   if(u<-a.t.len/2-1.6||u>-a.t.len/2+1.2||Math.abs(w)>a.t.wid/2+.8)continue;if(a.v>2.2)continue;return a;}return null;}
 function roofCtx(){if(!FOOT.on||FOOT.ride||INT.on)return null;
-  if(ROOF.a)return {k:'item',it:{fn:roofDown},label:'Climb down'};
+  if(ROOF.a)return ROOF.h>2?{k:'item',it:{fn:roofDown},label:'Climb down'}:null;
   const a=busAgentNear();return a?{k:'item',it:{fn:()=>roofUp(a)},label:'Climb onto the bus'}:null;}
-function roofUp(a){ROOF.a=a;ROOF.u=-a.t.len/2+1;ROOF.w=0;ROOF.t=0;Snd.thud&&Snd.thud(.3);Hap.play&&Hap.play([0,40],[0,120],true);}
-function roofDown(fall){const a=ROOF.a;ROOF.a=null;P.elev=0;if(!a)return;const fx=Math.sin(a.h),fy=-Math.cos(a.h);
-  const sx=fall?Math.sign(ROOF.w||1):0;const bx=a.x+fx*(-a.t.len/2-1.2)+(-fy)*sx*0,by=a.y+fy*(-a.t.len/2-1.2);
-  if(fall){const rx=Math.cos(a.h),ry=Math.sin(a.h);P.x=a.x+fx*ROOF.u+rx*(ROOF.w>=0?1:-1)*(a.t.wid/2+.9);P.y=a.y+fy*ROOF.u+ry*(ROOF.w>=0?1:-1)*(a.t.wid/2+.9);if(a.v>7)lfDamage(10,'crash');else Snd.thud&&Snd.thud(.5);}
-  else{P.x=bx;P.y=by;}M4.model(P.M,P.x,0,P.y,-P.h,0,0);}
+function roofUp(a){ROOF.a=a;ROOF.u=-a.t.len/2+1;ROOF.w=0;ROOF.t=0;ROOF.h=ROOF_H;ROOF.e=0;Snd.thud&&Snd.thud(.3);Hap.play&&Hap.play([0,40],[0,120],true);}
+/* step or fall off: Tony keeps his height and drops under gravity */
+function roofRelease(){const z=LIFE.z+(ROOF.e||0);ROOF.e=0;ROOF.a=null;P.elev=0;LIFE.z=z;if(!(LIFE.vz<0))LIFE.vz=Math.min(LIFE.vz||0,0);}
+function roofDown(fall){const a=ROOF.a;if(!a){ROOF.a=null;P.elev=0;return;}const d=vehDims(a);
+  if(fall===true){roofRelease();return;}
+  const fx=Math.sin(a.h),fy=-Math.cos(a.h);ROOF.a=null;P.elev=0;LIFE.z=0;LIFE.vz=0;P.x=a.x+fx*(-d.len/2-1.2);P.y=a.y+fy*(-d.len/2-1.2);M4.model(P.M,P.x,0,P.y,-P.h,0,0);}
+/* landing: a jump that comes down on a bonnet, boot or roof puts Tony on top of the vehicle */
+function roofLand(){if(!FOOT.on||FOOT.ride||INT.on||(typeof VAULT!=='undefined'&&VAULT.on)||(P.elev||0)>.5)return;const z=LIFE.z;if(z<.45)return;
+  for(const a of vehRefs()){const d=vehDims(a);if(d.k==='two')continue;const fx=Math.sin(a.h),fy=-Math.cos(a.h),dx=P.x-a.x,dy=P.y-a.y;const u=dx*fx+dy*fy,w=-dx*fy+dy*fx;
+    if(Math.abs(u)>d.len/2||Math.abs(w)>d.wid/2)continue;const top=vehTop(d,u);
+    if(z>=top-.32){ROOF.a=a;ROOF.u=u;ROOF.w=w;ROOF.t=1;ROOF.h=top;ROOF.e=Math.min(top,z);P.elev=ROOF.e;LIFE.z=Math.max(0,z-top);if(LIFE.z===0)LIFE.vz=0;Snd.burst&&Snd.burst(.12,260,1.2,.35,'lowpass');Hap.tick&&Hap.tick();return;}
+    vehPush(a.x,a.y,a.h,d.len,d.wid);}}
 {const _uf=updateFoot;updateFoot=function(dt){
-  if(!ROOF.a){_uf(dt);return;}
-  const a=ROOF.a;if(!agents.includes(a)||!FOOT.on||FOOT.ride||INT.on||LIFE.dead){roofDown(true);_uf(dt);return;}
-  const ox=P.x,oy=P.y;_uf(dt);const mx=P.x-ox,my=P.y-oy;
-  const fx=Math.sin(a.h),fy=-Math.cos(a.h),rx=Math.cos(a.h),ry=Math.sin(a.h);
-  ROOF.u+=mx*fx+my*fy;ROOF.w+=mx*rx+my*ry;ROOF.t+=dt;
-  if(Math.abs(ROOF.u)>a.t.len/2+.25||Math.abs(ROOF.w)>a.t.wid/2+.25){roofDown(true);return;}
-  P.x=a.x+fx*ROOF.u+rx*ROOF.w;P.y=a.y+fy*ROOF.u+ry*ROOF.w;P.elev=ROOF_H*Math.min(1,ROOF.t/.5);
+  if(!ROOF.a){_uf(dt);try{roofLand();}catch(e){}return;}
+  const a=ROOF.a;if(!vehRefs().includes(a)||!FOOT.on||FOOT.ride||INT.on||LIFE.dead){roofRelease();_uf(dt);return;}
+  const d=vehDims(a);const ox=P.x,oy=P.y;_uf(dt);const mx=P.x-ox,my=P.y-oy;
+  const fx=Math.sin(a.h),fy=-Math.cos(a.h),rx=Math.cos(a.h),ry=Math.sin(a.h);const du=mx*fx+my*fy,dw=mx*rx+my*ry;
+  ROOF.u+=du;ROOF.w+=dw;ROOF.t+=dt;
+  if(Math.abs(ROOF.u)>d.len/2+.2||Math.abs(ROOF.w)>d.wid/2+.2){P.x=a.x+fx*ROOF.u+rx*ROOF.w;P.y=a.y+fy*ROOF.u+ry*ROOF.w;roofRelease();if(d.v>7)lfDamage(8,'crash');return;}
+  let top=vehTop(d,ROOF.u);const z=LIFE.z+ROOF.h;
+  if(top>ROOF.h+.6&&z<top-.3){ROOF.u-=du;ROOF.w-=dw;top=ROOF.h;}/* too tall a step without a jump */
+  else if(top!==ROOF.h){ROOF.h=top;LIFE.z=Math.max(0,z-top);if(LIFE.z===0&&LIFE.vz<0)LIFE.vz=0;}
+  P.x=a.x+fx*ROOF.u+rx*ROOF.w;P.y=a.y+fy*ROOF.u+ry*ROOF.w;
+  const tgt=ROOF.t<.5&&ROOF.h>2?ROOF.h*ROOF.t/.5:ROOF.h;ROOF.e=(ROOF.e||0)<tgt?Math.min(tgt,(ROOF.e||0)+dt*6):tgt;P.elev=ROOF.e;
   M4.model(P.M,P.x,LIFE.z+P.elev,P.y,-P.h,0,0);};}
 {const _fc=findContext;findContext=function(){const c=roofCtx();if(c)return c;return _fc();};}
 

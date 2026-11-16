@@ -415,6 +415,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
       <button class="abtn atk hit" id="btnAtk">HIT</button>
     </div>
     <div class="ctl-act">
+      <button class="abtn hit" id="btnNos" hidden>NOS</button>
       <button class="abtn hit" id="btnRadio" hidden>RADIO</button>
       <button class="abtn hit" id="btnExit">EXIT</button>
     </div>
@@ -501,6 +502,7 @@ button.padfocus{outline:3px solid var(--auto-yellow);outline-offset:2px}
       <div class="row" style="justify-content:flex-start">
         <button class="btn primary" id="repFull">Full repair</button>
         <button class="btn" id="repHalf">Patch it up</button>
+        <button class="btn" id="repMods">Mod garage</button>
         <button class="btn" id="repLeave">Drive on</button>
       </div>
     </div>
@@ -1512,7 +1514,8 @@ function buildCar(type,colHex,o){
   const plate=o.taxi?C.plateY:C.plateW;
   mb.box(0,.44,-L/2-.012,.42,.11,.02,plate);mb.box(0,.56,L/2+.012,.42,.11,.02,plate);
   /* wheels and dark arches */
-  for(const sx of[-1,1])for(const sz of[-1,1]){const ax=sz*(L/2-.72);wheel(mb,sx*(W/2-.08),R,ax,R,.2);mb.box(sx*(W/2-.02),R+.1,ax,.06,.2,R*2+.1,C.black);}
+  for(const sx of[-1,1])for(const sz of[-1,1]){const ax=sz*(L/2-.72);wheel(mb,sx*(W/2-.08),R,ax,R,.2,o.rim);if(o.rim)mb.cyl(sx*(W/2+.025),R,ax,R*.5,.02,'x',10,o.rim,o.rim,.25);mb.box(sx*(W/2-.02),R+.1,ax,.06,.2,R*2+.1,C.black);}
+  if(o.wing){for(const s of[-1,1])mb.box(s*(W/2-.36),b+.2,L/2-.3,.05,.36,.12,C.black);mb.box(0,b+.4,L/2-.27,W-.08,.045,.36,[.07,.07,.08]);for(const s of[-1,1])mb.box(s*(W/2-.05),b+.43,L/2-.27,.03,.14,.38,col);}
   if(d.rails)for(const s of[-1,1])mb.box(s*(W/2-.22),H+.02,rz,.04,.05,rl*.85,C.black);
   if(d.spare&&!o.police)mb.cyl(0,.95,L/2+.12,.34,.22,'z',14,C.black,C.black);
   const chrome=[.86,.87,.9];
@@ -2420,7 +2423,7 @@ function buildChunk(cx,cy){
       const u0=run/13.6,u1=(run+L)/13.6,v1=h/12.4;run+=L;
       let y0=0;
       if(h>5&&L>3.5){const ol=Math.hypot(out[0],out[2])||1;const mx=(ax+bx)/2+out[0]/ol*1.5,my=(ay+by)/2+out[2]/ol*1.5;const ns=nearestSeg(mx,my,12);
-        if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/33.6,r1=run/33.6,su0=ccw?r1:r0,su1=ccw?r0:r1,F=[1,1,1];const row=(hash2(Math.round(ax),Math.round(ay))>>>0)%4,vb=(row+1)/4-.002,vt=row/4+.002;
+        if(ns.seg&&ns.edge<6.5&&!inBuilding(mx,my)){const r0=(run-L)/33.6,r1=run/33.6,su0=ccw?r1:r0,su1=ccw?r0:r1;const sh0=hash2(Math.round(ax),Math.round(ay))>>>0,F=[[1,1,1],[1,.95,.85],[.88,.96,1],[1,.9,.95]][(sh0>>>3)%4];const row=sh0%4,vb=(row+1)/4-.002,vt=row/4+.002;
           const on=Math.hypot(out[0],out[2])||1,ox=out[0]/on*.05,oz=out[2]/on*.05;
           shp.rtri([ax+ox,0,ay+oz],[bx+ox,0,by+oz],[bx+ox,3.4,by+oz],F,out,[su0,vb,su1,vb,su1,vt]);shp.rtri([ax+ox,0,ay+oz],[bx+ox,3.4,by+oz],[ax+ox,3.4,ay+oz],F,out,[su0,vb,su1,vt,su0,vt]);y0=3.4;}}
       if(!adE&&h>=6&&h<=40&&L>8){const ol2=Math.hypot(out[0],out[2])||1,nx=out[0]/ol2,ny=out[2]/ol2,mx2=(ax+bx)/2,my2=(ay+by)/2;const ns2=nearestSeg(mx2+nx*9,my2+ny*9,16);if(ns2.seg&&RANK[ns2.seg.w.cls]>=2&&!inBuilding(mx2+nx*2,my2+ny*2))adE=[ax,ay,bx,by,L,nx,ny];}
@@ -2529,20 +2532,26 @@ function computeTod(){
 
 /* ---------- camera ---------- */
 const CAM={mode:settings.cam||'chase',eye:[0,5,10],tgt:[0,0,0],fov:62,yaw:0,shake:0,vp:new Float32Array(16),proj:new Float32Array(16),view:new Float32Array(16),inv:new Float32Array(16),right:[1,0,0],fwd:[0,0,-1]};
-function colAdd(x,y,r){gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),{x,y,r,col:true,_q:0});}
+function colAdd(x,y,r,climb){const o={x,y,r,col:true,_q:0};if(climb)o.climb=climb;gAdd(W.tG,Math.floor(x/CELL),Math.floor(y/CELL),o);}
 function pierAt(x,y){const q=[];gQuery(W.tG,x,y,2,q);for(const t of q)if(t.pier&&Math.hypot(t.x-x,t.y-y)<t.r+.35)return true;return false;}
 function setupCamera(dt,P,V,model){
   const sp=Math.abs(P.s),top=V.top/3.6,frac=clamp(sp/top,0,1);
   const fx=Math.sin(P.h),fz=-Math.cos(P.h);
   /* on foot the camera stays where you put it (swipe to turn it); in vehicles it follows the heading, plus a swipe offset that springs back */
   CAM.free=FOOT.on&&!FOOT.ride&&!METRO.ride&&CAM.mode!=='cockpit';
-  if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'?20:4.5));
-  if(CAM.free||CAM.mode==='cockpit')CAM.look=0;else if(!CAM.lookHeld&&GT-(CAM.lookRel||0)>2.5){CAM.look=angDiff(0,CAM.look||0)*Math.pow(.2,dt);CAM.pitch=(CAM.pitch||0)*Math.pow(.2,dt);}
+  if(!CAM.free)CAM.yaw+=angDiff(CAM.yaw,P.h)*Math.min(1,dt*(CAM.mode==='cockpit'||(CAM.mode==='hood'&&!FOOT.on)?20:4.5));
+  if(CAM.free||CAM.mode==='cockpit'||(CAM.mode==='hood'&&!FOOT.on))CAM.look=0;else if(!CAM.lookHeld&&GT-(CAM.lookRel||0)>2.5){CAM.look=angDiff(0,CAM.look||0)*Math.pow(.2,dt);CAM.pitch=(CAM.pitch||0)*Math.pow(.2,dt);}
   const yawC=CAM.yaw+(CAM.look||0),cyx=Math.sin(yawC),cyz=-Math.cos(yawC);
   const sh=CAM.shake;const jx=(Math.random()-.5)*sh*.08,jy=(Math.random()-.5)*sh*.08;
   const bump=P.bounce*.12+P.air*.6;
   let near=.2;
-  if(CAM.mode==='cockpit'){
+  const hood=CAM.mode==='hood'&&!FOOT.on&&model.eye;
+  if(hood){ /* bonnet camera: low over the nose of the vehicle, the body stays visible below */
+    const M=P.M,L=model.len||4,car=V.cat==='car'||V.cat==='posh';
+    const hz=V.cat==='two'?model.eye[2]-.5:car?-L*.3:-(L/2+.08),hy=V.cat==='two'?model.eye[1]+.04:car?model.eye[1]+.16:Math.min(model.eye[1],1.5);
+    const e=M4.xform(M,0,hy,hz),f=M4.xform(M,0,hy-.9-bump*2,hz-12);
+    CAM.eye=[e[0]+jx,e[1]+jy,e[2]];CAM.tgt=f;CAM.fov=lerp(CAM.fov,72+frac*16,Math.min(1,dt*3));near=.06;
+  }else if(CAM.mode==='cockpit'){
     const M=P.M;const e=M4.xform(M,model.eye[0],model.eye[1],model.eye[2]);
     const f=M4.xform(M,model.eye[0],model.eye[1]-.6-bump*2,model.eye[2]-10);
     CAM.eye=[e[0]+jx,e[1]+jy,e[2]];CAM.tgt=f;CAM.fov=lerp(CAM.fov,70+frac*16,Math.min(1,dt*3));near=.04;
@@ -3575,7 +3584,7 @@ $('#repFull').addEventListener('click',()=>doRepair(true));$('#repHalf').addEven
 $('#repLeave').addEventListener('click',()=>resumeDrive());
 $('#outPrimary').addEventListener('click',()=>{if($('#outPrimary').dataset.end){goFoot();toast('Head to the court: follow the red beam','bad');}else{resumeDrive();}});
 $('#outMenu').addEventListener('click',()=>{resetActors();go('title');});
-$('#camBtn').addEventListener('click',()=>{const order=['chase','cockpit','far'];CAM.mode=order[(order.indexOf(CAM.mode)+1)%3];settings.cam=CAM.mode;saveSettings();toast({chase:'Chase view',cockpit:'Cockpit view',far:'Top view'}[CAM.mode],'','cam',300);});
+$('#camBtn').addEventListener('click',()=>{const order=['chase','hood','cockpit','far'];CAM.mode=order[(order.indexOf(CAM.mode)+1)%4];settings.cam=CAM.mode;saveSettings();toast({chase:'Chase view',hood:'Bonnet view',cockpit:'Cockpit view',far:'Top view'}[CAM.mode],'','cam',300);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Snd.hornOff();if(Snd.ctx&&Snd.ctx.suspend)Snd.ctx.suspend();}else Snd.resume();});
 window.__onBack=()=>{
   if(!$('#settings').hidden){closeSettings();return true;}
@@ -3593,7 +3602,7 @@ const SETS=[
   ['sound','Sound',[[true,'On'],[false,'Off']]],
   ['haptics','Vibration',[['off','Off'],['low','Low'],['med','Medium'],['high','Strong']]],
   ['steer','Steering',[['buttons','Joystick'],['arrows','Arrows'],['tilt','Tilt phone']]],
-  ['cam','Camera',[['chase','Chase'],['cockpit','Cockpit'],['far','Top']]],
+  ['cam','Camera',[['chase','Chase'],['hood','Bonnet'],['cockpit','Cockpit'],['far','Top']]],
   ['tod','Time of day',[['auto','Live (sun)'],['dawn','Dawn'],['noon','Noon'],['evening','Evening'],['night','Night']]],
   ['gfx','Graphics',[['fast','Fast'],['balanced','Balanced'],['ultra','Ultra']]],
 ];
@@ -3775,7 +3784,7 @@ function updateFoot(dt){
   if(false)FOOT.stam=0;else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
   const ox=P.x,oy=P.y,sx=P.vx*dt,sy=P.vy*dt;
-  const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;}const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};
+  const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;}const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);if(LIFE.z+(P.elev||0)>.45)return false;for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};
   const blocked=(x,y)=>treeAt2(x,y)||inBuilding(x,y)||inBuilding(x+fx*.32,y+fy*.32)||inBuilding(x-fy*.24+fx*.1,y+fx*.24+fy*.1)||inBuilding(x+fy*.24+fx*.1,y-fx*.24+fy*.1);
   if(metroWalk(ox,oy,sx,sy,dt)){}
   else if(inBuilding(ox,oy)){const o=pushOutOf(ox,oy);P.x=o[0];P.y=o[1];P.s*=.5;}
@@ -3784,7 +3793,7 @@ function updateFoot(dt){
   else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}
   else{P.s*=.4;}
   /* vehicles are solid boxes for their full length, so you cannot walk through a lorry or bus */
-  if(!(P.elev>1.5)&&!(typeof ROOF!=='undefined'&&ROOF.a)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
+  if(!(P.elev>1.5)&&!(LIFE.z>.45)&&!(typeof ROOF!=='undefined'&&ROOF.a)&&!(typeof VAULT!=='undefined'&&VAULT.on)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
     for(const c of COP.list)vehPush(c.x,c.y,c.h,4.55,1.86);
     if(typeof AMB!=='undefined')for(const m of AMB.list)vehPush(m.x,m.y,m.h,5.4,2.1);
     if(intruder)vehPush(intruder.x,intruder.y,intruder.h,intruder.t.len,intruder.t.wid);
@@ -4501,7 +4510,7 @@ function lifeUpdate(dt){
     }
   /* jumping and attacking on foot */
   if(onFoot){
-    if(input.jump&&LIFE.z<=0&&FOOT.stam>4){LIFE.vz=4.4;FOOT.stam-=4;input.jump=0;Snd.tone([300],.04,'triangle',.03);}
+    if(input.jump&&LIFE.z<=0&&FOOT.stam>4){LIFE.vz=5.4;FOOT.stam-=4;input.jump=0;Snd.tone([300],.04,'triangle',.03);}
     if(LIFE.z>0||LIFE.vz>0){LIFE.z+=LIFE.vz*dt;LIFE.vz-=13*dt;if(LIFE.z<=0){LIFE.z=0;LIFE.vz=0;Hap.tick();}}
     if(input.atk&&LIFE.atkT<=0&&!FOOT.unload)doAttack();
     if(LIFE.z>0)M4.model(P.M,P.x,LIFE.z+(P.elev||0),P.y,-P.h,0,0);
@@ -5436,7 +5445,7 @@ function doorsChunk(sol,inC,cx,cy){
     if(k==='house'&&b.h<=9&&!b.kiosk&&d.quiet){const gz=-2.2;for(const x of[-1.6,1.6])sol.box(x,.8,gz,.36,1.6,.36,[.82,.8,.74]);
       for(let i=0;i<11;i++)sol.box(-1.38+i*.276,.75,gz,.03,1.3,.03,[.2,.22,.25]);sol.box(0,1.36,gz,2.86,.05,.05,[.2,.22,.25]);sol.box(0,.2,gz,2.86,.05,.05,[.2,.22,.25]);
       for(const s of[-1,1])sol.box(s*(1.78+1.2),.7,gz,2.4,1.4,.18,[.85,.83,.77]);
-      {const c=Math.cos(-hAng(d.nx,d.ny)),sn=Math.sin(-hAng(d.nx,d.ny));const W2=(x,z)=>[d.x+x*c+z*sn,d.y-x*sn+z*c];for(const x of[-4,-3,-2,2,3,4])colAdd(...W2(x,gz),.25);}}
+      {const c=Math.cos(-hAng(d.nx,d.ny)),sn=Math.sin(-hAng(d.nx,d.ny));const W2=(x,z)=>[d.x+x*c+z*sn,d.y-x*sn+z*c];for(const x of[-4.1,-3.6,-3.1,-2.6,-2.1,-1.6,2.1,2.6,3.1,3.6,4.1,1.6])colAdd(...W2(x,gz),.26,1.45);for(const x of[-1.1,-.55,0,.55,1.1])colAdd(...W2(x,gz),.26,1.4);}}
     sol.restore();}
 }
 
@@ -6974,25 +6983,45 @@ say=function(set,who,force){
 {const _cs=cutSub;cutSub=function(who,txt){_cs(who,txt);if(txt&&settings.sound)speakLine(txt,false,.92,1.08);};}
 
 /* ---------- climb onto a BMTC bus from its rear ladder, ride on the roof, climb down ---------- */
-const ROOF={a:null,u:0,w:0,t:0};const ROOF_H=3.15;
+const ROOF={a:null,u:0,w:0,t:0,h:0};const ROOF_H=3.15;
+/* every vehicle Tony can stand on: traffic, Hoysalas, ambulances, his own parked vehicle and roadside parked cars */
+function vehRefs(){const out=[];for(const a of agents)if(!a.fallen)out.push(a);for(const c of COP.list)out.push(c);if(typeof AMB!=='undefined')for(const m of AMB.list)out.push(m);if(intruder)out.push(intruder);if(FOOT.parked)out.push(FOOT.parked);
+  const pq=[];gQuery(W.pvG||new Map(),P.x,P.y,8,pq);for(const v of pq)if(!CITY.taken.has(v.key))out.push(v);return out;}
+function vehDims(a){if(a===FOOT.parked){const ty=a.type||P.type,pm=playerModel(ty),cat=(VEH[ty]||{}).cat;return {len:pm.len||4,wid:pm.wid||1.8,k:cat==='two'?'two':cat==='heavy'?'bus':cat==='three'?'auto':cat==='posh'?'veloce':'hatch',v:0};}
+  if(a.t)return {len:a.t.len,wid:a.t.wid,k:a.t.two?'two':a.t.k,v:a.v||0};
+  if(COP.list.includes(a))return {len:4.55,wid:1.86,k:'suv',v:a.v||0};return {len:5.4,wid:2.1,k:'suv',v:a.v||0};}
+/* height of the surface under Tony: bonnet at the front, roof in the middle, boot at the back */
+function vehTop(d,u){const k=d.k;if(k==='two')return 0;if(k==='bus')return ROOF_H;if(k==='lorry'||k==='truck'||k==='tanker'||k==='tractor')return 2.7;if(k==='auto')return 1.75;
+  const f=u/d.len;if(k==='suv'||k==='monarch')return f>.22?1.08:1.78;if(k==='veloce'||k==='zephyr')return f>.18?.78:f<-.3?.95:1.22;return f>.2?.92:f<-.3?1.0:1.42;}
 function busAgentNear(){for(const a of agents){if(a.t.k!=='bus')continue;const fx=Math.sin(a.h),fy=-Math.cos(a.h);const dx=P.x-a.x,dy=P.y-a.y;const u=dx*fx+dy*fy,w=-dx*fy+dy*fx;
   if(u<-a.t.len/2-1.6||u>-a.t.len/2+1.2||Math.abs(w)>a.t.wid/2+.8)continue;if(a.v>2.2)continue;return a;}return null;}
 function roofCtx(){if(!FOOT.on||FOOT.ride||INT.on)return null;
-  if(ROOF.a)return {k:'item',it:{fn:roofDown},label:'Climb down'};
+  if(ROOF.a)return ROOF.h>2?{k:'item',it:{fn:roofDown},label:'Climb down'}:null;
   const a=busAgentNear();return a?{k:'item',it:{fn:()=>roofUp(a)},label:'Climb onto the bus'}:null;}
-function roofUp(a){ROOF.a=a;ROOF.u=-a.t.len/2+1;ROOF.w=0;ROOF.t=0;Snd.thud&&Snd.thud(.3);Hap.play&&Hap.play([0,40],[0,120],true);}
-function roofDown(fall){const a=ROOF.a;ROOF.a=null;P.elev=0;if(!a)return;const fx=Math.sin(a.h),fy=-Math.cos(a.h);
-  const sx=fall?Math.sign(ROOF.w||1):0;const bx=a.x+fx*(-a.t.len/2-1.2)+(-fy)*sx*0,by=a.y+fy*(-a.t.len/2-1.2);
-  if(fall){const rx=Math.cos(a.h),ry=Math.sin(a.h);P.x=a.x+fx*ROOF.u+rx*(ROOF.w>=0?1:-1)*(a.t.wid/2+.9);P.y=a.y+fy*ROOF.u+ry*(ROOF.w>=0?1:-1)*(a.t.wid/2+.9);if(a.v>7)lfDamage(10,'crash');else Snd.thud&&Snd.thud(.5);}
-  else{P.x=bx;P.y=by;}M4.model(P.M,P.x,0,P.y,-P.h,0,0);}
+function roofUp(a){ROOF.a=a;ROOF.u=-a.t.len/2+1;ROOF.w=0;ROOF.t=0;ROOF.h=ROOF_H;ROOF.e=0;Snd.thud&&Snd.thud(.3);Hap.play&&Hap.play([0,40],[0,120],true);}
+/* step or fall off: Tony keeps his height and drops under gravity */
+function roofRelease(){const z=LIFE.z+(ROOF.e||0);ROOF.e=0;ROOF.a=null;P.elev=0;LIFE.z=z;if(!(LIFE.vz<0))LIFE.vz=Math.min(LIFE.vz||0,0);}
+function roofDown(fall){const a=ROOF.a;if(!a){ROOF.a=null;P.elev=0;return;}const d=vehDims(a);
+  if(fall===true){roofRelease();return;}
+  const fx=Math.sin(a.h),fy=-Math.cos(a.h);ROOF.a=null;P.elev=0;LIFE.z=0;LIFE.vz=0;P.x=a.x+fx*(-d.len/2-1.2);P.y=a.y+fy*(-d.len/2-1.2);M4.model(P.M,P.x,0,P.y,-P.h,0,0);}
+/* landing: a jump that comes down on a bonnet, boot or roof puts Tony on top of the vehicle */
+function roofLand(){if(!FOOT.on||FOOT.ride||INT.on||(typeof VAULT!=='undefined'&&VAULT.on)||(P.elev||0)>.5)return;const z=LIFE.z;if(z<.45)return;
+  for(const a of vehRefs()){const d=vehDims(a);if(d.k==='two')continue;const fx=Math.sin(a.h),fy=-Math.cos(a.h),dx=P.x-a.x,dy=P.y-a.y;const u=dx*fx+dy*fy,w=-dx*fy+dy*fx;
+    if(Math.abs(u)>d.len/2||Math.abs(w)>d.wid/2)continue;const top=vehTop(d,u);
+    if(z>=top-.32){ROOF.a=a;ROOF.u=u;ROOF.w=w;ROOF.t=1;ROOF.h=top;ROOF.e=Math.min(top,z);P.elev=ROOF.e;LIFE.z=Math.max(0,z-top);if(LIFE.z===0)LIFE.vz=0;Snd.burst&&Snd.burst(.12,260,1.2,.35,'lowpass');Hap.tick&&Hap.tick();return;}
+    vehPush(a.x,a.y,a.h,d.len,d.wid);}}
 {const _uf=updateFoot;updateFoot=function(dt){
-  if(!ROOF.a){_uf(dt);return;}
-  const a=ROOF.a;if(!agents.includes(a)||!FOOT.on||FOOT.ride||INT.on||LIFE.dead){roofDown(true);_uf(dt);return;}
-  const ox=P.x,oy=P.y;_uf(dt);const mx=P.x-ox,my=P.y-oy;
-  const fx=Math.sin(a.h),fy=-Math.cos(a.h),rx=Math.cos(a.h),ry=Math.sin(a.h);
-  ROOF.u+=mx*fx+my*fy;ROOF.w+=mx*rx+my*ry;ROOF.t+=dt;
-  if(Math.abs(ROOF.u)>a.t.len/2+.25||Math.abs(ROOF.w)>a.t.wid/2+.25){roofDown(true);return;}
-  P.x=a.x+fx*ROOF.u+rx*ROOF.w;P.y=a.y+fy*ROOF.u+ry*ROOF.w;P.elev=ROOF_H*Math.min(1,ROOF.t/.5);
+  if(!ROOF.a){_uf(dt);try{roofLand();}catch(e){}return;}
+  const a=ROOF.a;if(!vehRefs().includes(a)||!FOOT.on||FOOT.ride||INT.on||LIFE.dead){roofRelease();_uf(dt);return;}
+  const d=vehDims(a);const ox=P.x,oy=P.y;_uf(dt);const mx=P.x-ox,my=P.y-oy;
+  const fx=Math.sin(a.h),fy=-Math.cos(a.h),rx=Math.cos(a.h),ry=Math.sin(a.h);const du=mx*fx+my*fy,dw=mx*rx+my*ry;
+  ROOF.u+=du;ROOF.w+=dw;ROOF.t+=dt;
+  if(Math.abs(ROOF.u)>d.len/2+.2||Math.abs(ROOF.w)>d.wid/2+.2){P.x=a.x+fx*ROOF.u+rx*ROOF.w;P.y=a.y+fy*ROOF.u+ry*ROOF.w;roofRelease();if(d.v>7)lfDamage(8,'crash');return;}
+  let top=vehTop(d,ROOF.u);const z=LIFE.z+ROOF.h;
+  if(top>ROOF.h+.6&&z<top-.3){ROOF.u-=du;ROOF.w-=dw;top=ROOF.h;}/* too tall a step without a jump */
+  else if(top!==ROOF.h){ROOF.h=top;LIFE.z=Math.max(0,z-top);if(LIFE.z===0&&LIFE.vz<0)LIFE.vz=0;}
+  P.x=a.x+fx*ROOF.u+rx*ROOF.w;P.y=a.y+fy*ROOF.u+ry*ROOF.w;
+  const tgt=ROOF.t<.5&&ROOF.h>2?ROOF.h*ROOF.t/.5:ROOF.h;ROOF.e=(ROOF.e||0)<tgt?Math.min(tgt,(ROOF.e||0)+dt*6):tgt;P.elev=ROOF.e;
   M4.model(P.M,P.x,LIFE.z+P.elev,P.y,-P.h,0,0);};}
 {const _fc=findContext;findContext=function(){const c=roofCtx();if(c)return c;return _fc();};}
 
@@ -7297,6 +7326,162 @@ function evTick(dt){const E=SB.ev;if(!E)return;E.t+=dt;
   try{evTick(dt);SB.tokT-=dt;if(SB.tokT<=0){SB.tokT=2;tokScan();}tokTick();
     if(!SB.ev&&!MIS.cur&&!COP.level){SB.t-=dt;if(SB.t<=0){SB.t=70+Math.random()*80;const r=Math.random();SB.ev=r<.35?evCashVan():r<.65?evGang():evRace();}}}catch(e){}};}
 Object.assign(window.__oosht||{},{SB,evCashVan,evGang,evRace,tokScan,sbPop,nearMissTick});
+
+/* ================= WISE CITY: climbing. Gates, railings and compound walls are solid; face one and press JUMP
+   (or the Climb over button) and Tony vaults across ================= */
+const VAULT={on:false,t:0,dur:.6,x0:0,y0:0,x1:0,y1:0,h:1.4};
+function climbTarget(){if(!FOOT.on||FOOT.ride||INT.on||ROOF.a||VAULT.on||LIFE.downT>0||(P.elev||0)>.5||LIFE.z>.05)return null;
+  const fx=Math.sin(P.h),fy=-Math.cos(P.h);const q=[];gQuery(W.tG,P.x,P.y,2.5,q);let best=null,bd=9;
+  for(const t of q){if(!t.climb)continue;const dx=t.x-P.x,dy=t.y-P.y,d=Math.hypot(dx,dy);if(d>t.r+.95)continue;const al=dx*fx+dy*fy;if(al<.05)continue;if(d<bd){bd=d;best={t,al};}}
+  if(!best)return null;
+  for(let e=.75;e<=2.4;e+=.35){const x=P.x+fx*(best.al+best.t.r+e),y=P.y+fy*(best.al+best.t.r+e);if(footFree(x,y))return {x,y,h:best.t.climb};}
+  return null;}
+function startVault(c){c=c||climbTarget();if(!c)return false;VAULT.on=true;VAULT.t=0;VAULT.x0=P.x;VAULT.y0=P.y;VAULT.x1=c.x;VAULT.y1=c.y;VAULT.h=c.h;VAULT.dur=.62;
+  P.h=hAng(c.x-P.x,c.y-P.y);Snd.tone&&Snd.tone([260,330],.08,'triangle',.04);Hap.tick&&Hap.tick();return true;}
+{const _ufV=updateFoot;updateFoot=function(dt){
+  if(!VAULT.on){_ufV(dt);return;}
+  if(!FOOT.on||FOOT.ride||INT.on){VAULT.on=false;LIFE.z=0;LIFE.vz=0;_ufV(dt);return;}
+  VAULT.t+=dt;const k=Math.min(1,VAULT.t/VAULT.dur),e=k*k*(3-2*k);P.x=VAULT.x0+(VAULT.x1-VAULT.x0)*e;P.y=VAULT.y0+(VAULT.y1-VAULT.y0)*e;P.s=2;P.vx=P.vy=0;
+  LIFE.z=Math.sin(k*Math.PI)*(VAULT.h+.12);LIFE.vz=0;M4.model(P.M,P.x,LIFE.z,P.y,-P.h,Math.sin(k*Math.PI)*.35,0);
+  if(k>=1){VAULT.on=false;LIFE.z=0;LIFE.vz=0;P.s=0;Snd.burst&&Snd.burst(.08,200,1.2,.25,'lowpass');Hap.tick&&Hap.tick();}};}
+/* JUMP in front of a gate or wall climbs it instead of hopping on the spot */
+{const _luV=lifeUpdate;lifeUpdate=function(dt){if(state==='play'&&input.jump&&FOOT.on&&!FOOT.ride&&LIFE.z<=0&&!VAULT.on){const c=climbTarget();if(c&&startVault(c))input.jump=0;}
+  if(VAULT.on)input.jump=0;_luV(dt);if(VAULT.on){LIFE.vz=0;}};}
+{const _fcV=findContext;findContext=function(){if(VAULT.on)return null;const c=climbTarget();if(c)return {k:'item',it:{fn:()=>startVault()},label:'Climb over'};return _fcV();};}
+Object.assign(window.__oosht||{},{VAULT,climbTarget,startVault,vehRefs,vehDims,vehTop,roofLand});
+
+/* ================= WISE CITY: Pay 'n' Spray and mod garage (at every mechanic). Repaint, gold rims, GT wing,
+   neon underglow, hydraulics that bounce to the radio, NOS and armour plating. Saved per vehicle with the profile ================= */
+const MODP={paint:1500,neon:4000,rims:6000,wing:5000,hydro:12000,nos:18000,armor:60000};
+const NEONS=[['Vice pink','#FF1493'],['Electric cyan','#00F2FF'],['Lime','#33FF26'],['Saffron','#FFA600'],['Royal purple','#A61AFF']];
+const PAINTS=['#B3121F','#F2B705','#15171C','#E8E8E4','#0F3D7A','#1F7A3A','#FF3FA4','#7A1FA2','#FF6A00','#2EE6E6'];
+const GOLD=[.95,.74,.18];
+function modsOf(t){if(!profile.mods)profile.mods={};return profile.mods[t]||(profile.mods[t]={});}
+function modCaps(t){const two=!!TWO_SPECS[t];const car=!two&&!['auto','bus','lorry','tractor','truck'].includes(t);return {paint:car||two,rims:car||two,wing:car,hydro:car,nos:true,neon:true,armor:true};}
+const MODM=new Map();
+function modModel(t){const m=modsOf(t),c=modCaps(t);const paint=c.paint&&m.paint,rims=c.rims&&m.rims,wing=c.wing&&m.wing;if(!paint&&!rims&&!wing)return null;
+  const lk=typeof PLOOK!=='undefined'?PLOOK:{shirt:'#2F6FB2',pants:'#2B2F3A'};const key=[t,paint||'',rims?1:0,wing?1:0,lk.shirt,lk.pants].join('|');let mm=MODM.get(key);if(mm)return mm;
+  if(TWO_SPECS[t])mm=buildTwo(Object.assign({},TWO_SPECS[t],{shirt:lk.shirt,pants:lk.pants},paint?{col:paint,lampShell:paint}:{},rims?{rim:GOLD}:{}));
+  else mm=buildCar(t,paint||VEH[t].col,{rim:rims?GOLD:null,wing:!!wing});
+  if(MODM.size>24)MODM.clear();MODM.set(key,mm);return mm;}
+/* put the saved look on Tony's own vehicle (never on a stolen one, which keeps its own skin) */
+function applyMods(){if(FOOT.on||FLY.on)return;if(P.skin&&!P.skin.mod)return;const mm=modModel(P.type);P.skin=mm?{model:mm,k:P.type,mod:true}:null;}
+{const _spG=startPlay;startPlay=function(k){_spG(k);try{applyMods();}catch(e){}};}
+{const _evG=enterVehicle;enterVehicle=function(c){const r=_evG(c);try{applyMods();}catch(e){}return r;};}
+/* armour plating: no crash damage at all */
+{const _dmG=damage;damage=function(n,silent){if(!FOOT.on&&modsOf(P.type).armor&&(!P.skin||P.skin.mod))return;_dmG(n,silent);};}
+
+/* ---------- garage screen ---------- */
+const GAR={el:null};
+function garUI(){if(GAR.el)return GAR.el;const e=document.createElement('div');e.id='modScr';e.hidden=true;
+  e.style.cssText='position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:14px;background:rgba(6,8,12,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)';
+  const st=document.createElement('style');st.textContent=`
+#modScr[hidden]{display:none!important}
+#modScr .card{width:min(720px,100%);max-height:96vh}
+#modScr h2{font-family:WCDisplay,Impact,sans-serif;font-weight:400;font-size:30px;letter-spacing:.04em;margin:0;color:#FFC72C;transform:skewX(-8deg);transform-origin:left}
+#modScr .mr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.08)}
+#modScr .mr b{font-size:15px}#modScr .mr small{display:block;opacity:.7;font-size:12px}
+#modScr .sw8{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+#modScr .sw8 button{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.35);padding:0}
+#modScr .sw8 button.on{border-color:#fff;box-shadow:0 0 0 3px #FFC72C}
+#modScr .sw8 button.off{background:#222;color:#fff;font-size:11px;width:auto;padding:0 12px;border-radius:17px}
+#modScr .btn[disabled]{opacity:.4}`;document.head.appendChild(st);document.body.appendChild(e);GAR.el=e;return e;}
+const rs=n=>'₹'+fmtINR(n);
+function garPay(n){if(profile.wallet<n){toast('Not enough money','bad');return false;}profile.wallet-=n;saveProfile();return true;}
+function garOpen(){const e=garUI();garDraw();e.hidden=false;}
+function garClose(){if(GAR.el)GAR.el.hidden=true;try{$('#repWallet').textContent=rs(profile.wallet);}catch(e){}}
+function garDraw(){const e=garUI(),t=P.type,m=modsOf(t),c=modCaps(t),V=VEH[t];const stolen=P.skin&&!P.skin.mod;
+  const row=(title,desc,btn)=>`<div class="mr"><div><b>${title}</b><small>${desc}</small></div>${btn||''}</div>`;
+  const tog=(k,name,desc,ok)=>!ok?row(name,'Not available for this vehicle','<button class="btn" disabled>N/A</button>'):m[k+'Own']?row(name,desc,`<button class="btn ${m[k]?'primary':''}" data-tog="${k}">${m[k]?'Fitted':'Fit'}</button>`):row(name,desc,`<button class="btn" data-buy="${k}">${rs(MODP[k])}</button>`);
+  let h=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>Pay 'n' Spray &amp; Mods</h2><button class="btn primary" data-close="1">Done</button></div><p style="margin:0;opacity:.8">${V.name} · Wallet <b>${rs(profile.wallet)}</b>${stolen?' · This is not your vehicle, so mods cannot be fitted.':''}</p>`;
+  if(!stolen){
+    h+=c.paint?`<div class="mr"><div><b>Respray · ${rs(MODP.paint)}</b><small>Pick a colour. A respray also loses the police if none of them is watching.</small></div><span></span><div class="sw8">${PAINTS.map(p=>`<button data-paint="${p}" class="${m.paint===p?'on':''}" style="background:${p}" aria-label="Paint ${p}"></button>`).join('')}${m.paint?'<button class="off" data-paint="">Factory</button>':''}</div></div>`:row('Respray','Not available for this vehicle','<button class="btn" disabled>N/A</button>');
+    h+=m.neonOwn?`<div class="mr"><div><b>Neon underglow</b><small>Glows at night and pulses to the radio.</small></div><span></span><div class="sw8">${NEONS.map((n,i)=>`<button data-neon="${i}" class="${m.neon===i?'on':''}" style="background:${n[1]}" aria-label="${n[0]}"></button>`).join('')}<button class="off ${m.neon==null?'on':''}" data-neon="-1">Off</button></div></div>`:row('Neon underglow','Glows at night and pulses to the radio.',`<button class="btn" data-buy="neon">${rs(MODP.neon)}</button>`);
+    h+=tog('rims','Gold wire rims','Lowrider gold wheels.',c.rims)+tog('wing','Carbon GT wing','A big rear wing.',c.wing)
+      +tog('hydro','Hydraulics','Hold HORN while stopped to bounce; steer to tilt. Bounces in time with the radio.',c.hydro)
+      +tog('nos','NOS nitrous','Hold the NOS button for a 3-second boost. Refills as you drive.',c.nos)
+      +tog('armor','Armour plating','Bulletproof tyres and an indestructible body: no crash damage.',c.armor);}
+  h+=`</div>`;e.innerHTML=h;}
+function garClick(ev){const b=ev.target.closest('button');if(!b||b.disabled)return;const t=P.type,m=modsOf(t);const d=b.dataset;
+  if(d.close){garClose();return;}
+  if(d.paint!==undefined){if(d.paint===''){delete m.paint;}else{if(m.paint===d.paint)return;if(!garPay(MODP.paint))return;m.paint=d.paint;Snd.burst&&Snd.burst(.7,3200,.6,.2,'highpass');
+      if((COP.level||COP.list.length)&&!COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<45)){escaped();toast('Fresh paint · the police lost you','good');}else toast('Resprayed','good');}}
+  else if(d.neon!==undefined){const i=+d.neon;if(i<0)delete m.neon;else m.neon=i;}
+  else if(d.buy){const k=d.buy;if(!garPay(MODP[k]))return;m[k+'Own']=true;if(k==='neon'){m.neon=0;}else m[k]=true;Snd.chime();toast('Fitted','good');}
+  else if(d.tog){m[d.tog]=!m[d.tog];}
+  saveProfile();applyMods();garDraw();}
+garUI().addEventListener('click',garClick);
+$('#repMods').addEventListener('click',garOpen);
+
+/* ---------- NOS ---------- */
+const NOS={tank:3,on:false,snd:0};
+hold($('#btnNos'),()=>{input.nos=1;},()=>{input.nos=0;});
+window.addEventListener('keydown',e=>{if(e.key==='n'||e.key==='N')input.nos=1;});window.addEventListener('keyup',e=>{if(e.key==='n'||e.key==='N')input.nos=0;});
+/* ---------- hydraulics ---------- */
+const HYD={y:0,vy:0,p:0,r:0,beat:0,hold:0,side:1,on:false};
+function ownMods(){return !FOOT.on&&!FLY.on&&(!P.skin||P.skin.mod)?modsOf(P.type):null;}
+{const _upG=updatePlayer;updatePlayer=function(dt){_upG(dt);const m=ownMods();if(!m){NOS.on=false;HYD.on=false;return;}const V=VEH[P.type];
+  /* NOS: strong push beyond the normal top speed while the tank lasts */
+  NOS.on=!!(m.nos&&input.nos&&NOS.tank>0&&P.s>1);
+  if(NOS.on){NOS.tank=Math.max(0,NOS.tank-dt);const cap=V.top/3.6*1.3;if(P.s<cap)P.s=Math.min(cap,P.s+8*dt);CAM.shake=Math.max(CAM.shake,1.2);
+    if((NOS.snd-=dt)<=0){NOS.snd=.18;Snd.burst&&Snd.burst(.25,2600,.8,.1,'bandpass');}}
+  else if(!input.nos)NOS.tank=Math.min(3,NOS.tank+dt*.2);
+  /* hydraulics: hold HORN while stopped or crawling */
+  HYD.hold=input.horn?HYD.hold+dt:0;HYD.on=!!(m.hydro&&HYD.hold>.35&&Math.abs(P.s)<4.5);
+  if(HYD.on){if(HYD.hold-dt<=.35)Snd.hornOff();const iv=typeof RADIO!=='undefined'&&RADIO.on>=0&&STATIONS[RADIO.on]&&STATIONS[RADIO.on].bpm?60/STATIONS[RADIO.on].bpm:.45;
+    if((HYD.beat-=dt)<=0){HYD.beat=iv;HYD.vy=2.3;HYD.side=-HYD.side;Snd.burst&&Snd.burst(.09,85,1,.5,'lowpass');Hap.tick&&Hap.tick();}}
+  if(HYD.y>0||HYD.vy>0){HYD.y+=HYD.vy*dt;HYD.vy-=14*dt;if(HYD.y<=0){HYD.y=0;HYD.vy=0;}}
+  const tp=HYD.on?HYD.side*.07+ (HYD.y*.25*HYD.side):0,tr=HYD.on?clamp(P.steer,-1,1)*.11:0;HYD.p+=(tp-HYD.p)*Math.min(1,dt*10);HYD.r+=(tr-HYD.r)*Math.min(1,dt*8);
+  if(HYD.y>.001||Math.abs(HYD.p)>.002||Math.abs(HYD.r)>.002){M4.model(TM,0,HYD.y+(HYD.on?.06:0),0,0,HYD.p,HYD.r);M4.mul(TM2,P.M,TM);for(let i=0;i<16;i++)P.M[i]=TM2[i];}};}
+setInterval(()=>{const b=$('#btnNos');if(!b)return;const m=state==='play'?ownMods():null;b.hidden=!(m&&m.nos);if(m&&m.nos){b.style.opacity=(.4+.6*NOS.tank/3).toFixed(2);}},250);
+
+/* ---------- neon underglow and NOS flames (drawn in the additive glow pass) ---------- */
+const DNE=new GlowBatch(12);
+function neonFor(type,x,y,h,len,wid,own){const m=modsOf(type);if(m.neon==null||!m.neonOwn)return;const c=hexRGB(NEONS[m.neon][1]);
+  const bpm=typeof RADIO!=='undefined'&&RADIO.on>=0&&STATIONS[RADIO.on]?STATIONS[RADIO.on].bpm:0;const ph=bpm?(GT*bpm/60)%1:0;const pulse=bpm&&own?.6+.6*Math.pow(1-ph,2):.8+.2*Math.sin(GT*6.5);
+  DNE.quad(x,.045,y,Math.sin(h),-Math.cos(h),len*.72,wid*1.05,c.map(v=>v*pulse));}
+{const _fbG=drawFootBeams;drawFootBeams=function(ex,ez){_fbG(ex,ez);try{DNE.reset();const n=FU.night||0;
+  if(!FOOT.on&&!FLY.on&&(!P.skin||P.skin.mod)){const pm=curModel();neonFor(P.type,P.x,P.y,P.h,pm.len||4,pm.wid||1.8,true);
+    if(NOS.on){const fx=Math.sin(P.h),fy=-Math.cos(P.h),rx=Math.cos(P.h),ry=Math.sin(P.h),L=(pm.len||4)/2+.25;for(const s of[-.35,.35]){const x=P.x-fx*L+rx*s,y=P.y-fy*L+ry*s;DNE.bill(x,.38,y,.55+Math.random()*.25,[.35,.6,1],CAM.right);DNE.bill(x-fx*.5,.38,y-fy*.5,.4,[1,.55,.15],CAM.right);}}}
+  else if(FOOT.on&&FOOT.parked&&(!FOOT.parked.skin||FOOT.parked.skin.mod)){const pk=FOOT.parked,pm=pk.skin?pk.skin.model:playerModel(pk.type);neonFor(pk.type,pk.x,pk.y,pk.h,pm.len||4,pm.wid||1.8,false);}
+  if(DNE.n)DNE.draw(0,.35+n*.9);}catch(e){}};}
+Object.assign(window.__oosht||{},{modsOf,applyMods,garOpen,garClose,NOS,HYD,modModel,setTod:k=>{settings.tod=k;computeTod();}});
+
+/* ================= WISE CITY: street barks. Every spoken line also shows as a one-line subtitle with a coloured speaker label.
+   New pools: drivers thrown out of their vehicles, Hoysala megaphone warnings, drivers fed up with honking ================= */
+LINES2.hijack=[['ಅಯ್ಯೋ! ನನ್ನ ಗಾಡಿ!','Ayyo! My vehicle! Leave it!','shout'],['ಏಯ್! ಇಳಿ ಕೆಳಗೆ!','Hey! Get out of my vehicle!','angry'],['ದಯವಿಟ್ಟು ಏನೂ ಮಾಡ್ಬೇಡಿ!','Please, don’t hurt me! Take it, take it!','shout'],
+  ['ಕಳ್ಳ! ಗಾಡಿ ಕದೀತಿದಾನೆ!','Thief! He’s stealing my vehicle!','shout'],['ಇದಕ್ಕೆ ಇನ್ನೂ ಇಎಂಐ ಕಟ್ತಿದೀನಿ!','I’m still paying EMI on that!','shout'],['ಪೊಲೀಸ್! ನನ್ನ ಗಾಡಿ ತಗೊಂಡು ಹೋಗ್ತಿದಾನೆ!','Police! He’s taking my vehicle!','shout']];
+LINES2.police=[['ಗಾಡಿ ಸೈಡಿಗೆ ಹಾಕಿ!','Hoysala here. Pull over to the left, now!','angry'],['ಗಾಡಿ ನಿಲ್ಲಿಸಿ! ಇದು ಕೊನೆ ವಾರ್ನಿಂಗ್!','Stop the vehicle! This is your last warning!','shout'],
+  ['ಇಂಜಿನ್ ಆಫ್ ಮಾಡಿ, ಕೆಳಗೆ ಇಳೀರಿ!','Switch off the engine and step out!','angry'],['ಎಲ್ಲಿಗೆ ಓಡ್ತೀಯಾ? ನಿಲ್ಲು!','Where will you run? Stop right there!','shout'],
+  ['ಕಂಟ್ರೋಲ್ ರೂಮ್, ಬ್ಯಾಕಪ್ ಕಳಿಸಿ!','Control room, suspect is running. Send backup!','stressed'],['ತಪ್ಪಿಸ್ಕೊಳ್ಳೋಕೆ ಆಗಲ್ಲ, ನಿಲ್ಲಿಸು!','You cannot escape. Stop the vehicle!','angry']];
+LINES2.honk=[['ಹಾರ್ನ್ ಹೊಡೆದ್ರೆ ಸಿಗ್ನಲ್ ಬದಲಾಗುತ್ತಾ?','Will honking turn the signal green, ah?','angry'],['ಎಲ್ಲಿ ಹೋಗ್ಲಿ? ಹಾರಿ ಹೋಗ್ಲಾ?','Where do I go? Should I fly?','angry'],
+  ['ಸ್ವಲ್ಪ ತಾಳ್ಮೆ ಇರಲಿ ಗುರು!','Have some patience, guru!','tired'],['ಹಾರ್ನ್ ಮೇಲೆ ಮಲಗಿದ್ಯಾ?','Did you fall asleep on the horn?','angry'],['ನಿನ್ನ ಅಪ್ಪನ ರೋಡಾ ಇದು?','Is this your father’s road?','angry']];
+const BARK={el:null,t:0,pol:6,honk:0};
+const BARKWHO={man:'Passerby',woman:'Passerby',kid:'Kid',elder:'Elder',vendor:'Vendor'};
+const BARKSET={argue:'Angry man',thief:'Victim',help:'Bystander',fear:'Pedestrian',hurt:'Pedestrian',hijack:'Driver',police:'Hoysala',honk:'Driver'};
+function barkUI(){if(BARK.el)return BARK.el;const e=document.createElement('div');e.id='bark';e.hidden=true;
+  const st=document.createElement('style');st.textContent=`#bark{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(46vw,520px);padding:6px 14px;border-radius:10px;background:rgba(8,10,14,.62);color:#fff;font-size:14px;line-height:1.3;text-align:center;pointer-events:none;z-index:5;text-shadow:0 1px 2px #000}
+#bark b{font-family:WCHud,system-ui,sans-serif;font-weight:600;color:#FFD166;letter-spacing:.04em;margin-right:6px;text-transform:uppercase;font-size:12px}
+#hud.cut #bark{display:none}`;document.head.appendChild(st);($('#hud')||document.body).appendChild(e);BARK.el=e;return e;}
+function barkShow(who,text){const e=barkUI();e.innerHTML='';const b=document.createElement('b');b.textContent=who+':';e.appendChild(b);e.appendChild(document.createTextNode(text));e.hidden=false;clearTimeout(BARK.t);BARK.t=setTimeout(()=>{e.hidden=true;},1900+text.length*45);}
+say=function(set,who,force){
+  const now=performance.now();if(now-TTS.last<(force?900:4500))return;
+  const L=LINES2[set];if(!L)return;
+  const fresh=L.filter(l=>!(now-(SPOKE.get(l[1])||-1e9)<90000));const line=(fresh.length?fresh:L)[Math.floor(Math.random()*(fresh.length||L.length))];
+  TTS.last=now;SPOKE.set(line[1],now);
+  if(state==='play')barkShow(BARKSET[set]||BARKWHO[who]||'Passerby',line[1]);
+  if(!settings.sound)return;const kn=ttsLang()==='kn';const m=MOOD[line[2]]||MOOD.calm;
+  const base=set==='police'?.8:({man:.9,woman:1.25,kid:1.6,elder:.78,vendor:1.0}[who]||1);const jit=(Math.random()-.5)*.12;
+  if(set==='police'&&Snd.burst)Snd.burst(.06,1900,2,.12,'bandpass');
+  speakLine(kn?line[0]:line[1],kn,base+m[1]+jit,(who==='elder'?.84:who==='kid'?1.1:1)*m[0]);};
+/* thrown out of the vehicle */
+{const _ejB=ejectDriver;ejectDriver=function(a){const r=_ejB(a);try{if(!(a.t&&a.t.two))say('hijack',Math.random()<.3?'woman':'man',true);}catch(e){}return r;};}
+/* Hoysala megaphone during a chase; drivers answer back when honked at in a jam */
+{const _luB=lifeUpdate;lifeUpdate=function(dt){_luB(dt);try{if(state!=='play'||(typeof CUT!=='undefined'&&CUT.on))return;
+  if(COP.list.length){if((BARK.pol-=dt)<=0){BARK.pol=9+Math.random()*7;if(COP.list.some(c=>Math.hypot(c.x-P.x,c.y-P.y)<40))say('police','man',true);}}else BARK.pol=Math.min(BARK.pol,5);
+  BARK.honk-=dt;if(!FOOT.on&&input.horn&&Math.abs(P.s)<3&&BARK.honk<=0&&!(typeof HYD!=='undefined'&&HYD.on)){const fx=Math.sin(P.h),fy=-Math.cos(P.h);
+    if(agents.some(a=>{const dx=a.x-P.x,dy=a.y-P.y,u=dx*fx+dy*fy;return u>1&&u<11&&Math.abs(dx*fy-dy*fx)<2.2&&(a.v||0)<2;})){BARK.honk=7;say('honk','man',true);}}}catch(e){}};}
+Object.assign(window.__oosht||{},{BARK,barkShow});
 
 })();
 </script>

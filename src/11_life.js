@@ -474,7 +474,7 @@ function lifeUpdate(dt){
     }
   /* jumping and attacking on foot */
   if(onFoot){
-    if(input.jump&&LIFE.z<=0&&FOOT.stam>4){LIFE.vz=4.4;FOOT.stam-=4;input.jump=0;Snd.tone([300],.04,'triangle',.03);}
+    if(input.jump&&LIFE.z<=0&&FOOT.stam>4){LIFE.vz=5.4;FOOT.stam-=4;input.jump=0;Snd.tone([300],.04,'triangle',.03);}
     if(LIFE.z>0||LIFE.vz>0){LIFE.z+=LIFE.vz*dt;LIFE.vz-=13*dt;if(LIFE.z<=0){LIFE.z=0;LIFE.vz=0;Hap.tick();}}
     if(input.atk&&LIFE.atkT<=0&&!FOOT.unload)doAttack();
     if(LIFE.z>0)M4.model(P.M,P.x,LIFE.z+(P.elev||0),P.y,-P.h,0,0);

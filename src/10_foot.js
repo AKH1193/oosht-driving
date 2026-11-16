@@ -118,7 +118,7 @@ function updateFoot(dt){
   if(false)FOOT.stam=0;else FOOT.stam=Math.min(maxStam(),FOOT.stam+(P.s<.3?12:6)*dt*(LIFE.boost>0?2:1));
   const fx=Math.sin(P.h),fy=-Math.cos(P.h);P.vx=fx*P.s;P.vy=fy*P.s;
   const ox=P.x,oy=P.y,sx=P.vx*dt,sy=P.vy*dt;
-  const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;}const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};
+  const treeAt2=(x,y)=>{const tq=[];gQuery(W.tG,x,y,2,tq);for(const t of tq){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-x,t.y-y)<(t.r||.3)+.22)return true;}const pq=[];gQuery(W.pvG||new Map(),x,y,4,pq);if(LIFE.z+(P.elev||0)>.45)return false;for(const v of pq)if(!CITY.taken.has(v.key)&&carDist(v,v.len,v.wid,x,y)<.28)return true;return false;};
   const blocked=(x,y)=>treeAt2(x,y)||inBuilding(x,y)||inBuilding(x+fx*.32,y+fy*.32)||inBuilding(x-fy*.24+fx*.1,y+fx*.24+fy*.1)||inBuilding(x+fy*.24+fx*.1,y-fx*.24+fy*.1);
   if(metroWalk(ox,oy,sx,sy,dt)){}
   else if(inBuilding(ox,oy)){const o=pushOutOf(ox,oy);P.x=o[0];P.y=o[1];P.s*=.5;}
@@ -127,7 +127,7 @@ function updateFoot(dt){
   else if(Math.abs(sy)>1e-4&&!blocked(ox,oy+sy)){P.y=oy+sy;P.s*=.97;}
   else{P.s*=.4;}
   /* vehicles are solid boxes for their full length, so you cannot walk through a lorry or bus */
-  if(!(P.elev>1.5)&&!(typeof ROOF!=='undefined'&&ROOF.a)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
+  if(!(P.elev>1.5)&&!(LIFE.z>.45)&&!(typeof ROOF!=='undefined'&&ROOF.a)&&!(typeof VAULT!=='undefined'&&VAULT.on)){for(const a of agents)vehPush(a.x,a.y,a.h,a.t.len,a.t.wid);
     for(const c of COP.list)vehPush(c.x,c.y,c.h,4.55,1.86);
     if(typeof AMB!=='undefined')for(const m of AMB.list)vehPush(m.x,m.y,m.h,5.4,2.1);
     if(intruder)vehPush(intruder.x,intruder.y,intruder.h,intruder.t.len,intruder.t.wid);

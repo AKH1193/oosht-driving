@@ -72,7 +72,7 @@ function doorsChunk(sol,inC,cx,cy){
     if(k==='house'&&b.h<=9&&!b.kiosk&&d.quiet){const gz=-2.2;for(const x of[-1.6,1.6])sol.box(x,.8,gz,.36,1.6,.36,[.82,.8,.74]);
       for(let i=0;i<11;i++)sol.box(-1.38+i*.276,.75,gz,.03,1.3,.03,[.2,.22,.25]);sol.box(0,1.36,gz,2.86,.05,.05,[.2,.22,.25]);sol.box(0,.2,gz,2.86,.05,.05,[.2,.22,.25]);
       for(const s of[-1,1])sol.box(s*(1.78+1.2),.7,gz,2.4,1.4,.18,[.85,.83,.77]);
-      {const c=Math.cos(-hAng(d.nx,d.ny)),sn=Math.sin(-hAng(d.nx,d.ny));const W2=(x,z)=>[d.x+x*c+z*sn,d.y-x*sn+z*c];for(const x of[-4,-3,-2,2,3,4])colAdd(...W2(x,gz),.25);}}
+      {const c=Math.cos(-hAng(d.nx,d.ny)),sn=Math.sin(-hAng(d.nx,d.ny));const W2=(x,z)=>[d.x+x*c+z*sn,d.y-x*sn+z*c];for(const x of[-4.1,-3.6,-3.1,-2.6,-2.1,-1.6,2.1,2.6,3.1,3.6,4.1,1.6])colAdd(...W2(x,gz),.26,1.45);for(const x of[-1.1,-.55,0,.55,1.1])colAdd(...W2(x,gz),.26,1.4);}}
     sol.restore();}
 }
 
