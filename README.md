@@ -10,6 +10,8 @@ Ten two-wheelers, an auto-rickshaw, three everyday cars, four luxury and sports 
 
 Every mechanic also runs a Pay 'n' Spray and mod garage: respray in ten colours (a respray loses the police if none is watching), neon underglow in five colours that pulses to the radio, gold wire rims, a carbon GT wing, hydraulics (hold HORN while stopped to bounce in time with the radio, steer to tilt), NOS (hold the NOS button for a 3 second boost that refills as you drive) and armour plating that makes the vehicle indestructible. Mods are saved per vehicle and come back whenever you take that vehicle out. Camera views: chase, bonnet, cockpit and top.
 
+People have proper faces (eyes, brows, nose, lips, ears), many hairstyles, moustaches and beards, spectacles, bindis and earrings, slim, average and heavy builds of different heights, collars, belts, watches, shoes, salwar kameez, lungis, jackets, hoodies and uniforms. They walk and run with a smooth 8-frame cycle, glance at Tony as he passes and look scared when they flee. Tony can change his top, colours, trousers, shoes, hair, facial hair, glasses and cap in the Wardrobe at any owned safehouse.
+
 At Kempegowda International Airport (drive out to Devanahalli, or take the ₹1,500 cab from the flight mission) airliners land and take off on the real runways. Walk up to a parked plane and pull the pilot out, or board an empty one, then fly it: GO and BRAKE set the throttle, the joystick banks and climbs, take off above about 230 km/h, and land on a runway and stop before getting out.
 
 ## On the road

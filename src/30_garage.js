@@ -25,7 +25,7 @@ function garUI(){if(GAR.el)return GAR.el;const e=document.createElement('div');e
   e.style.cssText='position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:14px;background:rgba(6,8,12,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)';
   const st=document.createElement('style');st.textContent=`
 #modScr[hidden]{display:none!important}
-#modScr .card{width:min(720px,100%);max-height:96vh}
+#modScr .card{width:min(720px,100%);max-height:94vh;overflow-y:auto}
 #modScr h2{font-family:WCDisplay,Impact,sans-serif;font-weight:400;font-size:30px;letter-spacing:.04em;margin:0;color:#FFC72C;transform:skewX(-8deg);transform-origin:left}
 #modScr .mr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.08)}
 #modScr .mr b{font-size:15px}#modScr .mr small{display:block;opacity:.7;font-size:12px}
