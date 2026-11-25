@@ -178,10 +178,7 @@ function buildChunk(cx,cy){
     const t0=jA?w.hw+9:2,t1=jB?s.len-w.hw-9:s.len-2;if(t1-t0<6)continue;const rnd=mulberry32(hash2(Math.round(s.ax*7),Math.round(s.ay*7)));
     for(let t=t0;t<t1;t+=3){const L=Math.min(3,t1-t),cx=s.ax+dx*(t+L/2),cy=s.ay+dy*(t+L/2);const k=Math.floor(t/3)%2;
       sol.save();sol.tr(cx,0,cy);sol.rotY(-h);sol.box(0,.09,0,1.2,.18,L,k?[.95,.78,.1]:[.12,.12,.12]);sol.box(0,.185,0,.9,.02,L,[.26,.2,.14]);sol.restore();}
-    for(let t=t0+2;t<t1-1;t+=4.5){const x=s.ax+dx*t,y=s.ay+dy*t,v=Math.floor(t/4.5)%3;
-      if(v===0){sol.blob(x,.55,y,.42,.42,.42,[.18,.46,.22]);sol.blob(x+.1,.75,y-.05,.25,.22,.25,[.85,.22,.55]);}
-      else if(v===1){sol.cyl(x,.7,y,.06,1.2,'y',6,[.42,.32,.2]);for(let i=0;i<5;i++){const a=i/5*TAU+rnd();sol.blob(x+Math.cos(a)*.38,1.3,y+Math.sin(a)*.38,.36,.08,.18,[.22,.55,.24]);}}
-      else{sol.blob(x,.45,y,.5,.32,.5,[.2,.5,.25]);}}}
+    for(let t=t0+2;t<t1-1;t+=4.5){const x=s.ax+dx*t,y=s.ay+dy*t,v=Math.floor(t/4.5)%3;medianPlant(sol,x,y,v,h,rnd);}}
   /* trees and street lamps along the roads */
   const trees=[];
   for(const s of mine){const w=s.w;if(w.br)continue;const rk=RANK[w.cls];

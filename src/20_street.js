@@ -8,7 +8,7 @@ function steerAssist(dt,sp){if(sp<3||P.s<0)return;const fx=Math.sin(P.h),fy=-Mat
   if(L&&!R)P.h+=1.1*dt;else if(R&&!L)P.h-=1.1*dt;}
 /* scrape along a wall instead of stopping dead, unless it is head-on */
 function slideWall(ox,oy,fx,fy,sg,n,dt){const mx=P.vx*dt/n,my=P.vy*dt/n,m=Math.hypot(mx,my)||1e-6;
-  const ok=(x,y)=>!inBuilding(x,y)&&!inBuilding(x+fx*P.len*.5*sg,y+fy*P.len*.5*sg);
+  const ok=(x,y)=>!inBuilding(x,y)&&!inBuilding(x+fx*P.len*.5*sg,y+fy*P.len*.5*sg)&&(P.ovl||!carCorners(x,y,fx,fy));
   for(const[ax,ay]of[[mx,0],[0,my]]){const part=Math.hypot(ax,ay)/m;if(part<.42)continue;if(ok(ox+ax,oy+ay)){P.x=ox+ax;P.y=oy+ay;
     if(ax===0)P.vx*=.4;else P.vy*=.4;P.s*=1-.6*dt*n;if(P.s>0){const want=hAng(ax,ay);P.h+=angDiff(P.h,want)*Math.min(1,dt*n*4);}
     if((P.scrapeT||0)<GT){P.scrapeT=GT+.35;Snd.burst(.08,2400,.7,.08,'bandpass');Hap.tick();}return true;}}

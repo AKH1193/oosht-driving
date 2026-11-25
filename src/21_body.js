@@ -11,7 +11,8 @@ function metroWalk(ox,oy,sx,sy,dt){
   let st=null,bd=46;for(const s of METRO.stations){const d=Math.hypot(s.x-ox,s.y-oy);if(d<bd){bd=d;st=s;}}
   const cur=P.elev||0;if(!st){if(cur>0)P.elev=0;return false;}
   const[u0,v0]=stLocal(st,ox,oy);const h0=stHeight(u0,v0,cur);
-  if(cur<.3&&h0<.3){/* still at street level: only take over once a foot is on the stairs */
+  if(cur<.3&&h0>=.3)return false;/* at street level inside the stair footprint (thrown there, pushed there): walk normally, never trap */
+  if(cur<.3){/* still at street level: only take over once a foot is on the stairs */
     const[u1,v1]=stLocal(st,ox+sx,oy+sy);const h1=stHeight(u1,v1,cur);if(h1<.3)return false;if(h1>1.3){P.s*=.5;return true;}}
   const nx=ox+sx,ny=oy+sy;const[u,v]=stLocal(st,nx,ny);const h=stHeight(u,v,cur);
   if(Math.abs(h-cur)>1.3){P.s*=.5;return true;}                                   /* edge of the stairs, the glass wall, the end of the platform */

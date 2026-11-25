@@ -197,3 +197,4 @@ const DBGCAM={on:false,eye:null,tgt:null,fov:30};
   M4.persp(CAM.proj,CAM.fov*Math.PI/180,asp,.1,1400);M4.lookAt(CAM.view,CAM.eye,CAM.tgt,[0,1,0]);M4.mul(CAM.vp,CAM.proj,CAM.view);M4.invert(CAM.inv,CAM.vp);
   const dx=CAM.tgt[0]-CAM.eye[0],dz=CAM.tgt[2]-CAM.eye[2],dl=Math.hypot(dx,dz)||1;CAM.fwd=[dx/dl,0,dz/dl];CAM.right=[-dz/dl,0,dx/dl];};}
 Object.assign(window.__oosht||{},{DBGCAM});
+Object.assign(window.__oosht||{},{updateFoot:dt=>updateFoot(dt),inBuilding:(x,y)=>inBuilding(x,y)});

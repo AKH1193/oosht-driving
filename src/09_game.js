@@ -61,21 +61,25 @@ function updatePlayer(dt){
   const V=VEH[P.type];
   let top=V.top/3.6;
   if(P.dry)top=6/3.6;else if(P.cond<=0)top=10/3.6;else if(P.cond<50)top*=.55+.45*P.cond/50;
-  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.1)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.1)/.85),1.8);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);{const ms=(1-.48*clamp(Math.abs(P.s)/33,0,1))*(V.cat==='two'?.82:1);steerIn=clamp(steerIn,-ms,ms);}if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
-  P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn?2.6:6));
+  const SS=STEERS[settings.steerSens]||STEERS.med;
+  const jxc=(()=>{const j=input.jx||0,m=Math.abs(j);if(m<.08)return 0;return Math.sign(j)*Math.pow(Math.min(1,(m-.08)/.84),SS.pow);})();let steerIn=clamp((input.R?1:0)-(input.L?1:0)+jxc,-1,1);{const ms=(1-SS.hi*clamp(Math.abs(P.s)/33,0,1))*(V.cat==='two'?.85:1);steerIn=clamp(steerIn,-ms,ms);}if(settings.steer==='tilt'&&!input.jx)steerIn=clamp(input.tilt,-1,1);
+  P.steer+=(steerIn-P.steer)*Math.min(1,dt*(steerIn&&Math.sign(steerIn)===Math.sign(P.steer||steerIn)?SS.rate:SS.rate*1.8));
   const nr=nearestSeg(P.x,P.y,14);P.road=nr.seg;
   P.offroad=!nr.seg||nr.edge>1.4;
   let back=(input.jy||0)<-.45;const cap=top;P.wheelie=V.cat==='two'&&input.gas&&back&&P.s>2.5;if(P.wheelie)back=false;P.wh=(P.wh||0)+((P.wheelie?.55:0)-(P.wh||0))*Math.min(1,dt*(P.wheelie?3:6));
   /* GO accelerates; GO with the joystick pulled back reverses */
   if(input.gas&&!back){if(P.s<-.3)P.s+=V.brake*dt;else if(P.s<cap){const f=1-Math.pow(clamp(P.s/cap,0,1),1.7);P.s+=V.accel*f*dt*(P.s<3?1.25:1);}}
   else if(input.gas&&back){if(P.s>.3)P.s-=V.brake*dt;else if(P.s>-Math.min(top*.4,8))P.s-=V.accel*.7*dt;}
-  /* BRAKE slows and holds; BRAKE while steering at speed drifts */
-  P.drift=input.brake&&Math.abs(P.steer)>.3&&P.s>7;
-  if(input.brake){if(P.drift)P.s-=V.brake*.2*dt;else if(P.s>.3)P.s=Math.max(0,P.s-(V.brake*1.35+P.s*.15)*dt);else if(P.s<-.3)P.s=Math.min(0,P.s+V.brake*1.35*dt);else P.s=0;}
-  if(!input.gas&&!input.brake){const c=(1.0+Math.abs(P.s)*.02)*dt;P.s=Math.abs(P.s)<c?0:P.s-Math.sign(P.s)*c;}
+  /* BRAKE always stops in a straight line: firm at first, full emergency braking (ABS) once held; HAND BRAKE locks the rear wheels and slides at speed */
+  P.bT=input.brake?(P.bT||0)+dt:0;P.hard=input.brake&&P.bT>.3&&Math.abs(P.s)>2;
+  P.drift=!!input.hb&&Math.abs(P.steer)>.2&&P.s>6;
+  const wetK=P.wet||WX.rain>.3?.75:1;
+  if(input.brake){const k=(P.bT<.3?1.05+P.bT*1.6:1.55)*wetK;const dcl=Math.min(24,V.brake*k+Math.abs(P.s)*.14)*dt;if(Math.abs(P.s)>dcl)P.s-=Math.sign(P.s)*dcl;else P.s=0;}
+  if(input.hb){const dcl=(P.drift?V.brake*.45:V.brake*1.2+Math.abs(P.s)*.1)*wetK*dt;if(Math.abs(P.s)>dcl)P.s-=Math.sign(P.s)*dcl;else P.s=0;}
+  if(!input.gas&&!input.brake&&!input.hb){const c=(1.0+Math.abs(P.s)*.02)*dt;P.s=Math.abs(P.s)<c?0:P.s-Math.sign(P.s)*c;}
   if(P.s>top+.5)P.s-=4*dt;
   const sp=Math.abs(P.s);
-  let turn=P.steer*V.handling*1.8*clamp(sp/3,0,1)/(1+sp/11)*Math.sign(P.s||1);if(P.drift)turn*=1.75;
+  let turn=P.steer*V.handling*1.8*SS.k*clamp(sp/3,0,1)/(1+sp/11)*Math.sign(P.s||1);if(P.drift)turn*=1.75;
   steerAssist(dt,sp);
   P.h+=turn*dt;
   if(V.cat==='two'){const tl=clamp(Math.atan(sp*turn/9.8),-.5,.5);P.lean+=(tl-P.lean)*Math.min(1,dt*6);}else P.lean=0;
@@ -92,10 +96,11 @@ function updatePlayer(dt){
   P.vx+=(fx*P.s-P.vx)*Math.min(1,grip*dt);P.vy+=(fy*P.s-P.vy)*Math.min(1,grip*dt);
   /* move in small steps so fast vehicles cannot skip through walls */
   const dist=Math.hypot(P.vx,P.vy)*dt;const n=Math.max(1,Math.ceil(dist/.45));
+  P.ovl=carCorners(P.x,P.y,fx,fy);/* already scraping a wall: only the nose and centre count until it is free */
   for(let i=0;i<n;i++){
     const ox=P.x,oy=P.y;P.x+=P.vx*dt/n;P.y+=P.vy*dt/n;
     const sg=Math.sign(P.s||1);const px=P.x+fx*P.len*.5*sg,py=P.y+fy*P.len*.5*sg;
-    if(inBuilding(px,py)||inBuilding(P.x,P.y)){if(slideWall(ox,oy,fx,fy,sg,n,dt))continue;P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
+    if(inBuilding(px,py)||inBuilding(P.x,P.y)||(!P.ovl&&carCorners(P.x,P.y,fx,fy))){if(slideWall(ox,oy,fx,fy,sg,n,dt))continue;P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.25;P.vx=P.vy=0;P.bumped=true;if(rel>2.5)crash(rel,'Hit a wall!',rel>8?25:0);else Hap.rumble();break;}
     gQuery(W.tG,P.x,P.y,2.5,tq);let tree=null;for(const t of tq){if(t.pole&&PDOWN.has(t.pole.key))continue;if(Math.hypot(t.x-P.x,t.y-P.y)<(t.r||.45)+P.wid*(t.pier?.42:.5))tree=t;}
       if(tree&&tree.pole&&Math.abs(P.s)>3.5){knockPole(tree.pole,P.vx,P.vy);P.s*=.62;damage(2);CAM.shake=Math.max(CAM.shake,4);tree=null;}
     if(tree){P.x=ox;P.y=oy;const rel=Math.abs(P.s);P.s*=-.2;P.vx=P.vy=0;P.bumped=true;if(rel>1.5){crash(rel,'Hit a tree!');if(!tree.pier&&!tree.col)damage(rel*1.3);}else Hap.rumble();break;}
@@ -118,7 +123,7 @@ function updatePlayer(dt){
     if(hit&&a.t.two&&!a.fallen&&VEH[P.type].cat!=='two'&&Math.abs(P.s)>6.5){knockBiker(a,nx,ny);continue;}
     if(hit&&a.fallen)continue;
     if(hit){const push=(pr+ar-md)+.05;P.x+=nx*push;P.y+=ny*push;const rel=Math.hypot(P.vx-afx*a.v,P.vy-afy*a.v);P.s*=-.2;P.vx=P.vy=0;a.stop=2.5;a.v=0;
-      if(rel>1.8)crash(rel,{auto:'Hit an auto!',bus:'Hit a bus!',truck:'Hit a truck!',tanker:'Hit a water tanker!',hatch:'Hit a car!',sedan:'Hit a car!',suv:'Hit an SUV!',taxi:'Hit a taxi!'}[a.t.k]||'Hit a two-wheeler!',rel>7?35:10);}
+      if(rel>1.8){P.hitN=[nx,ny];try{dmgAgent(a,nx,ny,rel);}catch(e){}}if(rel>1.8)crash(rel,{auto:'Hit an auto!',bus:'Hit a bus!',truck:'Hit a truck!',tanker:'Hit a water tanker!',hatch:'Hit a car!',sedan:'Hit a car!',suv:'Hit an SUV!',taxi:'Hit a taxi!'}[a.t.k]||'Hit a two-wheeler!',rel>7?35:10);}
   }
   /* pedestrians */
   for(const p of peds){if(p.state==='down')continue;
@@ -346,10 +351,12 @@ function setFrameUniforms(){
   FU.hlPos=hw;FU.hlDir=(()=>{const d=[Math.sin(P.h),-.12,-Math.cos(P.h)];const l=Math.hypot(...d);return d.map(v=>v/l);})();
   wxFrame();
 }
+let DZC=null;
 function lightsFor(model,M,headOn,brake,night){
-  if(!model.lights)return;
-  if(headOn)for(const p of model.lights.head){const w=M4.xform(M,p[0],p[1],p[2]-.05);DGr.bill(w[0],w[1],w[2],.55,[1,.9,.7],CAM.right);}
-  const tk=brake?1:night*.6;if(tk>.05)for(const p of model.lights.tail){const w=M4.xform(M,p[0],p[1],p[2]+.05);DGr.bill(w[0],w[1],w[2],brake?.5:.35,[1*tk,.1*tk,.05*tk],CAM.right);}
+  if(!model.lights)return;const dz=DZC,two=model.lights.head.length===1;
+  /* two-wheelers ride with the headlight always on, as Indian bikes do */
+  if(headOn||two){let i=0;for(const p of model.lights.head){const k=hlK(dz,i++,model)*(headOn?1:.55);if(k<.05)continue;const w=M4.xform(M,p[0],p[1],p[2]-.05);DGr.bill(w[0],w[1],w[2],headOn?.55:.32,[k,.9*k,.7*k],CAM.right);}}
+  const tk=brake?1:night*.6;if(tk>.05){let i=0;for(const p of model.lights.tail){const k=tlK(dz,i++);if(k<.05)continue;const w=M4.xform(M,p[0],p[1],p[2]+.05);DGr.bill(w[0],w[1],w[2],brake?.5:.35,[tk*k,.1*tk*k,.05*tk*k],CAM.right);}}
 }
 const PEDLIT={tint:[1,1,1]};
 const RLAYERS=[(A,n,ex,ez)=>lifeRender(A,n,ex,ez),(A,n)=>drawPoiSigns(n),(A,n,ex,ez)=>drawVenues(ex,ez,n,A),(A,n,ex,ez)=>drawFixedSigns(ex,ez,n),(A,n)=>drawStations(n),(A,n)=>drawAir(n)];
@@ -399,7 +406,7 @@ function renderScene(dt){
   /* traffic, people, animals */
   const A=animalModels();PEDLIT.tint=[1+night*1.2,1+night*1.2,1+night*1.3];
   for(const a of agents){const d=Math.hypot(a.x-ex,a.y-ez);if(d>R)continue;M4.model(TM,a.x,0,a.y,-a.h,0,-a.lean);drawLit(a.model.body,TM,{emiK:.5+night});if(a.model.glass)drawLit(a.model.glass,TM);if(a.model.rider)drawLit(a.model.rider,TM);if(a.patrol&&a.model.decal){drawLit(a.model.decal.mesh,TM,{tex:hoysalaTex().tex,emTex:TEX.black});const lb=a.model.lightbar;if(lb){drawLit(lb.red,TM,{emiAdd:[.25,.02,.02]});drawLit(lb.blue,TM,{emiAdd:[.02,.05,.3]});}}if(a.model.decal2&&d<120){const tx=a.model.decal2.tex().tex;drawLit(a.model.decal2.mesh,TM,{tex:tx,emTex:tx,emiK:.15+night*.4});}
-    if(d<160)lightsFor(a.model,TM,night>.25,a.brake&&a.v>.5,night);}
+    if(d<160){DZC=a.dz||null;lightsFor(a.model,TM,night>.25,a.brake&&a.v>.5,night);DZC=null;}}
   for(const p of peds){if(Math.hypot(p.x-ex,p.y-ez)>180)continue;
     if(p.state==='static'){
       if(p.kind==='vendor'){M4.model(TM,p.cx,0,p.cy,-p.h,0,0);drawLit(A.cart[p.cart],TM);M4.model(TM,p.x,0,p.y,-p.h,0,0);drawLit(A.vendor[p.vv],TM);}
@@ -429,13 +436,13 @@ function renderScene(dt){
     drawLit(pm.body,P.M,{emiK:.4+night*.6});drawLit(pm.cockpit,P.M,{emiK:.6+night*.8,noHL:true});
     if(pm.steer){const sp=pm.steerPos;M4.model(TM,sp[0],sp[1],sp[2],0,-.42,-P.steer*1.9);M4.mul(TM2,P.M,TM);drawLit(pm.steer,TM2,{noHL:true});}
   }else{drawLit(pm.body,P.M,{emiK:.5+night});if(pm.glass)drawLit(pm.glass,P.M);if(pm.rider)drawLit(pm.rider,P.M);if(pm.decal)drawLit(pm.decal.mesh,P.M,{tex:hoysalaTex().tex,emTex:TEX.black});if(pm.decal2){const tx=pm.decal2.tex().tex;drawLit(pm.decal2.mesh,P.M,{tex:tx,emTex:tx,emiK:.15});}}
-  if(!fv&&!FLY.on&&CAM.mode!=='cockpit')lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);
+  if(!fv&&!FLY.on&&CAM.mode!=='cockpit'){DZC=P.dz||null;lightsFor(pm,P.M,night>.2,input.brake&&Math.abs(P.s)>.5,night);DZC=null;}
   /* light, glow and signboards */
   gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
   if(night>.05){for(const c of vis)drawGlowMesh(c.glow,0,night*.5);
-    DGb.reset();const beam=(M,model)=>{for(const p of model.lights.head){const w=M4.xform(M,p[0],.05,p[2]);DGb.quad(w[0],.06,w[2],Math.sin(model._h),-Math.cos(model._h),16,4.5,[1,.88,.65],true);}};
-    if(!fv&&!FLY.on){pm._h=P.h;beam(P.M,pm);}
-    for(const a of agents){if(Math.hypot(a.x-ex,a.y-ez)>140)continue;a.model._h=a.h;M4.model(TM,a.x,0,a.y,-a.h,0,0);beam(TM,a.model);}
+    DGb.reset();const beam=(M,model,dz)=>{let i=0;for(const p of model.lights.head){const k=hlK(dz,i++,model);if(k<.05)continue;const w=M4.xform(M,p[0],.05,p[2]);DGb.quad(w[0],.06,w[2],Math.sin(model._h),-Math.cos(model._h),16,4.5,[k,.88*k,.65*k],true);}};
+    if(!fv&&!FLY.on){pm._h=P.h;beam(P.M,pm,P.dz);}
+    for(const a of agents){if(Math.hypot(a.x-ex,a.y-ez)>140)continue;a.model._h=a.h;M4.model(TM,a.x,0,a.y,-a.h,0,0);beam(TM,a.model,a.dz);}
     DGb.draw(2,night*.55);}
   DGr.draw(0,.75+night*.6);DGr.reset();
   drawRain();
@@ -449,9 +456,10 @@ function renderScene(dt){
 }
 
 /* ---------- main loop ---------- */
-let lastT=performance.now(),fpsAcc=0,fpsN=0;
+let lastT=performance.now(),fpsAcc=0,fpsN=0,dtS=1/60;
 function frame(t){
-  const dt=Math.min(.05,(t-lastT)/1000);lastT=t;
+  /* smoothed frame time: one slow frame no longer makes the world lurch forward */
+  const raw=Math.min(.05,Math.max(0,(t-lastT)/1000));lastT=t;dtS+=(raw-dtS)*(raw>dtS?.25:.5);const dt=Math.min(.05,dtS);
   if(state==='play'){GT+=dt;update(dt);}
   if(['play','pause','repair','outcome','fuel'].includes(state)){
     if(state!=='play')updateChunks(P.x,P.y,4);
@@ -693,6 +701,7 @@ window.__onBack=()=>{
 };
 
 /* ---------- settings ---------- */
+const STEERS={low:{pow:1.9,hi:.55,rate:3.2,k:.9},med:{pow:1.45,hi:.42,rate:5,k:1},high:{pow:1.15,hi:.3,rate:7.5,k:1.12}};
 const SETS=[
   ['sound','Sound',[[true,'On'],[false,'Off']]],
   ['haptics','Vibration',[['off','Off'],['low','Low'],['med','Medium'],['high','Strong']]],
@@ -719,6 +728,9 @@ function closeSettings(){$('#settings').hidden=true;}
 $('#setBtn1').addEventListener('click',openSettings);$('#setBtn2').addEventListener('click',openSettings);$('#setClose').addEventListener('click',closeSettings);
 
 /* ---------- controls ---------- */
+/* the four corners and the middle of each side of the player's vehicle, so no part of the body can sink into a building */
+function carCorners(x,y,fx,fy){const L=(P.len||4)*.5-.12,Wd=(P.wid||1.8)*.5-.08,rx=-fy,ry=fx;
+  for(const[a,b]of[[L,Wd],[L,-Wd],[-L,Wd],[-L,-Wd],[0,Wd],[0,-Wd]])if(inBuilding(x+fx*a+rx*b,y+fy*a+ry*b))return true;return false;}
 function hold(e,on,off){
   const pts=new Set();
   e.addEventListener('pointerdown',ev=>{ev.preventDefault();try{e.setPointerCapture(ev.pointerId);}catch(_){}pts.add(ev.pointerId);e.classList.add('on');on();});

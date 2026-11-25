@@ -118,6 +118,8 @@ function buildMetro(data){
       let nm=null,bd=900;for(const pl of W.places){const d=Math.hypot(pl.x-p.x,pl.y-p.y);if(d<bd){bd=d;nm=pl.name;}}
       if(!nm){const n=nearestSeg(p.x,p.y,60);nm=n.seg&&n.seg.w.name?n.seg.w.name:'Central';}
       if(METRO.stations.some(t=>t.name===nm))nm=nm+' Cross';METRO.stations.push({l,s,name:nm});}}
+  /* underground lines have no visible station building, so they get no walkable station, stairs or pillars */
+  METRO.stations=METRO.stations.filter(st=>!st.l.tun);
   METRO.stations.sort((a,b)=>a.l.idx-b.l.idx||a.s-b.s);
   for(const st of METRO.stations){const p=lineAt(st.l,st.s);st.x=p.x;st.y=p.y;st.h=p.h;const nx=-Math.cos(p.h),ny=-Math.sin(p.h);
     st.e=[[p.x+nx*12.5,p.y+ny*12.5],[p.x-nx*12.5,p.y-ny*12.5]].map(e=>{for(let k=0;k<6&&inBuilding(e[0],e[1]);k++){e[0]-=nx*Math.sign((e[0]-p.x)*nx+(e[1]-p.y)*ny);e[1]-=ny*Math.sign((e[0]-p.x)*nx+(e[1]-p.y)*ny);}return e;});}
@@ -293,7 +295,7 @@ function cityChunk(sol,dec,mine,inC){
     const poshS=poshAt((s.ax+s.bx)/2,(s.ay+s.by)/2)>.5;
     if(poshS&&!w.br&&s.len>12){/* posh streets: granite planters with clipped shrubs and bollard lights */
       for(let t=6;t<s.len-4;t+=16)for(const sd of[-1,1]){const x=s.ax+dx*t+dy*(w.hw+1.5)*sd,y=s.ay+dy*t-dx*(w.hw+1.5)*sd;if(inBuilding(x,y)||nearSignal(x,y,4)||!roadClear(x,y,.4))continue;
-        sol.box(x,.3,y,.9,.6,.9,[.42,.42,.44]);sol.blob(x,.85,y,.5,.42,.5,[.16,.42,.2]);const bx2=x+dx*4,by2=y+dy*4;sol.cyl(bx2,.45,by2,.08,.9,'y',8,[.18,.18,.2]);sol.box(bx2,.93,by2,.14,.06,.14,[1,.95,.8],.9);}}
+        sol.box(x,.3,y,.9,.6,.9,[.42,.42,.44]);sol.box(x,.61,y,.94,.03,.94,[.55,.55,.57]);sol.box(x,.63,y,.8,.02,.8,[.24,.18,.12]);sol.ell(x,.98,y,.42,.36,.42,[.16,.42,.2],9,6);sol.ell(x,1.12,y,.3,.22,.3,[.2,.48,.23],8,5);const bx2=x+dx*4,by2=y+dy*4;sol.cyl(bx2,.45,by2,.08,.9,'y',8,[.18,.18,.2]);sol.box(bx2,.93,by2,.14,.06,.14,[1,.95,.8],.9);}}
     if(r()<.12&&!poshS){const t=s.len*(.2+r()*.6),sd=r()<.5?1:-1;const x=s.ax+dx*t+dy*(w.hw+1.3)*sd,y=s.ay+dy*t-dx*(w.hw+1.3)*sd;if(!inBuilding(x,y)&&roadClear(x,y,.4)){
       {const hk=W.props._hk||(W.props._hk=new Set());const key='heap'+Math.round(x*10)+'_'+Math.round(y*10);if(!hk.has(key)){hk.add(key);for(let k=0;k<7;k++){const a=r()*TAU,rr=r()*.8;const kk=key+'_'+k;const st=LIFE.propState.get(kk);const o={key:kk,kind:'bag',x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr,h:r()*TAU,z:0,vx:0,vy:0,vz:0,down:false,pitch:0,col:k%5};if(st)Object.assign(o,st);W.props.push(o);gAddBox(W.prG,o.x,o.y,o.x,o.y,o);}}}
       dec.quad([x-1.3,.04,y-1.1],[x+1.3,.04,y-1.1],[x+1.3,.04,y+1.1],[x-1.3,.04,y+1.1],[.24,.22,.18],[0,1,0]);}}

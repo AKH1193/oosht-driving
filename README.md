@@ -12,6 +12,8 @@ Every mechanic also runs a Pay 'n' Spray and mod garage: respray in ten colours 
 
 People have proper faces (eyes, brows, nose, lips, ears), many hairstyles, moustaches and beards, spectacles, bindis and earrings, slim, average and heavy builds of different heights, collars, belts, watches, shoes, salwar kameez, lungis, jackets, hoodies and uniforms. They walk and run with a smooth 8-frame cycle, glance at Tony as he passes and look scared when they flee. Tony can change his top, colours, trousers, shoes, hair, facial hair, glasses and cap in the Wardrobe at any owned safehouse.
 
+Driving: BRAKE always stops in a straight line and turns into full emergency braking (ABS pulses, nose dip, skid marks) when held; HAND BRAKE locks the rear wheels for skids and slides. Settings > Steering sensitivity offers Gentle, Normal and Sharp. Crashes leave visible damage on the side that was hit: creased and popped bonnets, hanging bumpers, cracked windscreens, dented doors, smashed and flickering headlights, broken tail lights, steam, black smoke and fire; a full repair at the mechanic fixes it. Traffic you hit shows its dents too. Street trees have smooth canopies and painted trunk bases, and medians have clipped shrubs, saplings and bougainvillea.
+
 At Kempegowda International Airport (drive out to Devanahalli, or take the ₹1,500 cab from the flight mission) airliners land and take off on the real runways. Walk up to a parked plane and pull the pilot out, or board an empty one, then fly it: GO and BRAKE set the throttle, the joystick banks and climbs, take off above about 230 km/h, and land on a runway and stop before getting out.
 
 ## On the road
